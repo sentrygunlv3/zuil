@@ -1,0 +1,6 @@
+#!/bin/zsh
+set -e
+
+zig build
+
+./zig-out/bin/test

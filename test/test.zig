@@ -4,8 +4,7 @@ const print = std.debug.print;
 const ui = @import("zuil");
 const colors = ui.color;
 
-const container = ui.uContainer;
-const list = ui.UList;
+const widgets = ui.widgets;
 
 pub fn main() anyerror!void {
 	var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -14,24 +13,38 @@ pub fn main() anyerror!void {
 	try ui.init(allocator);
 	defer ui.deinit();
 
-	const root = container()
-		.bounds(400, 225)
-		.color(colors.RED)
+	const root = widgets.container()
+		.bounds(0, 0, 400, 225)
+		.color(colors.WHITE)
 		.child(
-			list()
+			widgets.container()
 			.layout(.fill)
-			.content_align(.center)
-			.children(.{
-				container()
-				.bounds(20, 500)
-				.color(colors.rgb(0, 1.0, 0.5))
+			.margin(5, 5, 5, 5)
+			.color(colors.GREY)
+			.child(
+				widgets.list()
+				.layout(.fill)
+				.direction(.horizontal)
+				.children(.{
+					widgets.container()
+					.bounds(0, 0, 20, 500)
+					.margin(10, 10, 10, 0)
+					.color(colors.rgb(0, 1.0, 0.5))
+					.build()
+					,
+					widgets.container()
+					.bounds(50, -50, 50, 50)
+					.color(colors.RED)
+					.layout(.absolute)
+					.build()
+					,
+					widgets.container()
+					.bounds(0, 0, 20, 500)
+					.color(colors.WHITE)
+					.build()
+				})
 				.build()
-				,
-				container()
-				.bounds(20, 500)
-				.color(colors.WHITE)
-				.build()
-			})
+			)
 			.build()
 		)
 		.build();
@@ -42,7 +55,7 @@ pub fn main() anyerror!void {
 		"hello",
 		root
 	);
-	window.content_alignment = ui.widget.UAlign.top;
+	window.content_alignment = ui.types.UAlign.top;
 
 	ui.run() catch |e| {
 		std.log.err("test: {}", .{e});

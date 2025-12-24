@@ -4,31 +4,17 @@ const opengl = @import("opengl");
 
 pub const gl = opengl.bindings;
 
-pub const widget = @import("widget.zig");
-pub const color = @import("color.zig");
+pub const types = @import("types/generic.zig");
+pub const UError = @import("types/error.zig").UError;
+pub const color = @import("types/color.zig");
+
+pub const uwidget = @import("uwidget.zig");
+
+pub const widgets = @import("widgets.zig");
 pub const shader = @import("shader_registry.zig");
-
-// widgets
-
-pub const uContainer = @import("widgets/container.zig").uContainer;
-pub const UList = @import("widgets/list.zig").uList;
-
-// ---
 
 pub var allocator: std.mem.Allocator = undefined;
 var windows: std.AutoHashMap(*glfw.Window, *UWindow) = undefined;
-
-pub const UError = error{
-	NotImplemented,
-	NoWindowsCreated,
-	// widget
-	MissingWidgetFunction,
-	NoWidgetData,
-	// shader
-	FailedToCompileShader,
-	FailedToLinkShader,
-	MissingShader,
-};
 
 pub fn init(a: std.mem.Allocator) !void {
 	allocator = a;
@@ -79,16 +65,16 @@ fn errorCallback(error_code: c_int, desc: ?[*:0]const u8) callconv(.c) void {
 pub const UWindow = struct {
 	window: *glfw.Window,
 	dirty: bool,
-	root: *widget.UWidget,
-	content_alignment: widget.UAlign,
+	root: *uwidget.UWidget,
+	content_alignment: types.UAlign,
 
-	pub fn init(width: i32, height: i32, title: [:0]const u8, root: *widget.UWidget) !*@This() {
+	pub fn init(width: i32, height: i32, title: [:0]const u8, root: *uwidget.UWidget) !*@This() {
 		const self = try allocator.create(@This());
 
 		self.window = try glfw.Window.create(width, height, title, null);
 		self.dirty = true;
 		self.root = root;
-		self.content_alignment = widget.UAlign.default();
+		self.content_alignment = types.UAlign.default();
 
 		glfw.makeContextCurrent(self.window);
 
@@ -110,9 +96,11 @@ pub const UWindow = struct {
 		gl.viewport(0, 0, a, b);
 	}
 
-	pub fn getSize(self: *@This()) widget.UBounds {
+	pub fn getBounds(self: *@This()) types.UBounds {
 		const size = self.window.getSize();
 		return .{
+			.x = 0,
+			.y = 0,
 			.w = @floatFromInt(size[0]),
 			.h = @floatFromInt(size[1]),
 		};
@@ -144,7 +132,11 @@ pub const UWindow = struct {
 		const clear_color = [_]f32{0.192, 0.212, 0.231, 1.0};
 		gl.clearBufferfv(gl.COLOR, 0, &clear_color);
 
-		try self.root.update(self);
+		try self.root.update(
+			self,
+			self.getBounds(),
+			self.content_alignment
+		);
 
 		try self.root.render(self);
 		

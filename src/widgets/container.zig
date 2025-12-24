@@ -1,8 +1,10 @@
 const std = @import("std");
-const widget = @import("../widget.zig");
 const root = @import("../root.zig");
-const UColor = @import("../color.zig").UColor;
-pub const shader = @import("../shader_registry.zig");
+
+const widget = root.uwidget;
+const UColor = root.color.UColor;
+const shader = root.shader;
+const types = root.types;
 
 pub fn uContainer() *UContainerBuilder {
 	return UContainerBuilder.init() catch |e| {
@@ -42,7 +44,7 @@ fn renderUContainer(w: *widget.UWidget, window: *root.UWindow) anyerror!void {
 		color = data.color;
 	}
 
-	const window_size = window.getSize();
+	const window_size = window.getBounds();
 
 	const vertices = [_]f32{
 		// bottom left
@@ -85,8 +87,8 @@ fn renderUContainer(w: *widget.UWidget, window: *root.UWindow) anyerror!void {
 	const sizew = (w.clamped_bounds.w / window_size.w) * 2;
 	const sizeh = (w.clamped_bounds.h / window_size.h) * 2;
 
-	const posx = (w.position.x / window_size.w) * 2.0;
-	const posy = (w.position.y / window_size.h) * 2.0;
+	const posx = (w.clamped_bounds.x / window_size.w) * 2.0;
+	const posy = (w.clamped_bounds.y / window_size.h) * 2.0;
 
 	const position_loc = root.gl.getUniformLocation(program, "pos");
 	root.gl.uniform2f(position_loc, posx, posy);
@@ -121,7 +123,7 @@ fn getChildrenUContainer(self: *widget.UWidget) anyerror!std.ArrayList(*widget.U
 	return children;
 }
 
-const UContainerBuilder = struct {
+pub const UContainerBuilder = struct {
 	widget: *widget.UWidget,
 
 	pub fn init() anyerror!*@This() {
@@ -138,8 +140,23 @@ const UContainerBuilder = struct {
 		return final;
 	}
 
-	pub fn bounds(self: *@This(), w: f32, h: f32) *@This() {
-		self.widget.bounds = .{.w = w, .h = h};
+	pub fn bounds(self: *@This(), x: f32, y: f32, w: f32, h: f32) *@This() {
+		self.widget.bounds = .{
+			.x = x,
+			.y = y,
+			.w = w,
+			.h = h
+		};
+		return self;
+	}
+
+	pub fn margin(self: *@This(), top: f32, bottom: f32, left: f32, right: f32) *@This() {
+		self.widget.margin = .{
+			.top = top,
+			.bottom = bottom,
+			.left = left,
+			.right = right
+		};
 		return self;
 	}
 
@@ -150,12 +167,12 @@ const UContainerBuilder = struct {
 		return self;
 	}
 
-	pub fn content_align(self: *@This(), a: widget.UAlign) *@This() {
+	pub fn content_align(self: *@This(), a: types.UAlign) *@This() {
 		self.widget.content_alignment = a;
 		return self;
 	}
 
-	pub fn layout(self: *@This(), l: widget.ULayout) *@This() {
+	pub fn layout(self: *@This(), l: types.ULayout) *@This() {
 		self.widget.layout = l;
 		return self;
 	}

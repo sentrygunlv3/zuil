@@ -1,6 +1,3 @@
-const std = @import("std");
-const root = @import("root.zig");
-
 pub const RED: UColor = .{ .r = 0.8, .g = 0.2, .b = 0.2, .a = 1};
 pub const GREEN: UColor = .{ .r = 0.2, .g = 0.8, .b = 0.2, .a = 1};
 pub const BLUE: UColor = .{ .r = 0.2, .g = 0.2, .b = 0.8, .a = 1};

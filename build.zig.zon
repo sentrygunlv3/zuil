@@ -1,7 +1,7 @@
 .{
     .name = .zuil,
     .version = "0.0.1",
-    .fingerprint = 0x27ff46b0c00ae50a,
+    .fingerprint = 0x87c7c8c20db7b89d,
     .minimum_zig_version = "0.15.2",
     .dependencies = .{
         .zglfw = .{

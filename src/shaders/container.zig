@@ -1,5 +1,5 @@
 const std = @import("std");
-const registry = @import("../shader_registry.zig");
+const shader = @import("../root.zig").shader;
 
 const name = "container";
 
@@ -33,7 +33,7 @@ const fragment =
 ;
 
 pub fn register() void {
-	registry.registerShader(
+	shader.registerShader(
 		name,
 		vertex,
 		fragment

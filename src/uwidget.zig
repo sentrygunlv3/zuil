@@ -11,6 +11,7 @@ pub const UWidget = struct {
 	type_name: []const u8 = "UWidget",
 	fi: UWidgetFI,
 	parent: ?*UWidget = null,
+	window: ?*root.UWindow,
 	data: ?*anyopaque = null,
 	// ---
 	bounds: UBounds = UBounds.zero(),
@@ -46,9 +47,9 @@ pub const UWidget = struct {
 		}
 	}
 
-	pub fn update(self: *@This(), window: *root.UWindow, space: UBounds, alignment: UAlign) anyerror!void {
+	pub fn update(self: *@This(), space: UBounds, alignment: UAlign) anyerror!void {
 		if (self.fi.update) |func| {
-			try func(self, window, space, alignment);
+			try func(self, space, alignment);
 		}
 	}
 
@@ -64,7 +65,7 @@ pub const UWidgetFI = struct {
 	init: ?*const fn (self: *UWidget) anyerror!void = null,
 	deinit: ?*const fn (self: *UWidget) void = null,
 	render: ?*const fn (self: *UWidget, window: *root.UWindow) anyerror!void = renderWidget,
-	update: ?*const fn (self: *UWidget, window: *root.UWindow, space: UBounds, alignment: UAlign) anyerror!void = updateWidget,
+	update: ?*const fn (self: *UWidget, space: UBounds, alignment: UAlign) anyerror!void = updateWidget,
 	getChildren: ?*const fn (self: *UWidget) anyerror!std.ArrayList(*UWidget) = null,
 };
 
@@ -75,12 +76,12 @@ pub fn renderWidget(self: *UWidget, window: *root.UWindow) anyerror!void {
 	}
 }
 
-pub fn updateWidget(self: *UWidget, window: *root.UWindow, space: UBounds, alignment: UAlign) anyerror!void {
+pub fn updateWidget(self: *UWidget, space: UBounds, alignment: UAlign) anyerror!void {
 	const new_space = updateWidgetSelf(self, space, alignment);
 
 	const children = try self.getChildren();
 	for (children.items) |child| {
-		_ = try child.update(window, new_space, alignment);
+		_ = try child.update(new_space, alignment);
 	}
 }
 

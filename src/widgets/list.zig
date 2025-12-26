@@ -21,29 +21,28 @@ pub const UListFI = widget.UWidgetFI{
 	.update = updateUList,
 };
 
-fn updateUList(self: *widget.UWidget, window: *root.UWindow, space: types.UBounds, alignment: types.UAlign) anyerror!void {
-	const new_space = widget.updateWidgetSelf(self, space, alignment);
+fn updateUList(self: *widget.UWidget, space: types.UBounds, alignment: types.UAlign) anyerror!void {
+	var new_space = widget.updateWidgetSelf(self, space, alignment);
 
 	const children = try self.getChildren();
 	const children_len: f32 = @floatFromInt(children.items.len);
-	var child_space = new_space;
 
 	if (getData(self)) |data| {
 		switch (data.direction) {
 			.horizontal => {
-				child_space.w = new_space.w / children_len;
+				new_space.w = (new_space.w - data.spacing * (children_len - 1)) / children_len;
 
 				for (children.items) |child| {
-					_ = try child.update(window, child_space, self.content_alignment);
-					child_space.x += child_space.w;
+					_ = try child.update(new_space, self.content_alignment);
+					new_space.x += new_space.w + data.spacing;
 				}
 			},
 			.vertical => {
-				child_space.h = new_space.h / children_len;
+				new_space.h = (new_space.h - data.spacing * (children_len - 1)) / children_len;
 
 				for (children.items) |child| {
-					_ = try child.update(window, child_space, self.content_alignment);
-					child_space.y += child_space.h;
+					_ = try child.update(new_space, self.content_alignment);
+					new_space.y += new_space.h + data.spacing;
 				}
 			},
 		}
@@ -54,7 +53,6 @@ fn initUList(self: *widget.UWidget) anyerror!void {
 	self.type_name = "UList";
 	const data = try root.allocator.create(UListData);
 	data.* = UListData{
-		.direction = types.UDirection.default(),
 		.children = try std.ArrayList(*widget.UWidget).initCapacity(root.allocator, 0),
 	};
 	self.data = data;
@@ -65,6 +63,7 @@ fn deinitUList(self: *widget.UWidget) void {
 		for (data.children.items) |c| {
 			c.deinit();
 		}
+		data.children.deinit(root.allocator);
 		root.allocator.destroy(data);
 		self.data = null;
 	}
@@ -126,6 +125,13 @@ pub const UListBuilder = struct {
 		return self;
 	}
 
+	pub fn spacing(self: *@This(), f: f32) *@This() {
+		if (getData(self.widget)) |data| {
+			data.*.spacing = f;
+		}
+		return self;
+	}
+
 	pub fn children(self: *@This(), c: anytype) *@This() {
 		if (getData(self.widget)) |data| {
 			const ArgsType = @TypeOf(c);
@@ -148,7 +154,8 @@ pub const UListBuilder = struct {
 };
 
 pub const UListData = struct {
-	direction: types.UDirection,
+	direction: types.UDirection = types.UDirection.default(),
+	spacing: f32 = 0,
 	children: std.ArrayList(*widget.UWidget),
 };
 

@@ -7,6 +7,7 @@ pub const gl = opengl.bindings;
 pub const types = @import("types/generic.zig");
 pub const UError = @import("types/error.zig").UError;
 pub const color = @import("types/color.zig");
+pub const input = @import("types/input.zig");
 
 pub const uwidget = @import("uwidget.zig");
 
@@ -65,6 +66,10 @@ fn errorCallback(error_code: c_int, desc: ?[*:0]const u8) callconv(.c) void {
 pub const UWindow = struct {
 	window: *glfw.Window,
 	dirty: bool,
+	// input
+	key_events: std.ArrayList(input.UEvent),
+	focused_widget: ?*uwidget.UWidget,
+	// ---
 	root: *uwidget.UWidget,
 	content_alignment: types.UAlign,
 
@@ -73,12 +78,19 @@ pub const UWindow = struct {
 
 		self.window = try glfw.Window.create(width, height, title, null);
 		self.dirty = true;
+		self.key_events = try std.ArrayList(input.UEvent).initCapacity(allocator, 0);
+
 		self.root = root;
 		self.content_alignment = types.UAlign.default();
+
+		const arrow_cursor = try glfw.createStandardCursor(.arrow);
+		glfw.setCursor(self.window, arrow_cursor);
 
 		glfw.makeContextCurrent(self.window);
 
 		_ = glfw.setWindowSizeCallback(self.window, resizeCallback);
+		_ = glfw.setKeyCallback(self.window, keyCallback);
+		_ = glfw.setMouseButtonCallback(self.window, keyCallback);
 
 		try windows.put(self.window, self);
 		return self;
@@ -88,7 +100,24 @@ pub const UWindow = struct {
 		self.root.deinit();
 		_ = windows.remove(self.window);
 		self.window.destroy();
+		std.debug.print("{}\n", .{self.key_events});
+		self.key_events.deinit(allocator);
 		allocator.destroy(self);
+	}
+
+	fn keyCallback(window: *glfw.Window, key: glfw.Key, scancode: c_int, action: glfw.Action, mods: glfw.Mods) callconv(.c) void {
+		_ = scancode;
+		_ = key;
+		_ = action;
+		_ = mods;
+		const event = input.UEvent{
+			.key = .press,
+			.action = .hold,
+			.modifiers = .{ .alt = true },
+		};
+		windows.get(window).?.key_events.append(allocator, event) catch |e| {
+			std.log.err("keyCallback {}", .{e});
+		};
 	}
 
 	fn resizeCallback(window: *glfw.Window, a: c_int, b: c_int) callconv(.c) void {

@@ -13,41 +13,57 @@ pub fn main() anyerror!void {
 	try ui.init(allocator);
 	defer ui.deinit();
 
-	const root = widgets.container()
-		.bounds(0, 0, 400, 225)
-		.color(colors.WHITE)
+	const root =
+	widgets.container()
+	.bounds(0, 0, 400, 225)
+	.color(colors.WHITE)
+	.child(
+		widgets.container()
+		.layout(.fill)
+		.margin(5, 5, 5, 5)
+		.color(colors.GREY)
 		.child(
-			widgets.container()
+			widgets.list()
 			.layout(.fill)
-			.margin(5, 5, 5, 5)
-			.color(colors.GREY)
-			.child(
-				widgets.list()
+			.children(.{
+				widgets.container()
 				.layout(.fill)
-				.direction(.horizontal)
+				.bounds(0, 0, 20, 500)
+				.margin(10, 10, 10, 10)
+				.color(colors.rgb(0, 1.0, 0.5))
+				.build(),
+				widgets.container()
+				.bounds(50, -50, 50, 50)
+				.color(colors.RED)
+				.layout(.absolute)
+				.build(),
+				widgets.container()
+				.bounds(0, 0, 20, 500)
+				.color(colors.WHITE)
+				.build(),
+				widgets.list()
+				.direction(.vertical)
+				.layout(.fill)
+				.margin(1, 1, 1, 1)
+				.spacing(1)
 				.children(.{
 					widgets.container()
-					.bounds(0, 0, 20, 500)
-					.margin(10, 10, 10, 0)
-					.color(colors.rgb(0, 1.0, 0.5))
-					.build()
-					,
+					.layout(.fill)
+					.build(),
 					widgets.container()
-					.bounds(50, -50, 50, 50)
-					.color(colors.RED)
-					.layout(.absolute)
-					.build()
-					,
+					.layout(.fill)
+					.build(),
 					widgets.container()
-					.bounds(0, 0, 20, 500)
-					.color(colors.WHITE)
+					.layout(.fill)
 					.build()
 				})
 				.build()
-			)
+			})
 			.build()
 		)
-		.build();
+		.build()
+	)
+	.build();
 
 	const window = try ui.UWindow.init(
 		800,

@@ -72,8 +72,31 @@ pub fn main() anyerror!void {
 		root
 	);
 	window.content_alignment = ui.types.UAlign.top;
+	window.input_handler = process_input;
 
 	ui.run() catch |e| {
 		std.log.err("test: {}", .{e});
 	};
+}
+
+fn process_input(self: *ui.UWindow, event: ui.input.UEvent) bool {
+	std.debug.print("{}\n", .{event});
+	if (event != ui.input.UEvent.key) {
+		return true;
+	} else if (event.key.action != .release) {
+		return true;
+	}
+	switch (event.key.key) {
+		.space => {
+			if (self.content_alignment != .center) {
+				self.content_alignment = .center;
+			} else {
+				self.content_alignment = .top;
+			}
+			self.dirty = true;
+			return false;
+		},
+		else => {}
+	}
+	return true;
 }

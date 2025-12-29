@@ -17,6 +17,8 @@ pub const shader = @import("shader_registry.zig");
 pub var allocator: std.mem.Allocator = undefined;
 var windows: std.AutoHashMap(*glfw.Window, *UWindow) = undefined;
 
+var modifiers = input.UModifiers{};
+
 pub fn init(a: std.mem.Allocator) !void {
 	allocator = a;
 
@@ -46,7 +48,7 @@ pub fn run() !void {
 		}
 		var iterator = windows.valueIterator();
 		while (iterator.next()) |window| {
-			if (!window.*.attemptRender()) {
+			if (!window.*.process()) {
 				window.*.deinit();
 				break;
 			}
@@ -69,6 +71,8 @@ pub const UWindow = struct {
 	// input
 	key_events: std.ArrayList(input.UEvent),
 	focused_widget: ?*uwidget.UWidget,
+	/// return true to pass input to widget tree
+	input_handler: ?*const fn (self: *@This(), event: input.UEvent) bool = null,
 	// ---
 	root: *uwidget.UWidget,
 	content_alignment: types.UAlign,
@@ -101,15 +105,42 @@ pub const UWindow = struct {
 		self.root.destroy();
 		_ = windows.remove(self.window);
 		self.window.destroy();
-		std.debug.print("{}\n", .{self.key_events});
 		self.key_events.deinit(allocator);
 		allocator.destroy(self);
 	}
 
 	fn keyCallback(window: *glfw.Window, key: glfw.Key, scancode: c_int, action: glfw.Action, mods: glfw.Mods) callconv(.c) void {
-		const event = input.UEvent.fromGlfwKey(key, scancode, action, mods);
+		_ = mods;
+		const event = processGlfwKey(key, scancode, action);
+		
 		windows.get(window).?.key_events.append(allocator, event) catch |e| {
 			std.log.err("keyCallback {}", .{e});
+		};
+	}
+
+	fn processGlfwKey(key: glfw.Key, scancode: c_int, action: glfw.Action) input.UEvent {
+		const ukey = input.UKey.fromGlfw(key);
+		const state = if (action != glfw.Action.release) true else false;
+
+		switch (ukey) {
+			.left_shift => modifiers.left_shift = state,
+			.right_shift => modifiers.right_shift = state,
+			.left_control => modifiers.left_control = state,
+			.right_control => modifiers.right_control = state,
+			.left_alt => modifiers.left_alt = state,
+			.right_alt => modifiers.right_alt = state,
+			.left_super => modifiers.left_super = state,
+			.right_super => modifiers.right_super = state,
+			else => {},
+		}
+
+		return .{
+			.key = .{
+				.key = ukey,
+				.action = .fromGlfw(action),
+				.modifiers = modifiers,
+				.scan_code = scancode,
+			}
 		};
 	}
 
@@ -128,11 +159,29 @@ pub const UWindow = struct {
 		};
 	}
 
-	pub fn attemptRender(self: *@This()) bool {
+	pub fn process(self: *@This()) bool {
 		if (self.window.shouldClose()) {
 			return false;
 		}
+		if (self.key_events.items.len != 0) {
+			std.debug.print("\n--- process input ---\n", .{});
+			for (self.key_events.items) |event| {
+				if (self.input_handler) |func| {
+					if (!func(self, event)) {
+						continue;
+					}
+					switch (event) {
+						.key => {
+							//
+						},
+						else => {}
+					}
+				}
+			}
+			self.key_events.clearAndFree(allocator);
+		}
 		if (self.dirty == true) {
+			std.debug.print("\n--- process layout/render ---\n", .{});
 			self.render() catch |e| {
 				std.log.err("failed to render window: {}\n", .{e});
 				switch (e) {
@@ -147,8 +196,6 @@ pub const UWindow = struct {
 	}
 
 	pub fn render(self: *@This()) !void {
-		std.debug.print("\n--- render ---\n", .{});
-
 		glfw.makeContextCurrent(self.window);
 		
 		const clear_color = [_]f32{0.192, 0.212, 0.231, 1.0};

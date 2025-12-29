@@ -81,6 +81,7 @@ pub const UWindow = struct {
 		self.key_events = try std.ArrayList(input.UEvent).initCapacity(allocator, 0);
 
 		self.root = root;
+		self.root.window = self;
 		self.content_alignment = types.UAlign.default();
 
 		const arrow_cursor = try glfw.createStandardCursor(.arrow);
@@ -90,14 +91,14 @@ pub const UWindow = struct {
 
 		_ = glfw.setWindowSizeCallback(self.window, resizeCallback);
 		_ = glfw.setKeyCallback(self.window, keyCallback);
-		_ = glfw.setMouseButtonCallback(self.window, keyCallback);
+		// _ = glfw.setMouseButtonCallback(self.window, keyCallback);
 
 		try windows.put(self.window, self);
 		return self;
 	}
 
 	pub fn deinit(self: *@This()) void {
-		self.root.deinit();
+		self.root.destroy();
 		_ = windows.remove(self.window);
 		self.window.destroy();
 		std.debug.print("{}\n", .{self.key_events});
@@ -106,23 +107,15 @@ pub const UWindow = struct {
 	}
 
 	fn keyCallback(window: *glfw.Window, key: glfw.Key, scancode: c_int, action: glfw.Action, mods: glfw.Mods) callconv(.c) void {
-		_ = scancode;
-		_ = key;
-		_ = action;
-		_ = mods;
-		const event = input.UEvent{
-			.key = .press,
-			.action = .hold,
-			.modifiers = .{ .alt = true },
-		};
+		const event = input.UEvent.fromGlfwKey(key, scancode, action, mods);
 		windows.get(window).?.key_events.append(allocator, event) catch |e| {
 			std.log.err("keyCallback {}", .{e});
 		};
 	}
 
-	fn resizeCallback(window: *glfw.Window, a: c_int, b: c_int) callconv(.c) void {
+	fn resizeCallback(window: *glfw.Window, w: c_int, h: c_int) callconv(.c) void {
 		windows.get(window).?.dirty = true;
-		gl.viewport(0, 0, a, b);
+		gl.viewport(0, 0, w, h);
 	}
 
 	pub fn getBounds(self: *@This()) types.UBounds {
@@ -162,7 +155,6 @@ pub const UWindow = struct {
 		gl.clearBufferfv(gl.COLOR, 0, &clear_color);
 
 		try self.root.update(
-			self,
 			self.getBounds(),
 			self.content_alignment
 		);

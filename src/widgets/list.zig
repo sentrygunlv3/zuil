@@ -25,14 +25,15 @@ fn updateUList(self: *widget.UWidget, space: types.UBounds, alignment: types.UAl
 	var new_space = widget.updateWidgetSelf(self, space, alignment);
 
 	const children = try self.getChildren();
-	const children_len: f32 = @floatFromInt(children.items.len);
+	defer root.allocator.free(children);
+	const children_len: f32 = @floatFromInt(children.len);
 
 	if (getData(self)) |data| {
 		switch (data.direction) {
 			.horizontal => {
 				new_space.w = (new_space.w - data.spacing * (children_len - 1)) / children_len;
 
-				for (children.items) |child| {
+				for (children) |child| {
 					_ = try child.update(new_space, self.content_alignment);
 					new_space.x += new_space.w + data.spacing;
 				}
@@ -40,7 +41,7 @@ fn updateUList(self: *widget.UWidget, space: types.UBounds, alignment: types.UAl
 			.vertical => {
 				new_space.h = (new_space.h - data.spacing * (children_len - 1)) / children_len;
 
-				for (children.items) |child| {
+				for (children) |child| {
 					_ = try child.update(new_space, self.content_alignment);
 					new_space.y += new_space.h + data.spacing;
 				}
@@ -52,16 +53,15 @@ fn updateUList(self: *widget.UWidget, space: types.UBounds, alignment: types.UAl
 fn initUList(self: *widget.UWidget) anyerror!void {
 	self.type_name = "UList";
 	const data = try root.allocator.create(UListData);
-	data.* = UListData{
-		.children = try std.ArrayList(*widget.UWidget).initCapacity(root.allocator, 0),
-	};
+	data.*.children = try std.ArrayList(*widget.UWidget).initCapacity(root.allocator, 0);
+	data.*.direction = .default();
 	self.data = data;
 }
 
 fn deinitUList(self: *widget.UWidget) void {
 	if (getData(self)) |data| {
 		for (data.children.items) |c| {
-			c.deinit();
+			c.destroy();
 		}
 		data.children.deinit(root.allocator);
 		root.allocator.destroy(data);
@@ -69,9 +69,10 @@ fn deinitUList(self: *widget.UWidget) void {
 	}
 }
 
-fn getChildrenUList(self: *widget.UWidget) anyerror!std.ArrayList(*widget.UWidget) {
+fn getChildrenUList(self: *widget.UWidget) anyerror![]*widget.UWidget {
 	if (getData(self)) |data| {
-		return data.children;
+		var children = try data.children.clone(root.allocator);
+		return children.toOwnedSlice(root.allocator);
 	}
 	return root.UError.NoWidgetData;
 }
@@ -144,6 +145,7 @@ pub const UListBuilder = struct {
 			inline for (fields_info) |f| {
 				const child = @field(c, f.name);
 				child.parent = self.widget;
+				child.window = self.widget.window;
 				data.*.children.append(root.allocator, child) catch |e| {
 					std.log.err("list builder error: {}", .{e});
 				};

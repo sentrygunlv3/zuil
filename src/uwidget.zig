@@ -11,7 +11,7 @@ pub const UWidget = struct {
 	type_name: []const u8 = "UWidget",
 	fi: UWidgetFI,
 	parent: ?*UWidget = null,
-	window: ?*root.UWindow,
+	window: ?*root.UWindow = null,
 	data: ?*anyopaque = null,
 	// ---
 	bounds: UBounds = UBounds.zero(),
@@ -32,11 +32,25 @@ pub const UWidget = struct {
 		return self;
 	}
 
+	/// call destroy when removing widget from window/tree
 	pub fn deinit(self: *@This()) void {
 		if (self.fi.deinit) |func| {
 			func(self);
 		}
 		root.allocator.destroy(self);
+	}
+
+	pub fn exitTree(self: *@This()) void {
+		if (self.window) |window| {
+			if (window.focused_widget == self) {
+				window.focused_widget = null;
+			}
+		}
+	}
+
+	pub fn destroy(self: *@This()) void {
+		self.exitTree();
+		self.deinit();
 	}
 
 	pub fn render(self: *@This(), window: *root.UWindow) anyerror!void {
@@ -53,7 +67,7 @@ pub const UWidget = struct {
 		}
 	}
 
-	pub fn getChildren(self: *@This()) anyerror!std.ArrayList(*UWidget) {
+	pub fn getChildren(self: *@This()) anyerror![]*UWidget {
 		if (self.fi.getChildren) |func| {
 			return try func(self);
 		}
@@ -66,12 +80,13 @@ pub const UWidgetFI = struct {
 	deinit: ?*const fn (self: *UWidget) void = null,
 	render: ?*const fn (self: *UWidget, window: *root.UWindow) anyerror!void = renderWidget,
 	update: ?*const fn (self: *UWidget, space: UBounds, alignment: UAlign) anyerror!void = updateWidget,
-	getChildren: ?*const fn (self: *UWidget) anyerror!std.ArrayList(*UWidget) = null,
+	getChildren: ?*const fn (self: *UWidget) anyerror![]*UWidget = null,
 };
 
 pub fn renderWidget(self: *UWidget, window: *root.UWindow) anyerror!void {
 	const children = try self.getChildren();
-	for (children.items) |child| {
+	defer root.allocator.free(children);
+	for (children) |child| {
 		_ = try child.render(window);
 	}
 }
@@ -80,7 +95,8 @@ pub fn updateWidget(self: *UWidget, space: UBounds, alignment: UAlign) anyerror!
 	const new_space = updateWidgetSelf(self, space, alignment);
 
 	const children = try self.getChildren();
-	for (children.items) |child| {
+	defer root.allocator.free(children);
+	for (children) |child| {
 		_ = try child.update(new_space, alignment);
 	}
 }

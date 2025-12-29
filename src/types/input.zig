@@ -96,4 +96,13 @@ pub const UEvent = union(enum) {
 	mouse_scroll: UMouseWheelEvent,
 	focused: void,
 	unfocused: void,
+
+	pub fn fromGlfwKey(key: glfw.Key, scancode: c_int, action: glfw.Action, mods: glfw.Mods) UEvent {
+		return UEvent{
+			.key = switch (key) {
+				.a => .a,
+			},
+			.scan_code = scancode,
+		};
+	}
 };

@@ -31,7 +31,7 @@ fn initUContainer(self: *widget.UWidget) anyerror!void {
 fn deinitUContainer(self: *widget.UWidget) void {
 	if (getData(self)) |data| {
 		if (data.child) |c| {
-			c.deinit();
+			c.destroy();
 		}
 		root.allocator.destroy(data);
 		self.data = null;
@@ -113,14 +113,15 @@ fn renderUContainer(w: *widget.UWidget, window: *root.UWindow) anyerror!void {
 	}
 }
 
-fn getChildrenUContainer(self: *widget.UWidget) anyerror!std.ArrayList(*widget.UWidget) {
+fn getChildrenUContainer(self: *widget.UWidget) anyerror![]*widget.UWidget {
 	var children = try std.ArrayList(*widget.UWidget).initCapacity(root.allocator, 0);
+	errdefer children.deinit(root.allocator);
 	if (getData(self)) |data| {
 		if (data.child) |c| {
 			try children.append(root.allocator, c);
 		}
 	}
-	return children;
+	return children.toOwnedSlice(root.allocator);
 }
 
 pub const UContainerBuilder = struct {
@@ -181,6 +182,7 @@ pub const UContainerBuilder = struct {
 		if (getData(self.widget)) |data| {
 			data.*.child = c;
 			data.*.child.?.parent = self.widget;
+			data.*.child.?.window = self.widget.window;
 		}
 		return self;
 	}

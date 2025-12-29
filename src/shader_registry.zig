@@ -10,6 +10,10 @@ pub fn init(allocator: std.mem.Allocator) void {
 	@import("shaders/container.zig").register();
 }
 
+pub fn deinit() void {
+	shaders.deinit();
+}
+
 pub fn getShader(name: []const u8) !u32 {
 	const shader = shaders.get(name);
 	if (shader) |s| {

@@ -7,11 +7,52 @@ const colors = ui.color;
 const widgets = ui.widgets;
 
 pub fn main() anyerror!void {
-	var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+	var gpa = std.heap.GeneralPurposeAllocator(.{
+		.verbose_log = true,
+	}){};
 	const allocator: std.mem.Allocator = gpa.allocator();
 
 	try ui.init(allocator);
 	defer ui.deinit();
+
+	const list =
+	widgets.list()
+	.layout(.fill)
+	.children(.{
+		widgets.container()
+		.layout(.fill)
+		.bounds(0, 0, 20, 500)
+		.margin(10, 10, 10, 10)
+		.color(colors.rgb(0, 1.0, 0.5))
+		.build(),
+		widgets.container()
+		.bounds(50, -50, 50, 50)
+		.color(colors.RED)
+		.layout(.absolute)
+		.build(),
+		widgets.container()
+		.bounds(0, 0, 20, 500)
+		.color(colors.WHITE)
+		.build(),
+		widgets.list()
+		.direction(.vertical)
+		.layout(.fill)
+		.margin(1, 1, 1, 1)
+		.spacing(1)
+		.children(.{
+			widgets.container()
+			.layout(.fill)
+			.build(),
+			widgets.container()
+			.layout(.fill)
+			.build(),
+			widgets.container()
+			.layout(.fill)
+			.build()
+		})
+		.build()
+	})
+	.build();
 
 	const root =
 	widgets.container()
@@ -22,45 +63,7 @@ pub fn main() anyerror!void {
 		.layout(.fill)
 		.margin(5, 5, 5, 5)
 		.color(colors.GREY)
-		.child(
-			widgets.list()
-			.layout(.fill)
-			.children(.{
-				widgets.container()
-				.layout(.fill)
-				.bounds(0, 0, 20, 500)
-				.margin(10, 10, 10, 10)
-				.color(colors.rgb(0, 1.0, 0.5))
-				.build(),
-				widgets.container()
-				.bounds(50, -50, 50, 50)
-				.color(colors.RED)
-				.layout(.absolute)
-				.build(),
-				widgets.container()
-				.bounds(0, 0, 20, 500)
-				.color(colors.WHITE)
-				.build(),
-				widgets.list()
-				.direction(.vertical)
-				.layout(.fill)
-				.margin(1, 1, 1, 1)
-				.spacing(1)
-				.children(.{
-					widgets.container()
-					.layout(.fill)
-					.build(),
-					widgets.container()
-					.layout(.fill)
-					.build(),
-					widgets.container()
-					.layout(.fill)
-					.build()
-				})
-				.build()
-			})
-			.build()
-		)
+		.child(list)
 		.build()
 	)
 	.build();

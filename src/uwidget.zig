@@ -69,7 +69,7 @@ pub const UWidget = struct {
 
 	pub fn getChildren(self: *@This()) anyerror![]*UWidget {
 		if (self.fi.getChildren) |func| {
-			return try func(self);
+			return func(self);
 		}
 		return root.UError.MissingWidgetFunction;
 	}
@@ -80,13 +80,11 @@ pub const UWidgetFI = struct {
 	deinit: ?*const fn (self: *UWidget) void = null,
 	render: ?*const fn (self: *UWidget, window: *root.UWindow) anyerror!void = renderWidget,
 	update: ?*const fn (self: *UWidget, space: UBounds, alignment: UAlign) anyerror!void = updateWidget,
-	getChildren: ?*const fn (self: *UWidget) anyerror![]*UWidget = null,
+	getChildren: ?*const fn (self: *UWidget) []*UWidget = null,
 };
 
 pub fn renderWidget(self: *UWidget, window: *root.UWindow) anyerror!void {
-	const children = try self.getChildren();
-	defer root.allocator.free(children);
-	for (children) |child| {
+	for (try self.getChildren()) |child| {
 		_ = try child.render(window);
 	}
 }
@@ -94,9 +92,7 @@ pub fn renderWidget(self: *UWidget, window: *root.UWindow) anyerror!void {
 pub fn updateWidget(self: *UWidget, space: UBounds, alignment: UAlign) anyerror!void {
 	const new_space = updateWidgetSelf(self, space, alignment);
 
-	const children = try self.getChildren();
-	defer root.allocator.free(children);
-	for (children) |child| {
+	for (try self.getChildren()) |child| {
 		_ = try child.update(new_space, alignment);
 	}
 }

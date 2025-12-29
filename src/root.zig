@@ -29,6 +29,7 @@ pub fn init(a: std.mem.Allocator) !void {
 }
 
 pub fn deinit() void {
+	shader.deinit();
 	glfw.terminate();
 	windows.deinit();
 }

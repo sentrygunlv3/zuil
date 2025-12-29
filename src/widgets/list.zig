@@ -25,7 +25,6 @@ fn updateUList(self: *widget.UWidget, space: types.UBounds, alignment: types.UAl
 	var new_space = widget.updateWidgetSelf(self, space, alignment);
 
 	const children = try self.getChildren();
-	defer root.allocator.free(children);
 	const children_len: f32 = @floatFromInt(children.len);
 
 	if (getData(self)) |data| {
@@ -53,8 +52,8 @@ fn updateUList(self: *widget.UWidget, space: types.UBounds, alignment: types.UAl
 fn initUList(self: *widget.UWidget) anyerror!void {
 	self.type_name = "UList";
 	const data = try root.allocator.create(UListData);
-	data.*.children = try std.ArrayList(*widget.UWidget).initCapacity(root.allocator, 0);
-	data.*.direction = .default();
+	data.children = try std.ArrayList(*widget.UWidget).initCapacity(root.allocator, 0);
+	data.direction = .default();
 	self.data = data;
 }
 
@@ -69,12 +68,11 @@ fn deinitUList(self: *widget.UWidget) void {
 	}
 }
 
-fn getChildrenUList(self: *widget.UWidget) anyerror![]*widget.UWidget {
+fn getChildrenUList(self: *widget.UWidget) []*widget.UWidget {
 	if (getData(self)) |data| {
-		var children = try data.children.clone(root.allocator);
-		return children.toOwnedSlice(root.allocator);
+		return data.children.items;
 	}
-	return root.UError.NoWidgetData;
+	return &[0]*widget.UWidget{};
 }
 
 pub const UListBuilder = struct {
@@ -94,8 +92,13 @@ pub const UListBuilder = struct {
 		return final;
 	}
 
-	pub fn bounds(self: *@This(), w: f32, h: f32) *@This() {
-		self.widget.bounds = .{.w = w, .h = h};
+	pub fn bounds(self: *@This(), x: f32, y: f32, w: f32, h: f32) *@This() {
+		self.widget.bounds = .{
+			.x = x,
+			.y = y,
+			.w = w,
+			.h = h
+		};
 		return self;
 	}
 
@@ -121,14 +124,14 @@ pub const UListBuilder = struct {
 
 	pub fn direction(self: *@This(), d: types.UDirection) *@This() {
 		if (getData(self.widget)) |data| {
-			data.*.direction = d;
+			data.direction = d;
 		}
 		return self;
 	}
 
 	pub fn spacing(self: *@This(), f: f32) *@This() {
 		if (getData(self.widget)) |data| {
-			data.*.spacing = f;
+			data.spacing = f;
 		}
 		return self;
 	}
@@ -146,7 +149,7 @@ pub const UListBuilder = struct {
 				const child = @field(c, f.name);
 				child.parent = self.widget;
 				child.window = self.widget.window;
-				data.*.children.append(root.allocator, child) catch |e| {
+				data.children.append(root.allocator, child) catch |e| {
 					std.log.err("list builder error: {}", .{e});
 				};
 			}

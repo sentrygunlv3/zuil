@@ -2,6 +2,10 @@ const std = @import("std");
 const glfw = @import("glfw");
 const opengl = @import("opengl");
 
+pub const c = @cImport({
+	@cInclude("plutosvg.h");
+});
+
 pub const gl = opengl.bindings;
 
 pub const types = @import("types/generic.zig");
@@ -13,6 +17,7 @@ pub const zwidget = @import("zwidget.zig");
 
 pub const widgets = @import("widgets.zig");
 pub const shader = @import("shader_registry.zig");
+pub const svg = @import("rendering/svg.zig");
 
 pub var allocator: std.mem.Allocator = undefined;
 var windows: std.AutoHashMap(*glfw.Window, *ZWindow) = undefined;

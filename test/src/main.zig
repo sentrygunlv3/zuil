@@ -13,6 +13,8 @@ pub fn main() anyerror!void {
 	try zuil.init(allocator);
 	defer zuil.deinit();
 
+	_ = zuil.svg.svgToBitmap("", 1, 1) catch {};
+
 	const list =
 	widgets.list()
 	.layout(.fill)
@@ -110,7 +112,7 @@ fn containerClick(self: *zuil.zwidget.ZWidget, event: zuil.input.ZEvent) anyerro
 	}
 	switch (event.mouse.key) {
 		.left => {
-			if (self.getData(widgets.ucontainer.ZContainer)) |data| {
+			if (self.getData(widgets.zcontainer.ZContainer)) |data| {
 				if (colors.compare(data.color, colors.BLUE)) {
 					data.color = colors.BLACK;
 				} else {

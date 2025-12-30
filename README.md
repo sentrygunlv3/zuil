@@ -5,9 +5,6 @@
 ZUIL
 </h1>
 
-> [!CAUTION]
-> `build.zig` needs the test project to do anything
-
 ---
 
 Zig UI Library
@@ -19,8 +16,8 @@ using `zglfw` and `zopengl`
 
 ## example
 
-> test/example project: `test/test.zig`\
-> run with `./build-run`
+> test/example project: `test/`\
+> run with `./test.sh`
 
 widgets are created using builder functions
 

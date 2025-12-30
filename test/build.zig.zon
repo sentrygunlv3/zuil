@@ -1,0 +1,19 @@
+.{
+	.name = .example,
+	.version = "0.0.0",
+	.fingerprint = 0x6eec9b9f4b91eff4,
+	.minimum_zig_version = "0.15.2",
+	.dependencies = .{
+		.zuil = .{
+			.path = "../",
+		},
+	},
+	.paths = .{
+		"build.zig",
+		"build.zig.zon",
+		"src",
+		// For example...
+		//"LICENSE",
+		//"README.md",
+	},
+}

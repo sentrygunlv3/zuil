@@ -8,7 +8,8 @@ pub fn build(b: *std.Build) void {
 	const opengl = b.dependency("zopengl", .{});
 
 	var lib = b.addLibrary(.{
-		.name = "zuil", 
+		.name = "zuil",
+		.linkage = .dynamic,
 		.root_module = b.createModule(.{
 			.root_source_file = b.path("src/root.zig"),
 			.target = target,
@@ -17,17 +18,15 @@ pub fn build(b: *std.Build) void {
 	});
 	lib.root_module.addImport("glfw", glfw.module("root"));
 	lib.root_module.addImport("opengl", opengl.module("root"));
-	lib.linkLibrary(glfw.artifact("glfw"));
+	lib.root_module.linkLibrary(glfw.artifact("glfw"));
 
-	const exe = b.addExecutable(.{
-		.name = "test",
-		.root_module = b.createModule(.{
-			.root_source_file = b.path("test/test.zig"),
-			.target = target,
-			.optimize = optimize,
-		}),
-	});
-	exe.root_module.addImport("zuil", lib.root_module);
+	lib.root_module.linkSystemLibrary("freetype", .{});
 
-	b.installArtifact(exe);
+	lib.root_module.linkSystemLibrary("plutosvg", .{});
+	lib.root_module.addSystemIncludePath(b.path("plutovg/plutovg.h"));
+	lib.root_module.addSystemIncludePath(b.path("plutosvg/plutosvg.h"));
+
+	b.modules.put("root", lib.root_module) catch {};
+
+	b.installArtifact(lib);
 }

@@ -7,9 +7,7 @@ const colors = ui.color;
 const widgets = ui.widgets;
 
 pub fn main() anyerror!void {
-	var gpa = std.heap.GeneralPurposeAllocator(.{
-		.verbose_log = true,
-	}){};
+	var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 	const allocator: std.mem.Allocator = gpa.allocator();
 
 	try ui.init(allocator);
@@ -42,6 +40,7 @@ pub fn main() anyerror!void {
 		.children(.{
 			widgets.container()
 			.layout(.fill)
+			.eventCallback(containerClick)
 			.build(),
 			widgets.container()
 			.layout(.fill)
@@ -75,14 +74,14 @@ pub fn main() anyerror!void {
 		root
 	);
 	window.content_alignment = ui.types.UAlign.top;
-	window.input_handler = process_input;
+	window.input_handler = processInput;
 
 	ui.run() catch |e| {
 		std.log.err("test: {}", .{e});
 	};
 }
 
-fn process_input(self: *ui.UWindow, event: ui.input.UEvent) bool {
+fn processInput(self: *ui.UWindow, event: ui.input.UEvent) bool {
 	std.debug.print("{}\n", .{event});
 	if (event != ui.input.UEvent.key) {
 		return true;
@@ -102,4 +101,19 @@ fn process_input(self: *ui.UWindow, event: ui.input.UEvent) bool {
 		else => {}
 	}
 	return true;
+}
+
+fn containerClick(self: *ui.uwidget.UWidget, event: ui.input.UEvent) anyerror!void {
+	if (event != ui.input.UEvent.mouse) {
+		return;
+	} else if (event.mouse.action != .release) {
+		return;
+	}
+	switch (event.mouse.key) {
+		.left => {
+			_ = self.data;
+		},
+		else => {}
+	}
+	return;
 }

@@ -67,27 +67,26 @@ fn errorCallback(error_code: c_int, desc: ?[*:0]const u8) callconv(.c) void {
 }
 
 pub const UWindow = struct {
-	window: *glfw.Window,
-	dirty: bool,
-	// input
-	key_events: std.ArrayList(input.UEvent),
-	focused_widget: ?*uwidget.UWidget,
+	window: *glfw.Window = undefined,
+	dirty: bool = true,
+	// --- input
+	key_events: std.ArrayList(input.UEvent) = undefined,
+	focused_widget: ?*uwidget.UWidget = null,
 	/// return true to pass input to widget tree
 	input_handler: ?*const fn (self: *@This(), event: input.UEvent) bool = null,
 	// ---
-	root: *uwidget.UWidget,
-	content_alignment: types.UAlign,
+	root: *uwidget.UWidget = undefined,
+	content_alignment: types.UAlign = .default(),
 
 	pub fn init(width: i32, height: i32, title: [:0]const u8, root: *uwidget.UWidget) !*@This() {
 		const self = try allocator.create(@This());
 
-		self.window = try glfw.Window.create(width, height, title, null);
-		self.dirty = true;
-		self.key_events = try std.ArrayList(input.UEvent).initCapacity(allocator, 0);
-
-		self.root = root;
+		self.* = .{
+			.window = try glfw.Window.create(width, height, title, null),
+			.key_events = try std.ArrayList(input.UEvent).initCapacity(allocator, 0),
+			.root = root,
+		};
 		self.root.window = self;
-		self.content_alignment = types.UAlign.default();
 
 		const arrow_cursor = try glfw.createStandardCursor(.arrow);
 		glfw.setCursor(self.window, arrow_cursor);
@@ -173,7 +172,12 @@ pub const UWindow = struct {
 					}
 					switch (event) {
 						.key => {
-							//
+							if (self.focused_widget) |focused| {
+								std.debug.print("{*}\n", .{focused});
+								focused.event(event) catch |e| {
+									std.log.err("event: {}", .{e});
+								};
+							}
 						},
 						else => {}
 					}

@@ -9,7 +9,9 @@ const ULayout = root.types.ULayout;
 
 pub const UWidget = struct {
 	type_name: []const u8 = "UWidget",
-	fi: UWidgetFI,
+	mutable_fi: MutableUWidgetFI = .{},
+	fi: *const UWidgetFI,
+	// ---
 	parent: ?*UWidget = null,
 	window: ?*root.UWindow = null,
 	data: ?*anyopaque = null,
@@ -21,7 +23,7 @@ pub const UWidget = struct {
 	content_alignment: UAlign = UAlign.default(),
 	layout: ULayout = ULayout.default(),
 
-	pub fn init(fi: UWidgetFI) anyerror!*@This() {
+	pub fn init(fi: *const UWidgetFI) anyerror!*@This() {
 		const self = try root.allocator.create(@This());
 		self.* = @This(){
 			.fi = fi,
@@ -53,6 +55,15 @@ pub const UWidget = struct {
 		self.deinit();
 	}
 
+	pub fn getData(self: *@This(), T: type) ?*T {
+		if (self.data) |d| {
+			if (std.mem.eql(u8, self.type_name, @typeName(T))) {
+				return @ptrCast(@alignCast(d));
+			}
+		}
+		return null;
+	}
+
 	pub fn render(self: *@This(), window: *root.UWindow) anyerror!void {
 		std.debug.print("\n{*}\n", .{self});
 		std.debug.print("bounds: {}\n", .{self.clamped_bounds});
@@ -64,6 +75,12 @@ pub const UWidget = struct {
 	pub fn update(self: *@This(), space: UBounds, alignment: UAlign) anyerror!void {
 		if (self.fi.update) |func| {
 			try func(self, space, alignment);
+		}
+	}
+
+	pub fn event(self: *@This(), e: root.input.UEvent) anyerror!void {
+		if (self.mutable_fi.event) |func| {
+			try func(self, e);
 		}
 	}
 
@@ -81,6 +98,10 @@ pub const UWidgetFI = struct {
 	render: ?*const fn (self: *UWidget, window: *root.UWindow) anyerror!void = renderWidget,
 	update: ?*const fn (self: *UWidget, space: UBounds, alignment: UAlign) anyerror!void = updateWidget,
 	getChildren: ?*const fn (self: *UWidget) []*UWidget = null,
+};
+
+pub const MutableUWidgetFI = struct {
+	event: ?*const fn (self: *UWidget, event: root.input.UEvent) anyerror!void = null,
 };
 
 pub fn renderWidget(self: *UWidget, window: *root.UWindow) anyerror!void {

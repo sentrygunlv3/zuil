@@ -27,7 +27,7 @@ fn updateUList(self: *widget.UWidget, space: types.UBounds, alignment: types.UAl
 	const children = try self.getChildren();
 	const children_len: f32 = @floatFromInt(children.len);
 
-	if (getData(self)) |data| {
+	if (self.getData(UList)) |data| {
 		switch (data.direction) {
 			.horizontal => {
 				new_space.w = (new_space.w - data.spacing * (children_len - 1)) / children_len;
@@ -50,15 +50,16 @@ fn updateUList(self: *widget.UWidget, space: types.UBounds, alignment: types.UAl
 }
 
 fn initUList(self: *widget.UWidget) anyerror!void {
-	self.type_name = "UList";
-	const data = try root.allocator.create(UListData);
-	data.children = try std.ArrayList(*widget.UWidget).initCapacity(root.allocator, 0);
-	data.direction = .default();
+	const data = try root.allocator.create(UList);
+	data.* = .{
+		.children = try std.ArrayList(*widget.UWidget).initCapacity(root.allocator, 0),
+	};
+	self.type_name = @typeName(UList);
 	self.data = data;
 }
 
 fn deinitUList(self: *widget.UWidget) void {
-	if (getData(self)) |data| {
+	if (self.getData(UList)) |data| {
 		for (data.children.items) |c| {
 			c.destroy();
 		}
@@ -69,7 +70,7 @@ fn deinitUList(self: *widget.UWidget) void {
 }
 
 fn getChildrenUList(self: *widget.UWidget) []*widget.UWidget {
-	if (getData(self)) |data| {
+	if (self.getData(UList)) |data| {
 		return data.children.items;
 	}
 	return &[0]*widget.UWidget{};
@@ -81,7 +82,7 @@ pub const UListBuilder = struct {
 	pub fn init() anyerror!*@This() {
 		const self = try root.allocator.create(@This());
 
-		self.widget = try widget.UWidget.init(UListFI);
+		self.widget = try widget.UWidget.init(&UListFI);
 
 		return self;
 	}
@@ -123,21 +124,21 @@ pub const UListBuilder = struct {
 	}
 
 	pub fn direction(self: *@This(), d: types.UDirection) *@This() {
-		if (getData(self.widget)) |data| {
+		if (self.widget.getData(UList)) |data| {
 			data.direction = d;
 		}
 		return self;
 	}
 
 	pub fn spacing(self: *@This(), f: f32) *@This() {
-		if (getData(self.widget)) |data| {
+		if (self.widget.getData(UList)) |data| {
 			data.spacing = f;
 		}
 		return self;
 	}
 
 	pub fn children(self: *@This(), c: anytype) *@This() {
-		if (getData(self.widget)) |data| {
+		if (self.widget.getData(UList)) |data| {
 			const ArgsType = @TypeOf(c);
 			const args_type_info = @typeInfo(ArgsType);
 			if (args_type_info != .@"struct") {
@@ -158,15 +159,8 @@ pub const UListBuilder = struct {
 	}
 };
 
-pub const UListData = struct {
+pub const UList = struct {
 	direction: types.UDirection = types.UDirection.default(),
 	spacing: f32 = 0,
-	children: std.ArrayList(*widget.UWidget),
+	children: std.ArrayList(*widget.UWidget) = undefined,
 };
-
-fn getData(self: *widget.UWidget) ?*UListData {
-	if (self.data) |d| {
-		return @ptrCast(@alignCast(d));
-	}
-	return null;
-}

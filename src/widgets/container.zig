@@ -22,14 +22,14 @@ pub const UContainerFI = widget.UWidgetFI{
 };
 
 fn initUContainer(self: *widget.UWidget) anyerror!void {
-	self.type_name = "UContainer";
-	const data = try root.allocator.create(UContainerData);
-	data.* = UContainerData{};
+	const data = try root.allocator.create(UContainer);
+	data.* = .{};
+	self.type_name = @typeName(UContainer);
 	self.data = data;
 }
 
 fn deinitUContainer(self: *widget.UWidget) void {
-	if (getData(self)) |data| {
+	if (self.getData(UContainer)) |data| {
 		if (data.child) |c| {
 			c.destroy();
 		}
@@ -40,7 +40,7 @@ fn deinitUContainer(self: *widget.UWidget) void {
 
 fn renderUContainer(w: *widget.UWidget, window: *root.UWindow) anyerror!void {
 	var color = UColor.default();
-	if (getData(w)) |data| {
+	if (w.getData(UContainer)) |data| {
 		color = data.color;
 	}
 
@@ -106,7 +106,7 @@ fn renderUContainer(w: *widget.UWidget, window: *root.UWindow) anyerror!void {
 	root.gl.deleteBuffers(1, &element_buffer);
 	root.gl.bindVertexArray(0);
 
-	if (getData(w)) |data| {
+	if (w.getData(UContainer)) |data| {
 		if (data.child) |child| {
 			try child.render(window);
 		}
@@ -114,7 +114,7 @@ fn renderUContainer(w: *widget.UWidget, window: *root.UWindow) anyerror!void {
 }
 
 fn getChildrenUContainer(self: *widget.UWidget) []*widget.UWidget {
-	if (getData(self)) |data| {
+	if (self.getData(UContainer)) |data| {
 		if (data.child) |_| {
 			return @as([*]*widget.UWidget, @ptrCast(&data.child.?))[0..1];
 		}
@@ -128,7 +128,7 @@ pub const UContainerBuilder = struct {
 	pub fn init() anyerror!*@This() {
 		const self = try root.allocator.create(@This());
 
-		self.widget = try widget.UWidget.init(UContainerFI);
+		self.widget = try widget.UWidget.init(&UContainerFI);
 
 		return self;
 	}
@@ -159,13 +159,6 @@ pub const UContainerBuilder = struct {
 		return self;
 	}
 
-	pub fn color(self: *@This(), c: UColor) *@This() {
-		if (getData(self.widget)) |data| {
-			data.*.color = c;
-		}
-		return self;
-	}
-
 	pub fn content_align(self: *@This(), a: types.UAlign) *@This() {
 		self.widget.content_alignment = a;
 		return self;
@@ -176,8 +169,20 @@ pub const UContainerBuilder = struct {
 		return self;
 	}
 
+	pub fn eventCallback(self: *@This(), event: *const fn (self: *widget.UWidget, event: root.input.UEvent) anyerror!void) *@This() {
+		self.widget.mutable_fi.event = event;
+		return self;
+	}
+
+	pub fn color(self: *@This(), c: UColor) *@This() {
+		if (self.widget.getData(UContainer)) |data| {
+			data.*.color = c;
+		}
+		return self;
+	}
+
 	pub fn child(self: *@This(), c: *widget.UWidget) *@This() {
-		if (getData(self.widget)) |data| {
+		if (self.widget.getData(UContainer)) |data| {
 			data.child = c;
 			data.child.?.parent = self.widget;
 			data.child.?.window = self.widget.window;
@@ -186,14 +191,7 @@ pub const UContainerBuilder = struct {
 	}
 };
 
-pub const UContainerData = struct {
+pub const UContainer = struct {
 	color: UColor = UColor.default(),
 	child: ?*widget.UWidget = null,
 };
-
-fn getData(self: *widget.UWidget) ?*UContainerData {
-	if (self.data) |d| {
-		return @ptrCast(@alignCast(d));
-	}
-	return null;
-}

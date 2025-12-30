@@ -1,33 +1,33 @@
 const std = @import("std");
 const root = @import("../root.zig");
 
-const widget = root.uwidget;
-const UColor = root.color.UColor;
+const widget = root.zwidget;
+const ZColor = root.color.ZColor;
 const shader = root.shader;
 const types = root.types;
 
-pub fn uList() *UListBuilder {
-	return UListBuilder.init() catch |e| {
+pub fn uList() *ZListBuilder {
+	return ZListBuilder.init() catch |e| {
 		std.log.err("{}", .{e});
 		std.process.exit(1);
 		unreachable;
 	};
 }
 
-pub const UListFI = widget.UWidgetFI{
+pub const ZListFI = widget.ZWidgetFI{
 	.init = initUList,
 	.deinit = deinitUList,
 	.getChildren = getChildrenUList,
 	.update = updateUList,
 };
 
-fn updateUList(self: *widget.UWidget, space: types.UBounds, alignment: types.UAlign) anyerror!void {
+fn updateUList(self: *widget.ZWidget, space: types.ZBounds, alignment: types.ZAlign) anyerror!void {
 	var new_space = widget.updateWidgetSelf(self, space, alignment);
 
 	const children = try self.getChildren();
 	const children_len: f32 = @floatFromInt(children.len);
 
-	if (self.getData(UList)) |data| {
+	if (self.getData(ZList)) |data| {
 		switch (data.direction) {
 			.horizontal => {
 				new_space.w = (new_space.w - data.spacing * (children_len - 1)) / children_len;
@@ -49,17 +49,17 @@ fn updateUList(self: *widget.UWidget, space: types.UBounds, alignment: types.UAl
 	}
 }
 
-fn initUList(self: *widget.UWidget) anyerror!void {
-	const data = try root.allocator.create(UList);
+fn initUList(self: *widget.ZWidget) anyerror!void {
+	const data = try root.allocator.create(ZList);
 	data.* = .{
-		.children = try std.ArrayList(*widget.UWidget).initCapacity(root.allocator, 0),
+		.children = try std.ArrayList(*widget.ZWidget).initCapacity(root.allocator, 0),
 	};
-	self.type_name = @typeName(UList);
+	self.type_name = @typeName(ZList);
 	self.data = data;
 }
 
-fn deinitUList(self: *widget.UWidget) void {
-	if (self.getData(UList)) |data| {
+fn deinitUList(self: *widget.ZWidget) void {
+	if (self.getData(ZList)) |data| {
 		for (data.children.items) |c| {
 			c.destroy();
 		}
@@ -69,25 +69,25 @@ fn deinitUList(self: *widget.UWidget) void {
 	}
 }
 
-fn getChildrenUList(self: *widget.UWidget) []*widget.UWidget {
-	if (self.getData(UList)) |data| {
+fn getChildrenUList(self: *widget.ZWidget) []*widget.ZWidget {
+	if (self.getData(ZList)) |data| {
 		return data.children.items;
 	}
-	return &[0]*widget.UWidget{};
+	return &[0]*widget.ZWidget{};
 }
 
-pub const UListBuilder = struct {
-	widget: *widget.UWidget,
+pub const ZListBuilder = struct {
+	widget: *widget.ZWidget,
 
 	pub fn init() anyerror!*@This() {
 		const self = try root.allocator.create(@This());
 
-		self.widget = try widget.UWidget.init(&UListFI);
+		self.widget = try widget.ZWidget.init(&ZListFI);
 
 		return self;
 	}
 
-	pub fn build(self: *@This()) *widget.UWidget {
+	pub fn build(self: *@This()) *widget.ZWidget {
 		const final = self.widget;
 		root.allocator.destroy(self);
 		return final;
@@ -113,32 +113,32 @@ pub const UListBuilder = struct {
 		return self;
 	}
 
-	pub fn content_align(self: *@This(), a: types.UAlign) *@This() {
+	pub fn content_align(self: *@This(), a: types.ZAlign) *@This() {
 		self.widget.content_alignment = a;
 		return self;
 	}
 
-	pub fn layout(self: *@This(), l: types.ULayout) *@This() {
+	pub fn layout(self: *@This(), l: types.ZLayout) *@This() {
 		self.widget.layout = l;
 		return self;
 	}
 
-	pub fn direction(self: *@This(), d: types.UDirection) *@This() {
-		if (self.widget.getData(UList)) |data| {
+	pub fn direction(self: *@This(), d: types.ZDirection) *@This() {
+		if (self.widget.getData(ZList)) |data| {
 			data.direction = d;
 		}
 		return self;
 	}
 
 	pub fn spacing(self: *@This(), f: f32) *@This() {
-		if (self.widget.getData(UList)) |data| {
+		if (self.widget.getData(ZList)) |data| {
 			data.spacing = f;
 		}
 		return self;
 	}
 
 	pub fn children(self: *@This(), c: anytype) *@This() {
-		if (self.widget.getData(UList)) |data| {
+		if (self.widget.getData(ZList)) |data| {
 			const ArgsType = @TypeOf(c);
 			const args_type_info = @typeInfo(ArgsType);
 			if (args_type_info != .@"struct") {
@@ -159,8 +159,8 @@ pub const UListBuilder = struct {
 	}
 };
 
-pub const UList = struct {
-	direction: types.UDirection = types.UDirection.default(),
+pub const ZList = struct {
+	direction: types.ZDirection = types.ZDirection.default(),
 	spacing: f32 = 0,
-	children: std.ArrayList(*widget.UWidget) = undefined,
+	children: std.ArrayList(*widget.ZWidget) = undefined,
 };

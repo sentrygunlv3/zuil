@@ -5,19 +5,19 @@ const opengl = @import("opengl");
 pub const gl = opengl.bindings;
 
 pub const types = @import("types/generic.zig");
-pub const UError = @import("types/error.zig").UError;
+pub const ZError = @import("types/error.zig").ZError;
 pub const color = @import("types/color.zig");
 pub const input = @import("types/input.zig");
 
-pub const uwidget = @import("uwidget.zig");
+pub const zwidget = @import("zwidget.zig");
 
 pub const widgets = @import("widgets.zig");
 pub const shader = @import("shader_registry.zig");
 
 pub var allocator: std.mem.Allocator = undefined;
-var windows: std.AutoHashMap(*glfw.Window, *UWindow) = undefined;
+var windows: std.AutoHashMap(*glfw.Window, *ZWindow) = undefined;
 
-var modifiers = input.UModifiers{};
+var modifiers = input.ZModifiers{};
 
 pub fn init(a: std.mem.Allocator) !void {
 	allocator = a;
@@ -25,7 +25,7 @@ pub fn init(a: std.mem.Allocator) !void {
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();
 
-	windows = std.AutoHashMap(*glfw.Window, *UWindow).init(allocator);
+	windows = std.AutoHashMap(*glfw.Window, *ZWindow).init(allocator);
 }
 
 pub fn deinit() void {
@@ -36,7 +36,7 @@ pub fn deinit() void {
 
 pub fn run() !void {
 	if (windows.count() == 0) {
-		return UError.NoWindowsCreated;
+		return ZError.NoWindowsCreated;
 	}
 	try opengl.loadCoreProfile(glfw.getProcAddress, 4, 0);
 	shader.init(allocator);
@@ -66,24 +66,24 @@ fn errorCallback(error_code: c_int, desc: ?[*:0]const u8) callconv(.c) void {
 	}
 }
 
-pub const UWindow = struct {
+pub const ZWindow = struct {
 	window: *glfw.Window = undefined,
 	dirty: bool = true,
 	// --- input
-	key_events: std.ArrayList(input.UEvent) = undefined,
-	focused_widget: ?*uwidget.UWidget = null,
+	key_events: std.ArrayList(input.ZEvent) = undefined,
+	focused_widget: ?*zwidget.ZWidget = null,
 	/// return true to pass input to widget tree
-	input_handler: ?*const fn (self: *@This(), event: input.UEvent) bool = null,
+	input_handler: ?*const fn (self: *@This(), event: input.ZEvent) bool = null,
 	// ---
-	root: *uwidget.UWidget = undefined,
-	content_alignment: types.UAlign = .default(),
+	root: *zwidget.ZWidget = undefined,
+	content_alignment: types.ZAlign = .default(),
 
-	pub fn init(width: i32, height: i32, title: [:0]const u8, root: *uwidget.UWidget) !*@This() {
+	pub fn init(width: i32, height: i32, title: [:0]const u8, root: *zwidget.ZWidget) !*@This() {
 		const self = try allocator.create(@This());
 
 		self.* = .{
 			.window = try glfw.Window.create(width, height, title, null),
-			.key_events = try std.ArrayList(input.UEvent).initCapacity(allocator, 0),
+			.key_events = try std.ArrayList(input.ZEvent).initCapacity(allocator, 0),
 			.root = root,
 		};
 		self.root.window = self;
@@ -114,9 +114,9 @@ pub const UWindow = struct {
 		var posx: f64 = 0;
 		var posy: f64 = 0;
 		glfw.getCursorPos(window, &posx, &posy);
-		const event = input.UEvent{
+		const event = input.ZEvent{
 			.mouse = .{
-				.key = input.UMouseKey.fromGlfw(button),
+				.key = input.ZMouseKey.fromGlfw(button),
 				.action = .fromGlfw(action),
 				.modifiers = modifiers,
 				.x = @floatCast(posx),
@@ -138,8 +138,8 @@ pub const UWindow = struct {
 		};
 	}
 
-	fn processGlfwKey(key: glfw.Key, scancode: c_int, action: glfw.Action) input.UEvent {
-		const ukey = input.UKey.fromGlfw(key);
+	fn processGlfwKey(key: glfw.Key, scancode: c_int, action: glfw.Action) input.ZEvent {
+		const ukey = input.ZKey.fromGlfw(key);
 		const state = if (action != glfw.Action.release) true else false;
 
 		switch (ukey) {
@@ -169,7 +169,7 @@ pub const UWindow = struct {
 		gl.viewport(0, 0, w, h);
 	}
 
-	pub fn getBounds(self: *@This()) types.UBounds {
+	pub fn getBounds(self: *@This()) types.ZBounds {
 		const size = self.window.getSize();
 		return .{
 			.x = 0,
@@ -222,7 +222,7 @@ pub const UWindow = struct {
 			self.render() catch |e| {
 				std.log.err("failed to render window: {}\n", .{e});
 				switch (e) {
-					UError.MissingShader => {
+					ZError.MissingShader => {
 						shader.debugPrintAll();
 					},
 					else => {}

@@ -1,35 +1,35 @@
 const std = @import("std");
 const root = @import("../root.zig");
 
-const widget = root.uwidget;
-const UColor = root.color.UColor;
+const widget = root.zwidget;
+const ZColor = root.color.ZColor;
 const shader = root.shader;
 const types = root.types;
 
-pub fn uContainer() *UContainerBuilder {
-	return UContainerBuilder.init() catch |e| {
+pub fn uContainer() *ZContainerBuilder {
+	return ZContainerBuilder.init() catch |e| {
 		std.log.err("{}", .{e});
 		std.process.exit(1);
 		unreachable;
 	};
 }
 
-pub const UContainerFI = widget.UWidgetFI{
+pub const ZContainerFI = widget.ZWidgetFI{
 	.init = initUContainer,
 	.deinit = deinitUContainer,
 	.render = renderUContainer,
 	.getChildren = getChildrenUContainer,
 };
 
-fn initUContainer(self: *widget.UWidget) anyerror!void {
-	const data = try root.allocator.create(UContainer);
+fn initUContainer(self: *widget.ZWidget) anyerror!void {
+	const data = try root.allocator.create(ZContainer);
 	data.* = .{};
-	self.type_name = @typeName(UContainer);
+	self.type_name = @typeName(ZContainer);
 	self.data = data;
 }
 
-fn deinitUContainer(self: *widget.UWidget) void {
-	if (self.getData(UContainer)) |data| {
+fn deinitUContainer(self: *widget.ZWidget) void {
+	if (self.getData(ZContainer)) |data| {
 		if (data.child) |c| {
 			c.destroy();
 		}
@@ -38,9 +38,9 @@ fn deinitUContainer(self: *widget.UWidget) void {
 	}
 }
 
-fn renderUContainer(w: *widget.UWidget, window: *root.UWindow) anyerror!void {
-	var color = UColor.default();
-	if (w.getData(UContainer)) |data| {
+fn renderUContainer(w: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
+	var color = ZColor.default();
+	if (w.getData(ZContainer)) |data| {
 		color = data.color;
 	}
 
@@ -106,34 +106,34 @@ fn renderUContainer(w: *widget.UWidget, window: *root.UWindow) anyerror!void {
 	root.gl.deleteBuffers(1, &element_buffer);
 	root.gl.bindVertexArray(0);
 
-	if (w.getData(UContainer)) |data| {
+	if (w.getData(ZContainer)) |data| {
 		if (data.child) |child| {
 			try child.render(window);
 		}
 	}
 }
 
-fn getChildrenUContainer(self: *widget.UWidget) []*widget.UWidget {
-	if (self.getData(UContainer)) |data| {
+fn getChildrenUContainer(self: *widget.ZWidget) []*widget.ZWidget {
+	if (self.getData(ZContainer)) |data| {
 		if (data.child) |_| {
-			return @as([*]*widget.UWidget, @ptrCast(&data.child.?))[0..1];
+			return @as([*]*widget.ZWidget, @ptrCast(&data.child.?))[0..1];
 		}
 	}
-	return &[0]*widget.UWidget{};
+	return &[0]*widget.ZWidget{};
 }
 
-pub const UContainerBuilder = struct {
-	widget: *widget.UWidget,
+pub const ZContainerBuilder = struct {
+	widget: *widget.ZWidget,
 
 	pub fn init() anyerror!*@This() {
 		const self = try root.allocator.create(@This());
 
-		self.widget = try widget.UWidget.init(&UContainerFI);
+		self.widget = try widget.ZWidget.init(&ZContainerFI);
 
 		return self;
 	}
 
-	pub fn build(self: *@This()) *widget.UWidget {
+	pub fn build(self: *@This()) *widget.ZWidget {
 		const final = self.widget;
 		root.allocator.destroy(self);
 		return final;
@@ -159,30 +159,30 @@ pub const UContainerBuilder = struct {
 		return self;
 	}
 
-	pub fn content_align(self: *@This(), a: types.UAlign) *@This() {
+	pub fn content_align(self: *@This(), a: types.ZAlign) *@This() {
 		self.widget.content_alignment = a;
 		return self;
 	}
 
-	pub fn layout(self: *@This(), l: types.ULayout) *@This() {
+	pub fn layout(self: *@This(), l: types.ZLayout) *@This() {
 		self.widget.layout = l;
 		return self;
 	}
 
-	pub fn eventCallback(self: *@This(), event: *const fn (self: *widget.UWidget, event: root.input.UEvent) anyerror!void) *@This() {
+	pub fn eventCallback(self: *@This(), event: *const fn (self: *widget.ZWidget, event: root.input.ZEvent) anyerror!void) *@This() {
 		self.widget.mutable_fi.event = event;
 		return self;
 	}
 
-	pub fn color(self: *@This(), c: UColor) *@This() {
-		if (self.widget.getData(UContainer)) |data| {
+	pub fn color(self: *@This(), c: ZColor) *@This() {
+		if (self.widget.getData(ZContainer)) |data| {
 			data.*.color = c;
 		}
 		return self;
 	}
 
-	pub fn child(self: *@This(), c: *widget.UWidget) *@This() {
-		if (self.widget.getData(UContainer)) |data| {
+	pub fn child(self: *@This(), c: *widget.ZWidget) *@This() {
+		if (self.widget.getData(ZContainer)) |data| {
 			data.child = c;
 			data.child.?.parent = self.widget;
 			data.child.?.window = self.widget.window;
@@ -191,7 +191,7 @@ pub const UContainerBuilder = struct {
 	}
 };
 
-pub const UContainer = struct {
-	color: UColor = UColor.default(),
-	child: ?*widget.UWidget = null,
+pub const ZContainer = struct {
+	color: ZColor = ZColor.default(),
+	child: ?*widget.ZWidget = null,
 };

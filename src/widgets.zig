@@ -1,4 +1,4 @@
-pub const ucontainer = @import("widgets/container.zig");
-pub const container = ucontainer.uContainer;
-pub const ulist = @import("widgets/list.zig");
-pub const list = ulist.uList;
+pub const zcontainer = @import("widgets/container.zig");
+pub const container = zcontainer.uContainer;
+pub const zlist = @import("widgets/list.zig");
+pub const list = zlist.uList;

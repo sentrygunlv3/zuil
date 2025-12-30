@@ -19,7 +19,7 @@ pub fn getShader(name: []const u8) !u32 {
 	if (shader) |s| {
 		return s;
 	}
-	return root.UError.MissingShader;
+	return root.ZError.MissingShader;
 }
 
 pub fn registerShader(name: []const u8, v: []const u8, f: []const u8) !void {
@@ -34,7 +34,7 @@ pub fn registerShader(name: []const u8, v: []const u8, f: []const u8) !void {
 	var status: i32 = 0;
 	gl.getProgramiv(program, gl.LINK_STATUS, &status);
 	if (status == 0) {
-		return root.UError.FailedToLinkShader;
+		return root.ZError.FailedToLinkShader;
 	}
 
 	gl.deleteShader(vertex);
@@ -50,7 +50,7 @@ fn compileShader(shader_type: u32, source: []const u8) !u32 {
 	var status: i32 = 0;
 	gl.getShaderiv(shader, gl.COMPILE_STATUS, &status);
 	if (status == 0) {
-		return root.UError.FailedToCompileShader;
+		return root.ZError.FailedToCompileShader;
 	}
 	return shader;
 }

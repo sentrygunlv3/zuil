@@ -1,17 +1,17 @@
 const std = @import("std");
 const print = std.debug.print;
 
-const ui = @import("zuil");
-const colors = ui.color;
+const zuil = @import("zuil");
+const colors = zuil.color;
 
-const widgets = ui.widgets;
+const widgets = zuil.widgets;
 
 pub fn main() anyerror!void {
 	var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 	const allocator: std.mem.Allocator = gpa.allocator();
 
-	try ui.init(allocator);
-	defer ui.deinit();
+	try zuil.init(allocator);
+	defer zuil.deinit();
 
 	const list =
 	widgets.list()
@@ -67,23 +67,23 @@ pub fn main() anyerror!void {
 	)
 	.build();
 
-	const window = try ui.UWindow.init(
+	const window = try zuil.ZWindow.init(
 		800,
 		450,
 		"hello",
 		root
 	);
-	window.content_alignment = ui.types.UAlign.top;
+	window.content_alignment = zuil.types.ZAlign.top;
 	window.input_handler = processInput;
 
-	ui.run() catch |e| {
+	zuil.run() catch |e| {
 		std.log.err("test: {}", .{e});
 	};
 }
 
-fn processInput(self: *ui.UWindow, event: ui.input.UEvent) bool {
+fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 	std.debug.print("{}\n", .{event});
-	if (event != ui.input.UEvent.key) {
+	if (event != zuil.input.ZEvent.key) {
 		return true;
 	} else if (event.key.action != .release) {
 		return true;
@@ -102,15 +102,15 @@ fn processInput(self: *ui.UWindow, event: ui.input.UEvent) bool {
 	return true;
 }
 
-fn containerClick(self: *ui.uwidget.UWidget, event: ui.input.UEvent) anyerror!void {
-	if (event != ui.input.UEvent.mouse) {
+fn containerClick(self: *zuil.zwidget.ZWidget, event: zuil.input.ZEvent) anyerror!void {
+	if (event != zuil.input.ZEvent.mouse) {
 		return;
 	} else if (event.mouse.action != .release) {
 		return;
 	}
 	switch (event.mouse.key) {
 		.left => {
-			if (self.getData(widgets.ucontainer.UContainer)) |data| {
+			if (self.getData(widgets.ucontainer.ZContainer)) |data| {
 				if (colors.compare(data.color, colors.BLUE)) {
 					data.color = colors.BLACK;
 				} else {

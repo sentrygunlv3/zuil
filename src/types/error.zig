@@ -1,4 +1,4 @@
-pub const UError = error{
+pub const ZError = error{
 	NotImplemented,
 	NoWindowsCreated,
 	// widget

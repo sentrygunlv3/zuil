@@ -6,7 +6,7 @@
 /// 
 /// normal:
 /// only follows parent bounds if available space is smaller than self bounds
-pub const ULayout = enum {
+pub const ZLayout = enum {
 	fill,
 	absolute,
 	normal,
@@ -16,7 +16,7 @@ pub const ULayout = enum {
 	}
 };
 
-pub const UAlign = enum {
+pub const ZAlign = enum {
 	topLeft,
 	top,
 	topRight,
@@ -32,7 +32,7 @@ pub const UAlign = enum {
 	}
 };
 
-pub const UDirection = enum {
+pub const ZDirection = enum {
 	horizontal,
 	vertical,
 
@@ -41,7 +41,7 @@ pub const UDirection = enum {
 	}
 };
 
-pub const UBounds = struct {
+pub const ZBounds = struct {
 	x: f32,
 	y: f32,
 	w: f32,
@@ -57,7 +57,7 @@ pub const UBounds = struct {
 	}
 };
 
-pub const UMargin = struct {
+pub const ZMargin = struct {
 	top: f32,
 	bottom: f32,
 	left: f32,

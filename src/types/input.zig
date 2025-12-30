@@ -1,7 +1,7 @@
 const std = @import("std");
 const glfw = @import("glfw");
 
-pub const UKey = enum(u32) {
+pub const ZKey = enum(u32) {
 	unknown = 0,
 	a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z,
 	num_0, num_1, num_2, num_3, num_4, num_5, num_6, num_7, num_8, num_9,
@@ -18,7 +18,7 @@ pub const UKey = enum(u32) {
 	left_alt, right_alt,
 	left_super, right_super,
 
-	pub fn isModifier(self: UKey) bool {
+	pub fn isModifier(self: ZKey) bool {
 		return switch (self) {
 			.left_shift, .right_shift,
 			.left_control, .right_control,
@@ -115,7 +115,7 @@ pub const UKey = enum(u32) {
 	}
 };
 
-pub const UMouseKey = enum(u32) {
+pub const ZMouseKey = enum(u32) {
 	right,
 	middle,
 	left,
@@ -139,7 +139,7 @@ pub const UMouseKey = enum(u32) {
 	}
 };
 
-pub const UAction = enum(u16) {
+pub const ZAction = enum(u16) {
 	press,
 	hold,
 	release,
@@ -153,7 +153,7 @@ pub const UAction = enum(u16) {
 	}
 };
 
-pub const UModifiers = packed struct {
+pub const ZModifiers = packed struct {
 	left_shift: bool = false,
 	right_shift: bool = false,
 	left_control: bool = false,
@@ -167,41 +167,41 @@ pub const UModifiers = packed struct {
 	_: i6 = 0,
 };
 
-pub const UKeyEvent = struct {
-	key: UKey,
-	modifiers: UModifiers,
-	action: UAction,
+pub const ZKeyEvent = struct {
+	key: ZKey,
+	modifiers: ZModifiers,
+	action: ZAction,
 	scan_code: i32,
 };
 
-pub const UMouseEvent = struct {
-	key: UMouseKey,
-	modifiers: UModifiers,
-	action: UAction,
+pub const ZMouseEvent = struct {
+	key: ZMouseKey,
+	modifiers: ZModifiers,
+	action: ZAction,
 	x: f32,
 	y: f32,
 };
 
-pub const UMouseMoveEvent = struct {
-	x: f32,
-	y: f32,
-	distance_x: f32,
-	distance_y: f32,
-};
-
-pub const UMouseWheelEvent = struct {
-	modifiers: UModifiers,
+pub const ZMouseMoveEvent = struct {
 	x: f32,
 	y: f32,
 	distance_x: f32,
 	distance_y: f32,
 };
 
-pub const UEvent = union(enum) {
-	key: UKeyEvent,
-	mouse: UMouseEvent,
-	mouse_move: UMouseMoveEvent,
-	mouse_scroll: UMouseWheelEvent,
+pub const ZMouseWheelEvent = struct {
+	modifiers: ZModifiers,
+	x: f32,
+	y: f32,
+	distance_x: f32,
+	distance_y: f32,
+};
+
+pub const ZEvent = union(enum) {
+	key: ZKeyEvent,
+	mouse: ZMouseEvent,
+	mouse_move: ZMouseMoveEvent,
+	mouse_scroll: ZMouseWheelEvent,
 	focused: void,
 	unfocused: void,
 };

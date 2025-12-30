@@ -119,6 +119,24 @@ pub const UMouseKey = enum(u32) {
 	right,
 	middle,
 	left,
+	four,
+	five,
+	six,
+	seven,
+	eight,
+
+	pub fn fromGlfw(action: glfw.MouseButton) @This() {
+		return switch (action) {
+			.right => .right,
+			.middle => .middle,
+			.left => .left,
+			.four => .four,
+			.five => .five,
+			.six => .six,
+			.seven => .seven,
+			.eight => .eight,
+		};
+	}
 };
 
 pub const UAction = enum(u16) {
@@ -162,15 +180,11 @@ pub const UMouseEvent = struct {
 	action: UAction,
 	x: f32,
 	y: f32,
-	global_x: f32,
-	global_y: f32,
 };
 
 pub const UMouseMoveEvent = struct {
 	x: f32,
 	y: f32,
-	global_x: f32,
-	global_y: f32,
 	distance_x: f32,
 	distance_y: f32,
 };
@@ -179,8 +193,6 @@ pub const UMouseWheelEvent = struct {
 	modifiers: UModifiers,
 	x: f32,
 	y: f32,
-	global_x: f32,
-	global_y: f32,
 	distance_x: f32,
 	distance_y: f32,
 };

@@ -78,6 +78,13 @@ pub const UWidget = struct {
 		}
 	}
 
+	pub fn isOverPoint(self: *@This(), x: f32, y: f32) ?*@This() {
+		if (self.fi.isOverPoint) |func| {
+			return func(self, x, y);
+		}
+		return null;
+	}
+
 	pub fn event(self: *@This(), e: root.input.UEvent) anyerror!void {
 		if (self.mutable_fi.event) |func| {
 			try func(self, e);
@@ -97,6 +104,7 @@ pub const UWidgetFI = struct {
 	deinit: ?*const fn (self: *UWidget) void = null,
 	render: ?*const fn (self: *UWidget, window: *root.UWindow) anyerror!void = renderWidget,
 	update: ?*const fn (self: *UWidget, space: UBounds, alignment: UAlign) anyerror!void = updateWidget,
+	isOverPoint: ?*const fn (self: *UWidget, x: f32, y: f32) ?*UWidget = isOverPointWidget,
 	getChildren: ?*const fn (self: *UWidget) []*UWidget = null,
 };
 
@@ -108,6 +116,31 @@ pub fn renderWidget(self: *UWidget, window: *root.UWindow) anyerror!void {
 	for (try self.getChildren()) |child| {
 		_ = try child.render(window);
 	}
+}
+
+pub fn isOverPointWidget(self: *UWidget, x: f32, y: f32) ?*UWidget {
+	var ref: ?*UWidget = null;
+
+	if (
+		self.clamped_bounds.x < x and
+		self.clamped_bounds.x + self.clamped_bounds.w > x and
+		self.clamped_bounds.y < y and
+		self.clamped_bounds.y + self.clamped_bounds.h > y
+	) {
+		ref = self;
+	}
+
+	const children = self.getChildren() catch |e| {
+		std.debug.print("{}\n", .{e});
+		return null;
+	};
+
+	for (children) |child| {
+		if (child.isOverPoint(x, y)) |new| {
+			ref = new;
+		}
+	}
+	return ref;
 }
 
 pub fn updateWidget(self: *UWidget, space: UBounds, alignment: UAlign) anyerror!void {

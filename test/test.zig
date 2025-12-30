@@ -95,7 +95,6 @@ fn processInput(self: *ui.UWindow, event: ui.input.UEvent) bool {
 			} else {
 				self.content_alignment = .top;
 			}
-			self.dirty = true;
 			return false;
 		},
 		else => {}
@@ -111,7 +110,13 @@ fn containerClick(self: *ui.uwidget.UWidget, event: ui.input.UEvent) anyerror!vo
 	}
 	switch (event.mouse.key) {
 		.left => {
-			_ = self.data;
+			if (self.getData(widgets.ucontainer.UContainer)) |data| {
+				if (colors.compare(data.color, colors.BLUE)) {
+					data.color = colors.BLACK;
+				} else {
+					data.color = colors.BLUE;
+				}
+			}
 		},
 		else => {}
 	}

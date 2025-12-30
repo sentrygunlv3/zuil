@@ -30,3 +30,15 @@ pub fn rgb(r: f32, g: f32, b: f32) UColor {
 		.a = 1.0,
 	};
 }
+
+pub fn compare(a: UColor, b: UColor) bool {
+	if (
+		a.r == b.r and
+		a.g == b.g and
+		a.b == b.b and
+		a.a == b.a
+	) {
+		return true;
+	}
+	return false;
+}

@@ -95,7 +95,7 @@ pub const UWindow = struct {
 
 		_ = glfw.setWindowSizeCallback(self.window, resizeCallback);
 		_ = glfw.setKeyCallback(self.window, keyCallback);
-		// _ = glfw.setMouseButtonCallback(self.window, keyCallback);
+		_ = glfw.setMouseButtonCallback(self.window, mouseButtonCallback);
 
 		try windows.put(self.window, self);
 		return self;
@@ -109,10 +109,30 @@ pub const UWindow = struct {
 		allocator.destroy(self);
 	}
 
+	fn mouseButtonCallback(window: *glfw.Window, button: glfw.MouseButton, action: glfw.Action, mods: glfw.Mods) callconv(.c) void {
+		_ = mods;
+		var posx: f64 = 0;
+		var posy: f64 = 0;
+		glfw.getCursorPos(window, &posx, &posy);
+		const event = input.UEvent{
+			.mouse = .{
+				.key = input.UMouseKey.fromGlfw(button),
+				.action = .fromGlfw(action),
+				.modifiers = modifiers,
+				.x = @floatCast(posx),
+				.y = @floatCast(posy),
+			}
+		};
+
+		windows.get(window).?.key_events.append(allocator, event) catch |e| {
+			std.log.err("mouseButtonCallback {}", .{e});
+		};
+	}
+
 	fn keyCallback(window: *glfw.Window, key: glfw.Key, scancode: c_int, action: glfw.Action, mods: glfw.Mods) callconv(.c) void {
 		_ = mods;
 		const event = processGlfwKey(key, scancode, action);
-		
+
 		windows.get(window).?.key_events.append(allocator, event) catch |e| {
 			std.log.err("keyCallback {}", .{e});
 		};
@@ -179,10 +199,22 @@ pub const UWindow = struct {
 								};
 							}
 						},
+						.mouse => {
+							if (self.root.isOverPoint(event.mouse.x, event.mouse.y)) |hovered| {
+								std.debug.print("{*}\n", .{hovered});
+								hovered.event(event) catch |e| {
+									std.debug.print("{}\n", .{e});
+								};
+							} else {
+								std.debug.print("nothing hovered\n", .{});
+							}
+						},
 						else => {}
 					}
 				}
 			}
+			// TODO: temp dirty set
+			self.dirty = true;
 			self.key_events.clearAndFree(allocator);
 		}
 		if (self.dirty == true) {

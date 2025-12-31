@@ -8,4 +8,9 @@ pub const ZError = error{
 	FailedToCompileShader,
 	FailedToLinkShader,
 	MissingShader,
+	// assets
+	MissingAsset,
+	WrongAssetType,
+	// ---
+	FailedToCreateSvg
 };

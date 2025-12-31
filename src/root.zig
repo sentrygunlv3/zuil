@@ -12,11 +12,13 @@ pub const types = @import("types/generic.zig");
 pub const ZError = @import("types/error.zig").ZError;
 pub const color = @import("types/color.zig");
 pub const input = @import("types/input.zig");
-
+pub const ZBitmap = @import("types/bitmap.zig").ZBitmap;
+pub const ZAsset = @import("types/asset.zig").ZAsset;
 pub const zwidget = @import("zwidget.zig");
 
 pub const widgets = @import("widgets.zig");
-pub const shader = @import("shader_registry.zig");
+pub const assets = @import("assets/asset_registry.zig");
+pub const shader = @import("rendering/shader_registry.zig");
 pub const svg = @import("rendering/svg.zig");
 
 pub var allocator: std.mem.Allocator = undefined;
@@ -30,12 +32,15 @@ pub fn init(a: std.mem.Allocator) !void {
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();
 
+	assets.init();
+
 	windows = std.AutoHashMap(*glfw.Window, *ZWindow).init(allocator);
 }
 
 pub fn deinit() void {
 	shader.deinit();
 	glfw.terminate();
+	assets.deinit();
 	windows.deinit();
 }
 

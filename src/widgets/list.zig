@@ -6,7 +6,7 @@ const ZColor = root.color.ZColor;
 const shader = root.shader;
 const types = root.types;
 
-pub fn uList() *ZListBuilder {
+pub fn zList() *ZListBuilder {
 	return ZListBuilder.init() catch |e| {
 		std.log.err("{}", .{e});
 		std.process.exit(1);
@@ -15,13 +15,13 @@ pub fn uList() *ZListBuilder {
 }
 
 pub const ZListFI = widget.ZWidgetFI{
-	.init = initUList,
-	.deinit = deinitUList,
-	.getChildren = getChildrenUList,
-	.update = updateUList,
+	.init = initZList,
+	.deinit = deinitZList,
+	.getChildren = getChildrenZList,
+	.update = updateZList,
 };
 
-fn updateUList(self: *widget.ZWidget, space: types.ZBounds, alignment: types.ZAlign) anyerror!void {
+fn updateZList(self: *widget.ZWidget, space: types.ZBounds, alignment: types.ZAlign) anyerror!void {
 	var new_space = widget.updateWidgetSelf(self, space, alignment);
 
 	const children = try self.getChildren();
@@ -49,7 +49,7 @@ fn updateUList(self: *widget.ZWidget, space: types.ZBounds, alignment: types.ZAl
 	}
 }
 
-fn initUList(self: *widget.ZWidget) anyerror!void {
+fn initZList(self: *widget.ZWidget) anyerror!void {
 	const data = try root.allocator.create(ZList);
 	data.* = .{
 		.children = try std.ArrayList(*widget.ZWidget).initCapacity(root.allocator, 0),
@@ -58,7 +58,7 @@ fn initUList(self: *widget.ZWidget) anyerror!void {
 	self.data = data;
 }
 
-fn deinitUList(self: *widget.ZWidget) void {
+fn deinitZList(self: *widget.ZWidget) void {
 	if (self.getData(ZList)) |data| {
 		for (data.children.items) |c| {
 			c.destroy();
@@ -69,7 +69,7 @@ fn deinitUList(self: *widget.ZWidget) void {
 	}
 }
 
-fn getChildrenUList(self: *widget.ZWidget) []*widget.ZWidget {
+fn getChildrenZList(self: *widget.ZWidget) []*widget.ZWidget {
 	if (self.getData(ZList)) |data| {
 		return data.children.items;
 	}

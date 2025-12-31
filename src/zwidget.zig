@@ -113,7 +113,10 @@ pub const ZWidgetMutableFI = struct {
 };
 
 pub fn renderWidget(self: *ZWidget, window: *root.ZWindow) anyerror!void {
-	for (try self.getChildren()) |child| {
+	const children = self.getChildren() catch {
+		return;
+	};
+	for (children) |child| {
 		_ = try child.render(window);
 	}
 }
@@ -146,7 +149,10 @@ pub fn isOverPointWidget(self: *ZWidget, x: f32, y: f32) ?*ZWidget {
 pub fn updateWidget(self: *ZWidget, space: ZBounds, alignment: ZAlign) anyerror!void {
 	const new_space = updateWidgetSelf(self, space, alignment);
 
-	for (try self.getChildren()) |child| {
+	const children = self.getChildren() catch {
+		return;
+	};
+	for (children) |child| {
 		_ = try child.update(new_space, alignment);
 	}
 }

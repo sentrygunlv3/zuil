@@ -13,7 +13,7 @@ pub fn main() anyerror!void {
 	try zuil.init(allocator);
 	defer zuil.deinit();
 
-	_ = zuil.svg.svgToBitmap("", 1, 1) catch {};
+	try zuil.assets.registerAssetComptime("icon.svg", @embedFile("icon.svg"), .svg);
 
 	const list =
 	widgets.list()
@@ -47,8 +47,9 @@ pub fn main() anyerror!void {
 			widgets.container()
 			.layout(.fill)
 			.build(),
-			widgets.container()
+			widgets.icon()
 			.layout(.fill)
+			.icon("icon.svg")
 			.build()
 		})
 		.build()

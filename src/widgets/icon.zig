@@ -6,55 +6,51 @@ const ZColor = root.color.ZColor;
 const shader = root.shader;
 const types = root.types;
 
-pub fn zContainer() *ZContainerBuilder {
-	return ZContainerBuilder.init() catch |e| {
+pub fn zIcon() *ZIconBuilder {
+	return ZIconBuilder.init() catch |e| {
 		std.log.err("{}", .{e});
 		std.process.exit(1);
 		unreachable;
 	};
 }
 
-pub const ZContainerFI = widget.ZWidgetFI{
-	.init = initZContainer,
-	.deinit = deinitZContainer,
-	.render = renderZContainer,
-	.getChildren = getChildrenZContainer,
+pub const ZIconFI = widget.ZWidgetFI{
+	.init = initZIcon,
+	.deinit = deinitZIcon,
+	.render = renderZIcon,
 };
 
-fn initZContainer(self: *widget.ZWidget) anyerror!void {
-	const data = try root.allocator.create(ZContainer);
+fn initZIcon(self: *widget.ZWidget) anyerror!void {
+	const data = try root.allocator.create(ZIcon);
 	data.* = .{};
-	self.type_name = @typeName(ZContainer);
+	self.type_name = @typeName(ZIcon);
 	self.data = data;
 }
 
-fn deinitZContainer(self: *widget.ZWidget) void {
-	if (self.getData(ZContainer)) |data| {
-		if (data.child) |c| {
-			c.destroy();
-		}
+fn deinitZIcon(self: *widget.ZWidget) void {
+	if (self.getData(ZIcon)) |data| {
 		root.allocator.destroy(data);
 		self.data = null;
 	}
 }
 
-fn renderZContainer(w: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
-	var color = ZColor.default();
-	if (w.getData(ZContainer)) |data| {
-		color = data.color;
+fn renderZIcon(w: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
+	var icon: []const u8 = "";
+	if (w.getData(ZIcon)) |data| {
+		icon = data.icon;
 	}
 
 	const window_size = window.getBounds();
 
 	const vertices = [_]f32{
 		// bottom left
-		0, -1,
+		0, -1, 0, 1,
 		// bottom right
-		1, -1,
+		1, -1, 1, 1,
 		// top right
-		1, 0,
+		1, 0, 1, 0,
 		// top left
-		0, 0,
+		0, 0, 0, 0,
 	};
 
 	const indices = [_]u32{
@@ -65,10 +61,32 @@ fn renderZContainer(w: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
 	var vertex_arrays: u32 = 0;
 	var buffers: u32 = 0;
 	var element_buffer: u32 = 0;
+	var texture: u32 = 0;
 
 	root.gl.genVertexArrays(1, &vertex_arrays);
 	root.gl.genBuffers(1, &buffers);
 	root.gl.genBuffers(1, &element_buffer);
+	root.gl.genTextures(1, &texture);
+
+	root.gl.activeTexture(root.gl.TEXTURE0);
+	root.gl.bindTexture(root.gl.TEXTURE_2D, texture);
+	root.gl.texParameteri(root.gl.TEXTURE_2D, root.gl.TEXTURE_MIN_FILTER, root.gl.NEAREST);
+	root.gl.texParameteri(root.gl.TEXTURE_2D, root.gl.TEXTURE_MAG_FILTER, root.gl.NEAREST);
+
+	const image = try root.assets.getAsset(icon);
+	const bitmap = try root.svg.svgToBitmap(image, @intFromFloat(w.clamped_bounds.w), @intFromFloat(w.clamped_bounds.h));
+
+	root.gl.texImage2D(
+		root.gl.TEXTURE_2D,
+		0,
+		root.gl.RGBA,
+		@intCast(bitmap.w),
+		@intCast(bitmap.h),
+		0,
+		root.gl.BGRA,
+		root.gl.UNSIGNED_BYTE,
+		bitmap.data.ptr
+	);
 
 	root.gl.bindVertexArray(vertex_arrays);
 
@@ -78,10 +96,13 @@ fn renderZContainer(w: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
 	root.gl.bindBuffer(root.gl.ELEMENT_ARRAY_BUFFER, element_buffer);
 	root.gl.bufferData(root.gl.ELEMENT_ARRAY_BUFFER, indices.len * @sizeOf(u32), &indices, root.gl.STATIC_DRAW);
 
-	root.gl.vertexAttribPointer(0, 2, root.gl.FLOAT, root.gl.FALSE, 2 * @sizeOf(f32), null);
+	root.gl.vertexAttribPointer(0, 2, root.gl.FLOAT, root.gl.FALSE, 4 * @sizeOf(f32), null);
 	root.gl.enableVertexAttribArray(0);
 
-	const program = try shader.getShader("container");
+	root.gl.vertexAttribPointer(2, 2, root.gl.FLOAT, root.gl.FALSE, 4 * @sizeOf(f32), null);
+	root.gl.enableVertexAttribArray(2);
+
+	const program = try shader.getShader("bitmap");
 	root.gl.useProgram(program);
 
 	const sizew = (w.clamped_bounds.w / window_size.w) * 2;
@@ -96,39 +117,28 @@ fn renderZContainer(w: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
 	const size_loc = root.gl.getUniformLocation(program, "size");
 	root.gl.uniform2f(size_loc, sizew, sizeh);
 
-	const color_loc = root.gl.getUniformLocation(program, "color");
-	root.gl.uniform4f(color_loc, color.r, color.g, color.b, color.a);
+	const tex_loc = root.gl.getUniformLocation(program, "tex0");
+	root.gl.uniform1i(tex_loc, 0);
+
+	root.gl.enable(root.gl.BLEND);
+	root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
 
 	root.gl.drawElements(root.gl.TRIANGLES, 6, root.gl.UNSIGNED_INT, null);
 
 	root.gl.deleteVertexArrays(1, &vertex_arrays);
 	root.gl.deleteBuffers(1, &buffers);
 	root.gl.deleteBuffers(1, &element_buffer);
+	root.gl.deleteTextures(1, &texture);
 	root.gl.bindVertexArray(0);
-
-	if (w.getData(ZContainer)) |data| {
-		if (data.child) |child| {
-			try child.render(window);
-		}
-	}
 }
 
-fn getChildrenZContainer(self: *widget.ZWidget) []*widget.ZWidget {
-	if (self.getData(ZContainer)) |data| {
-		if (data.child) |_| {
-			return @as([*]*widget.ZWidget, @ptrCast(&data.child.?))[0..1];
-		}
-	}
-	return &[0]*widget.ZWidget{};
-}
-
-pub const ZContainerBuilder = struct {
+pub const ZIconBuilder = struct {
 	widget: *widget.ZWidget,
 
 	pub fn init() anyerror!*@This() {
 		const self = try root.allocator.create(@This());
 
-		self.widget = try widget.ZWidget.init(&ZContainerFI);
+		self.widget = try widget.ZWidget.init(&ZIconFI);
 
 		return self;
 	}
@@ -174,24 +184,14 @@ pub const ZContainerBuilder = struct {
 		return self;
 	}
 
-	pub fn color(self: *@This(), c: ZColor) *@This() {
-		if (self.widget.getData(ZContainer)) |data| {
-			data.*.color = c;
-		}
-		return self;
-	}
-
-	pub fn child(self: *@This(), c: *widget.ZWidget) *@This() {
-		if (self.widget.getData(ZContainer)) |data| {
-			data.child = c;
-			data.child.?.parent = self.widget;
-			data.child.?.window = self.widget.window;
+	pub fn icon(self: *@This(), i: []const u8) *@This() {
+		if (self.widget.getData(ZIcon)) |data| {
+			data.icon = i;
 		}
 		return self;
 	}
 };
 
-pub const ZContainer = struct {
-	color: ZColor = ZColor.default(),
-	child: ?*widget.ZWidget = null,
+pub const ZIcon = struct {
+	icon: []const u8 = "",
 };

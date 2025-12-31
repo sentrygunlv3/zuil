@@ -5,4 +5,6 @@ cd test
 
 zig build
 
-./zig-out/bin/test
+cd ..
+
+test/zig-out/bin/test

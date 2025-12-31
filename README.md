@@ -10,7 +10,8 @@ ZUIL
 Zig UI Library
 
 basic ui framework thing made with zig\
-using `zglfw` and `zopengl`
+using `zglfw`, `zopengl`, `plutosvg`/`plutovg` and `freetype` (no text rendering yet)\
+the `include` directory has headers for `plutosvg`/`plutovg` mainly to stop zls from giving false errors
 
 ---
 

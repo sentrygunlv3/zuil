@@ -65,7 +65,7 @@ pub fn main() anyerror!void {
 
 	const root =
 	widgets.container()
-	.size(.{.dp = 1200}, .{.dp = 600})
+	.size(.{.dp = 1200}, .{.percentage = 1})
 	.color(colors.WHITE)
 	.child(
 		widgets.container()
@@ -83,7 +83,7 @@ pub fn main() anyerror!void {
 		"hello",
 		root
 	);
-	window.content_alignment = zuil.types.ZAlign.top;
+	window.content_alignment = zuil.types.ZAlign.center;
 	window.input_handler = processInput;
 
 	zuil.run() catch |e| {
@@ -101,9 +101,9 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 	switch (event.key.key) {
 		.space => {
 			if (self.content_alignment != .center) {
-				self.content_alignment = .center;
+				self.setContentAlignment(.center);
 			} else {
-				self.content_alignment = .top;
+				self.setContentAlignment(.left);
 			}
 			return false;
 		},
@@ -126,6 +126,7 @@ fn containerClick(self: *zuil.zwidget.ZWidget, event: zuil.input.ZEvent) anyerro
 				} else {
 					data.color = colors.BLUE;
 				}
+				self.markDirty();
 			}
 		},
 		else => {}

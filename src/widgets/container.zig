@@ -138,38 +138,38 @@ pub const ZContainerBuilder = struct {
 	}
 
 	pub fn size(self: *@This(), w: root.types.ZUnit, h: root.types.ZUnit) *@This() {
-		self.widget.size = .{
+		self.widget.setSize(.{
 			.w = w,
 			.h = h
-		};
+		});
 		return self;
 	}
 
 	pub fn position(self: *@This(), x: root.types.ZUnit, y: root.types.ZUnit) *@This() {
-		self.widget.position = .{
+		self.widget.setPosition(.{
 			.x = x,
 			.y = y,
-		};
+		});
 		return self;
 	}
 
 	pub fn margin(self: *@This(), top: root.types.ZUnit, bottom: root.types.ZUnit, left: root.types.ZUnit, right: root.types.ZUnit) *@This() {
-		self.widget.margin = .{
+		self.widget.setMargin(.{
 			.top = top,
 			.bottom = bottom,
 			.left = left,
 			.right = right
-		};
+		});
 		return self;
 	}
 
 	pub fn content_align(self: *@This(), a: types.ZAlign) *@This() {
-		self.widget.content_alignment = a;
+		self.widget.setContentAlignment(a);
 		return self;
 	}
 
 	pub fn layout(self: *@This(), l: types.ZLayout) *@This() {
-		self.widget.layout = l;
+		self.widget.setLayout(l);
 		return self;
 	}
 

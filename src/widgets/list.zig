@@ -19,11 +19,29 @@ pub const ZListFI = widget.ZWidgetFI{
 	.update = updateZList,
 };
 
-fn updateZList(self: *widget.ZWidget) anyerror!void {
+fn updateZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
 	const children = try self.getChildren();
 	const children_len: f32 = @floatFromInt(children.len);
 
 	var new_space = self.clamped_bounds;
+	var child_layout_dirty = true;
+
+	if (!dirty) {
+		child_layout_dirty = false;
+		for (children) |child| {
+			if (child.flags.layout_dirty) {
+				child_layout_dirty = true;
+				break;
+			}
+		}
+	}
+
+	if (!child_layout_dirty) {
+		for (children) |child| {
+			_ = try child.update(false);
+		}
+		return;
+	}
 
 	if (self.getData(ZList)) |data| {
 		switch (data.direction) {
@@ -35,7 +53,7 @@ fn updateZList(self: *widget.ZWidget) anyerror!void {
 					
 					child.clamped_bounds.x += new_space.x;
 					child.clamped_bounds.y += new_space.y;
-					_ = try child.update();
+					_ = try child.update(true);
 
 					new_space.x += new_space.w + data.spacing;
 				}
@@ -48,7 +66,7 @@ fn updateZList(self: *widget.ZWidget) anyerror!void {
 					
 					child.clamped_bounds.x += new_space.x;
 					child.clamped_bounds.y += new_space.y;
-					_ = try child.update();
+					_ = try child.update(true);
 
 					new_space.y += new_space.h + data.spacing;
 				}

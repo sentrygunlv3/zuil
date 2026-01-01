@@ -78,7 +78,11 @@ fn errorCallback(error_code: c_int, desc: ?[*:0]const u8) callconv(.c) void {
 
 pub const ZWindow = struct {
 	window: *glfw.Window = undefined,
-	dirty: bool = true,
+	flags: packed struct {
+		layout_dirty: bool = true,
+		render_dirty: bool = true,
+		_: u6 = 0,
+	} = .{},
 	// --- input
 	key_events: std.ArrayList(input.ZEvent) = undefined,
 	focused_widget: ?*zwidget.ZWidget = null,
@@ -128,6 +132,16 @@ pub const ZWindow = struct {
 		self.window.destroy();
 		self.key_events.deinit(allocator);
 		allocator.destroy(self);
+	}
+
+	pub fn markDirty(self: *@This()) void {
+		self.flags.layout_dirty = true;
+	}
+
+	pub fn setContentAlignment(self: *@This(), new: types.ZAlign) void {
+		self.content_alignment = new;
+		self.root.markDirty();
+		self.markDirty();
 	}
 
 	fn mouseButtonCallback(window: *glfw.Window, button: glfw.MouseButton, action: glfw.Action, mods: glfw.Mods) callconv(.c) void {
@@ -186,7 +200,7 @@ pub const ZWindow = struct {
 	}
 
 	fn resizeCallback(window: *glfw.Window, w: c_int, h: c_int) callconv(.c) void {
-		windows.get(window).?.dirty = true;
+		windows.get(window).?.root.markDirty();
 		gl.viewport(0, 0, w, h);
 	}
 
@@ -224,7 +238,7 @@ pub const ZWindow = struct {
 							if (self.root.isOverPoint(event.mouse.x, event.mouse.y, false)) |hovered| {
 								std.debug.print("{*}\n", .{hovered});
 								hovered.event(event) catch |e| {
-									std.debug.print("{}\n", .{e});
+									std.log.err("event: {}", .{e});
 								};
 							} else {
 								std.debug.print("nothing hovered\n", .{});
@@ -234,38 +248,56 @@ pub const ZWindow = struct {
 					}
 				}
 			}
-			// TODO: temp dirty set
-			self.dirty = true;
 			self.key_events.clearAndFree(allocator);
 		}
-		if (self.dirty == true) {
-			std.debug.print("\n--- process layout/render ---\n", .{});
-			self.render() catch |e| {
-				std.log.err("failed to render window: {}\n", .{e});
-				switch (e) {
-					ZError.MissingShader => {
-						shader.debugPrintAll();
-					},
-					else => {}
-				}
+		if (self.flags.layout_dirty) {
+			std.debug.print("\n--- process layout ---\n", .{});
+
+			self.layout() catch |e| {
+				std.log.err("layout: {}", .{e});
 			};
+
+			std.debug.print("\n--- process render ---\n", .{});
+
+			self.render();
+		} else if (self.flags.render_dirty) {
+			std.debug.print("\n--- process render ---\n", .{});
+
+			self.render();
 		}
 		return true;
 	}
 
-	pub fn render(self: *@This()) !void {
+	pub fn layout(self: *@This()) anyerror!void {
+		const space = self.getBounds();
+
+		if (self.root.flags.layout_dirty) {
+			try zwidget.updateSizeWidget(self.root, space.w, space.h, self.content_alignment);
+			try self.root.update(true);
+		} else {
+			try self.root.update(false);
+		}
+
+		self.flags.layout_dirty = false;
+	}
+
+	pub fn render(self: *@This()) void {
 		glfw.makeContextCurrent(self.window);
 		
 		const clear_color = [_]f32{0.192, 0.212, 0.231, 1.0};
 		gl.clearBufferfv(gl.COLOR, 0, &clear_color);
 
-		const space = self.getBounds();
-		try zwidget.updateSizeWidget(self.root, space.w, space.h, self.content_alignment);
-		try self.root.update();
-
-		try self.root.render(self);
+		self.root.render(self) catch |e| {
+			std.log.err("failed to render window: {}\n", .{e});
+			switch (e) {
+				ZError.MissingShader => {
+					shader.debugPrintAll();
+				},
+				else => {}
+			}
+		};
 		
 		self.window.swapBuffers();
-		self.dirty = false;
+		self.flags.render_dirty = false;
 	}
 };

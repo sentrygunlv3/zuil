@@ -13,6 +13,10 @@ pub const ZWidget = struct {
 	type_name: []const u8 = "ZWidget",
 	mutable_fi: ZWidgetMutableFI = .{},
 	fi: *const ZWidgetFI,
+	flags: packed struct {
+		layout_dirty: bool = true,
+		_: u7 = 0,
+	} = .{},
 	data: ?*anyopaque = null,
 	// tree
 	parent: ?*ZWidget = null,
@@ -59,14 +63,38 @@ pub const ZWidget = struct {
 		self.deinit();
 	}
 
-	pub fn setWindow(self: *@This(), window: *root.ZWindow) void {
-		self.window = window;
-		const children = self.getChildren() catch {
-			return;
-		};
-		for (children) |child| {
-			child.setWindow(window);
+	pub fn markDirty(self: *@This()) void {
+		self.flags.layout_dirty = true;
+		if (self.window) |window| {
+			window.markDirty();
 		}
+	}
+
+	// ---
+
+	pub fn setPosition(self: *@This(), new: ZPosition) void {
+		self.position = new;
+		self.markDirty();
+	}
+
+	pub fn setSize(self: *@This(), new: ZSize) void {
+		self.size = new;
+		self.markDirty();
+	}
+
+	pub fn setMargin(self: *@This(), new: ZMargin) void {
+		self.margin = new;
+		self.markDirty();
+	}
+
+	pub fn setContentAlignment(self: *@This(), new: ZAlign) void {
+		self.content_alignment = new;
+		self.markDirty();
+	}
+
+	pub fn setLayout(self: *@This(), new: ZLayout) void {
+		self.layout = new;
+		self.markDirty();
 	}
 
 	pub fn getData(self: *@This(), T: type) ?*T {
@@ -78,6 +106,18 @@ pub const ZWidget = struct {
 		return null;
 	}
 
+	// ---
+
+	pub fn setWindow(self: *@This(), window: *root.ZWindow) void {
+		self.window = window;
+		const children = self.getChildren() catch {
+			return;
+		};
+		for (children) |child| {
+			child.setWindow(window);
+		}
+	}
+
 	pub fn render(self: *@This(), window: *root.ZWindow) anyerror!void {
 		std.debug.print("\n{*}\n", .{self});
 		std.debug.print("bounds: {}\n", .{self.clamped_bounds});
@@ -87,15 +127,17 @@ pub const ZWidget = struct {
 	}
 
 	pub fn updateSize(self: *@This(), x: f32, y: f32, alignment: ZAlign) anyerror!void {
+		std.debug.print("\n{*}\n", .{self});
 		if (self.fi.updateSize) |func| {
 			try func(self, x, y, alignment);
 		}
 	}
 
-	pub fn update(self: *@This()) anyerror!void {
+	pub fn update(self: *@This(), dirty: bool) anyerror!void {
 		if (self.fi.update) |func| {
-			try func(self);
+			try func(self, dirty);
 		}
+		self.flags.layout_dirty = false;
 	}
 
 	pub fn isOverPoint(self: *@This(), x: f32, y: f32, parent_outside: bool) ?*@This() {
@@ -124,7 +166,7 @@ pub const ZWidgetFI = struct {
 	deinit: ?*const fn (self: *ZWidget) void = null,
 
 	updateSize: ?*const fn (self: *ZWidget, x: f32, y: f32, alignment: ZAlign) anyerror!void = updateSizeWidget,
-	update: ?*const fn (self: *ZWidget) anyerror!void = updateWidget,
+	update: ?*const fn (self: *ZWidget, dirty: bool) anyerror!void = updateWidget,
 
 	render: ?*const fn (self: *ZWidget, window: *root.ZWindow) anyerror!void = renderWidget,
 
@@ -174,16 +216,21 @@ pub fn isOverPointWidget(self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?
 	return ref;
 }
 
-pub fn updateWidget(self: *ZWidget) anyerror!void {
+/// dirty forces all widgets from this point on to recalculate their layouts
+pub fn updateWidget(self: *ZWidget, dirty: bool) anyerror!void {
 	const children = self.getChildren() catch {
 		return;
 	};
 
 	for (children) |child| {
-		_ = try child.updateSize(self.clamped_bounds.w, self.clamped_bounds.h, self.content_alignment);
-		child.clamped_bounds.x += self.clamped_bounds.x;
-		child.clamped_bounds.y += self.clamped_bounds.y;
-		_ = try child.update();
+		if (dirty or child.flags.layout_dirty) {
+			_ = try child.updateSize(self.clamped_bounds.w, self.clamped_bounds.h, self.content_alignment);
+			child.clamped_bounds.x += self.clamped_bounds.x;
+			child.clamped_bounds.y += self.clamped_bounds.y;
+			_ = try child.update(true);
+		} else {
+			_ = try child.update(false);
+		}
 	}
 }
 

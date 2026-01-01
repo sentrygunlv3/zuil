@@ -161,6 +161,7 @@ pub const ZWidget = struct {
 	}
 };
 
+/// widget function interface for widget classes
 pub const ZWidgetFI = struct {
 	init: ?*const fn (self: *ZWidget) anyerror!void = null,
 	deinit: ?*const fn (self: *ZWidget) void = null,
@@ -174,6 +175,7 @@ pub const ZWidgetFI = struct {
 	getChildren: ?*const fn (self: *ZWidget) []*ZWidget = null,
 };
 
+/// widget function interface for per widget functions
 pub const ZWidgetMutableFI = struct {
 	event: ?*const fn (self: *ZWidget, event: root.input.ZEvent) anyerror!void = null,
 };

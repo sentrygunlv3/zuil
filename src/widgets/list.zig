@@ -8,9 +8,7 @@ const types = root.types;
 
 pub fn zList() *ZListBuilder {
 	return ZListBuilder.init() catch |e| {
-		std.log.err("{}", .{e});
-		std.process.exit(1);
-		unreachable;
+		std.debug.panic("{}", .{e});
 	};
 }
 
@@ -21,11 +19,11 @@ pub const ZListFI = widget.ZWidgetFI{
 	.update = updateZList,
 };
 
-fn updateZList(self: *widget.ZWidget, space: types.ZBounds, alignment: types.ZAlign) anyerror!void {
-	var new_space = widget.updateWidgetSelf(self, space, alignment);
-
+fn updateZList(self: *widget.ZWidget) anyerror!void {
 	const children = try self.getChildren();
 	const children_len: f32 = @floatFromInt(children.len);
+
+	var new_space = self.clamped_bounds;
 
 	if (self.getData(ZList)) |data| {
 		switch (data.direction) {
@@ -33,7 +31,12 @@ fn updateZList(self: *widget.ZWidget, space: types.ZBounds, alignment: types.ZAl
 				new_space.w = (new_space.w - data.spacing * (children_len - 1)) / children_len;
 
 				for (children) |child| {
-					_ = try child.update(new_space, self.content_alignment);
+					_ = try child.updateSize(new_space.w, new_space.h, self.content_alignment);
+					
+					child.clamped_bounds.x += new_space.x;
+					child.clamped_bounds.y += new_space.y;
+					_ = try child.update();
+
 					new_space.x += new_space.w + data.spacing;
 				}
 			},
@@ -41,7 +44,12 @@ fn updateZList(self: *widget.ZWidget, space: types.ZBounds, alignment: types.ZAl
 				new_space.h = (new_space.h - data.spacing * (children_len - 1)) / children_len;
 
 				for (children) |child| {
-					_ = try child.update(new_space, self.content_alignment);
+					_ = try child.updateSize(new_space.w, new_space.h, self.content_alignment);
+					
+					child.clamped_bounds.x += new_space.x;
+					child.clamped_bounds.y += new_space.y;
+					_ = try child.update();
+
 					new_space.y += new_space.h + data.spacing;
 				}
 			},
@@ -93,17 +101,23 @@ pub const ZListBuilder = struct {
 		return final;
 	}
 
-	pub fn bounds(self: *@This(), x: f32, y: f32, w: f32, h: f32) *@This() {
-		self.widget.bounds = .{
-			.x = x,
-			.y = y,
+	pub fn size(self: *@This(), w: root.types.ZUnit, h: root.types.ZUnit) *@This() {
+		self.widget.size = .{
 			.w = w,
 			.h = h
 		};
 		return self;
 	}
 
-	pub fn margin(self: *@This(), top: f32, bottom: f32, left: f32, right: f32) *@This() {
+	pub fn position(self: *@This(), x: root.types.ZUnit, y: root.types.ZUnit) *@This() {
+		self.widget.position = .{
+			.x = x,
+			.y = y,
+		};
+		return self;
+	}
+
+	pub fn margin(self: *@This(), top: root.types.ZUnit, bottom: root.types.ZUnit, left: root.types.ZUnit, right: root.types.ZUnit) *@This() {
 		self.widget.margin = .{
 			.top = top,
 			.bottom = bottom,

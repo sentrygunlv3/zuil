@@ -87,6 +87,7 @@ pub const ZWindow = struct {
 	// ---
 	root: *zwidget.ZWidget = undefined,
 	content_alignment: types.ZAlign = .default(),
+	display_size: struct {x: f32, y: f32} = .{.x = 0, .y = 0},
 
 	pub fn init(width: i32, height: i32, title: [:0]const u8, root: *zwidget.ZWidget) !*@This() {
 		const self = try allocator.create(@This());
@@ -96,7 +97,7 @@ pub const ZWindow = struct {
 			.key_events = try std.ArrayList(input.ZEvent).initCapacity(allocator, 0),
 			.root = root,
 		};
-		self.root.window = self;
+		self.root.setWindow(self);
 
 		const arrow_cursor = try glfw.createStandardCursor(.arrow);
 		glfw.setCursor(self.window, arrow_cursor);
@@ -106,6 +107,16 @@ pub const ZWindow = struct {
 		_ = glfw.setWindowSizeCallback(self.window, resizeCallback);
 		_ = glfw.setKeyCallback(self.window, keyCallback);
 		_ = glfw.setMouseButtonCallback(self.window, mouseButtonCallback);
+
+		if (glfw.getPrimaryMonitor()) |monitor| {
+			const mode = try monitor.getVideoMode();
+			const size = try monitor.getPhysicalSize();
+
+			self.display_size = .{
+				.x = @as(f32, @floatFromInt(mode.width)) / @as(f32, @floatFromInt(size[0])),
+				.y = @as(f32, @floatFromInt(mode.height)) / @as(f32, @floatFromInt(size[1])),
+			};
+		}
 
 		try windows.put(self.window, self);
 		return self;
@@ -210,7 +221,7 @@ pub const ZWindow = struct {
 							}
 						},
 						.mouse => {
-							if (self.root.isOverPoint(event.mouse.x, event.mouse.y)) |hovered| {
+							if (self.root.isOverPoint(event.mouse.x, event.mouse.y, false)) |hovered| {
 								std.debug.print("{*}\n", .{hovered});
 								hovered.event(event) catch |e| {
 									std.debug.print("{}\n", .{e});
@@ -248,10 +259,9 @@ pub const ZWindow = struct {
 		const clear_color = [_]f32{0.192, 0.212, 0.231, 1.0};
 		gl.clearBufferfv(gl.COLOR, 0, &clear_color);
 
-		try self.root.update(
-			self.getBounds(),
-			self.content_alignment
-		);
+		const space = self.getBounds();
+		try zwidget.updateSizeWidget(self.root, space.w, space.h, self.content_alignment);
+		try self.root.update();
 
 		try self.root.render(self);
 		

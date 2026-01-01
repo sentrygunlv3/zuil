@@ -7,7 +7,7 @@ pub fn svgToBitmap(svg: root.ZAsset, width: u32, height: u32) anyerror!ZBitmap {
 		return root.ZError.WrongAssetType;
 	}
 
-	var document: ?*root.c.struct_plutosvg_document = undefined;
+	var document: ?*root.c.struct_plutosvg_document = null;
 	switch (svg.data) {
 		.compile_time => {
 			document = root.c.plutosvg_document_load_from_data(

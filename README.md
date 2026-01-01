@@ -7,11 +7,12 @@ ZUIL
 
 ---
 
-Zig UI Library
+ZUIL (Zig UI Library)
 
 basic ui framework thing made with zig\
-using `zglfw`, `zopengl`, `plutosvg`/`plutovg` and `freetype` (no text rendering yet)\
-the `include` directory has headers for `plutosvg`/`plutovg` mainly to stop zls from giving false errors
+using `zglfw`, `zopengl`, `plutosvg`/`plutovg` and `freetype` (no text rendering yet)
+
+the `include` directory has headers for `plutosvg`/`plutovg` instead of using the system installed headers mainly to stop zls from giving false errors
 
 ---
 

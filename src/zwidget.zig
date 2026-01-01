@@ -3,6 +3,8 @@ const root = @import("root.zig");
 
 const types = root.types;
 const ZBounds = root.types.ZBounds;
+const ZPosition = root.types.ZPosition;
+const ZSize = root.types.ZSize;
 const ZMargin = root.types.ZMargin;
 const ZAlign = root.types.ZAlign;
 const ZLayout = root.types.ZLayout;
@@ -11,17 +13,18 @@ pub const ZWidget = struct {
 	type_name: []const u8 = "ZWidget",
 	mutable_fi: ZWidgetMutableFI = .{},
 	fi: *const ZWidgetFI,
-	// ---
+	data: ?*anyopaque = null,
+	// tree
 	parent: ?*ZWidget = null,
 	window: ?*root.ZWindow = null,
-	data: ?*anyopaque = null,
-	// ---
-	bounds: ZBounds = ZBounds.zero(),
-	clamped_bounds: ZBounds = ZBounds.zero(),
-	// ---
-	margin: ZMargin = ZMargin.zero(),
-	content_alignment: ZAlign = ZAlign.default(),
-	layout: ZLayout = ZLayout.default(),
+	// calculated
+	clamped_bounds: ZBounds = .zero(),
+	// layout
+	position: ZPosition = .zero(),
+	size: ZSize = .zero(),
+	margin: ZMargin = .zero(),
+	content_alignment: ZAlign = .default(),
+	layout: ZLayout = .default(),
 
 	pub fn init(fi: *const ZWidgetFI) anyerror!*@This() {
 		const self = try root.allocator.create(@This());
@@ -47,12 +50,23 @@ pub const ZWidget = struct {
 			if (window.focused_widget == self) {
 				window.focused_widget = null;
 			}
+			self.window = null;
 		}
 	}
 
 	pub fn destroy(self: *@This()) void {
 		self.exitTree();
 		self.deinit();
+	}
+
+	pub fn setWindow(self: *@This(), window: *root.ZWindow) void {
+		self.window = window;
+		const children = self.getChildren() catch {
+			return;
+		};
+		for (children) |child| {
+			child.setWindow(window);
+		}
 	}
 
 	pub fn getData(self: *@This(), T: type) ?*T {
@@ -72,15 +86,21 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn update(self: *@This(), space: ZBounds, alignment: ZAlign) anyerror!void {
-		if (self.fi.update) |func| {
-			try func(self, space, alignment);
+	pub fn updateSize(self: *@This(), x: f32, y: f32, alignment: ZAlign) anyerror!void {
+		if (self.fi.updateSize) |func| {
+			try func(self, x, y, alignment);
 		}
 	}
 
-	pub fn isOverPoint(self: *@This(), x: f32, y: f32) ?*@This() {
+	pub fn update(self: *@This()) anyerror!void {
+		if (self.fi.update) |func| {
+			try func(self);
+		}
+	}
+
+	pub fn isOverPoint(self: *@This(), x: f32, y: f32, parent_outside: bool) ?*@This() {
 		if (self.fi.isOverPoint) |func| {
-			return func(self, x, y);
+			return func(self, x, y, parent_outside);
 		}
 		return null;
 	}
@@ -102,9 +122,13 @@ pub const ZWidget = struct {
 pub const ZWidgetFI = struct {
 	init: ?*const fn (self: *ZWidget) anyerror!void = null,
 	deinit: ?*const fn (self: *ZWidget) void = null,
+
+	updateSize: ?*const fn (self: *ZWidget, x: f32, y: f32, alignment: ZAlign) anyerror!void = updateSizeWidget,
+	update: ?*const fn (self: *ZWidget) anyerror!void = updateWidget,
+
 	render: ?*const fn (self: *ZWidget, window: *root.ZWindow) anyerror!void = renderWidget,
-	update: ?*const fn (self: *ZWidget, space: ZBounds, alignment: ZAlign) anyerror!void = updateWidget,
-	isOverPoint: ?*const fn (self: *ZWidget, x: f32, y: f32) ?*ZWidget = isOverPointWidget,
+
+	isOverPoint: ?*const fn (self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?*ZWidget = isOverPointWidget,
 	getChildren: ?*const fn (self: *ZWidget) []*ZWidget = null,
 };
 
@@ -121,16 +145,20 @@ pub fn renderWidget(self: *ZWidget, window: *root.ZWindow) anyerror!void {
 	}
 }
 
-pub fn isOverPointWidget(self: *ZWidget, x: f32, y: f32) ?*ZWidget {
+pub fn isOverPointWidget(self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?*ZWidget {
 	var ref: ?*ZWidget = null;
+	var outside = true;
 
-	if (
-		self.clamped_bounds.x < x and
-		self.clamped_bounds.x + self.clamped_bounds.w > x and
-		self.clamped_bounds.y < y and
-		self.clamped_bounds.y + self.clamped_bounds.h > y
-	) {
-		ref = self;
+	if (!parent_outside or self.layout == ZLayout.absolute) {
+		if (
+			self.clamped_bounds.x < x and
+			self.clamped_bounds.x + self.clamped_bounds.w > x and
+			self.clamped_bounds.y < y and
+			self.clamped_bounds.y + self.clamped_bounds.h > y
+		) {
+			ref = self;
+			outside = false;
+		}
 	}
 
 	const children = self.getChildren() catch |e| {
@@ -139,38 +167,58 @@ pub fn isOverPointWidget(self: *ZWidget, x: f32, y: f32) ?*ZWidget {
 	};
 
 	for (children) |child| {
-		if (child.isOverPoint(x, y)) |new| {
+		if (child.isOverPoint(x, y, outside)) |new| {
 			ref = new;
 		}
 	}
 	return ref;
 }
 
-pub fn updateWidget(self: *ZWidget, space: ZBounds, alignment: ZAlign) anyerror!void {
-	const new_space = updateWidgetSelf(self, space, alignment);
-
+pub fn updateWidget(self: *ZWidget) anyerror!void {
 	const children = self.getChildren() catch {
 		return;
 	};
+
 	for (children) |child| {
-		_ = try child.update(new_space, alignment);
+		_ = try child.updateSize(self.clamped_bounds.w, self.clamped_bounds.h, self.content_alignment);
+		child.clamped_bounds.x += self.clamped_bounds.x;
+		child.clamped_bounds.y += self.clamped_bounds.y;
+		_ = try child.update();
 	}
 }
 
-pub fn updateWidgetSelf(self: *ZWidget, space: ZBounds, alignment: ZAlign) ZBounds {
+pub fn updateSizeWidget(self: *ZWidget, w: f32, h: f32, alignment: ZAlign) anyerror!void {
+	const space: ZBounds = .{
+		.w = w,
+		.h = h,
+	};
+
+	if (self.window == null) {
+		std.debug.print("updateSizeWidget: no window\n", .{});
+		return;
+	}
+
+	const size_bounds = self.size.asBounds(space, self.window.?);
+	const pos_bounds = self.position.asBounds(space, self.window.?);
+	const bounds: ZBounds = .{
+		.w = size_bounds.w,
+		.h = size_bounds.h,
+		.x = pos_bounds.x,
+		.y = pos_bounds.y,
+	};
 	switch (self.layout) {
 		.absolute => {
-			self.clamped_bounds = self.bounds;
+			self.clamped_bounds = bounds;
 		},
 		.fill => {
 			self.clamped_bounds = space;
 		},
 		.normal => {
-			self.clamped_bounds = self.bounds;
-			if (self.bounds.h > space.h) {
+			self.clamped_bounds = bounds;
+			if (bounds.h > space.h) {
 				self.clamped_bounds.h = space.h;
 			}
-			if (self.bounds.w > space.w) {
+			if (bounds.w > space.w) {
 				self.clamped_bounds.w = space.w;
 			}
 		},
@@ -213,8 +261,8 @@ pub fn updateWidgetSelf(self: *ZWidget, space: ZBounds, alignment: ZAlign) ZBoun
 
 	switch (self.layout) {
 		.absolute => {
-			self.clamped_bounds.x = (space.x + offsetx) + self.bounds.x;
-			self.clamped_bounds.y = (space.y + offsety) - self.bounds.y;
+			self.clamped_bounds.x = (space.x + offsetx) + bounds.x;
+			self.clamped_bounds.y = (space.y + offsety) - bounds.y;
 		},
 		else => {
 			self.clamped_bounds.x = space.x + offsetx;
@@ -222,10 +270,9 @@ pub fn updateWidgetSelf(self: *ZWidget, space: ZBounds, alignment: ZAlign) ZBoun
 		}
 	}
 
-	self.clamped_bounds.w -= (self.margin.left + self.margin.right);
-	self.clamped_bounds.h -= (self.margin.top + self.margin.bottom);
-	self.clamped_bounds.x += self.margin.left;
-	self.clamped_bounds.y += self.margin.top;
-
-	return self.clamped_bounds;
+	const margin = self.margin.asPixel(space, self.window.?);
+	self.clamped_bounds.w -= (margin.left + margin.right);
+	self.clamped_bounds.h -= (margin.top + margin.bottom);
+	self.clamped_bounds.x += margin.left;
+	self.clamped_bounds.y += margin.top;
 }

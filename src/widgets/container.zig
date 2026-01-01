@@ -8,9 +8,7 @@ const types = root.types;
 
 pub fn zContainer() *ZContainerBuilder {
 	return ZContainerBuilder.init() catch |e| {
-		std.log.err("{}", .{e});
-		std.process.exit(1);
-		unreachable;
+		std.debug.panic("{}", .{e});
 	};
 }
 
@@ -139,17 +137,23 @@ pub const ZContainerBuilder = struct {
 		return final;
 	}
 
-	pub fn bounds(self: *@This(), x: f32, y: f32, w: f32, h: f32) *@This() {
-		self.widget.bounds = .{
-			.x = x,
-			.y = y,
+	pub fn size(self: *@This(), w: root.types.ZUnit, h: root.types.ZUnit) *@This() {
+		self.widget.size = .{
 			.w = w,
 			.h = h
 		};
 		return self;
 	}
 
-	pub fn margin(self: *@This(), top: f32, bottom: f32, left: f32, right: f32) *@This() {
+	pub fn position(self: *@This(), x: root.types.ZUnit, y: root.types.ZUnit) *@This() {
+		self.widget.position = .{
+			.x = x,
+			.y = y,
+		};
+		return self;
+	}
+
+	pub fn margin(self: *@This(), top: root.types.ZUnit, bottom: root.types.ZUnit, left: root.types.ZUnit, right: root.types.ZUnit) *@This() {
 		self.widget.margin = .{
 			.top = top,
 			.bottom = bottom,

@@ -21,36 +21,43 @@ pub fn main() anyerror!void {
 	.children(.{
 		widgets.container()
 		.layout(.fill)
-		.bounds(0, 0, 20, 500)
-		.margin(10, 10, 10, 10)
+		.size(.{.dp = 20}, .{.dp = 500})
+		.margin(.{.dp = 10}, .{.dp = 10}, .{.dp = 10}, .{.dp = 10})
 		.color(colors.rgb(0, 1.0, 0.5))
 		.build(),
 		widgets.container()
-		.bounds(50, -50, 50, 50)
+		.position(.{.dp = 50}, .{.dp = -50})
+		.size(.{.dp = 50}, .{.dp = 50})
 		.color(colors.RED)
 		.layout(.absolute)
 		.build(),
 		widgets.container()
-		.bounds(0, 0, 20, 500)
+		.size(.{.dp = 20}, .{.dp = 500})
 		.color(colors.WHITE)
 		.build(),
 		widgets.list()
 		.direction(.vertical)
 		.layout(.fill)
-		.margin(1, 1, 1, 1)
+		.margin(.{.dp = 1}, .{.dp = 1}, .{.dp = 1}, .{.dp = 1})
 		.spacing(1)
 		.children(.{
-			widgets.container()
-			.layout(.fill)
-			.eventCallback(containerClick)
-			.build(),
-			widgets.container()
-			.layout(.fill)
-			.build(),
 			widgets.icon()
 			.layout(.fill)
 			.icon("icon.svg")
-			.build()
+			.build(),
+			widgets.container()
+			.size(.{.dp = 50}, .{.dp = 30})
+			.eventCallback(containerClick)
+			.build(),
+			widgets.container()
+			.size(.{.pixel = 50}, .{.dp = 30})
+			.build(),
+			widgets.container()
+			.size(.{.mm = 50}, .{.dp = 30})
+			.build(),
+			widgets.container()
+			.size(.{.percentage = 0.5}, .{.dp = 30})
+			.build(),
 		})
 		.build()
 	})
@@ -58,12 +65,12 @@ pub fn main() anyerror!void {
 
 	const root =
 	widgets.container()
-	.bounds(0, 0, 400, 225)
+	.size(.{.dp = 1200}, .{.dp = 600})
 	.color(colors.WHITE)
 	.child(
 		widgets.container()
 		.layout(.fill)
-		.margin(5, 5, 5, 5)
+		.margin(.{.dp = 5}, .{.dp = 5}, .{.dp = 5}, .{.dp = 5})
 		.color(colors.GREY)
 		.child(list)
 		.build()

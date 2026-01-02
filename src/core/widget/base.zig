@@ -76,6 +76,12 @@ pub const ZWidget = struct {
 		}
 	}
 
+	pub fn markDirtyRender(self: *@This()) void {
+		if (self.window) |window| {
+			window.flags.render_dirty = true;
+		}
+	}
+
 	// ---
 
 	pub fn setPosition(self: *@This(), new: ZPosition) void {

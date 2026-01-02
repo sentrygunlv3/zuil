@@ -126,7 +126,7 @@ fn containerClick(self: *zuil.zwidget.ZWidget, event: zuil.input.ZEvent) anyerro
 				} else {
 					data.color = colors.BLUE;
 				}
-				self.markDirty();
+				self.markDirtyRender();
 			}
 		},
 		else => {}

@@ -66,7 +66,7 @@ pub fn runLoop() !void {
 				break;
 			}
 		}
-		glfw.pollEvents();
+		glfw.waitEventsTimeout(0.016);
 	}
 }
 

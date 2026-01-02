@@ -2,7 +2,7 @@ const std = @import("std");
 const print = std.debug.print;
 
 const zuil = @import("zuil");
-const colors = zuil.color;
+const colors = zuil.core.color;
 
 const widgets = zuil.widgets;
 

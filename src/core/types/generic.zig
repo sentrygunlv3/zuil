@@ -1,4 +1,4 @@
-const root = @import("../../root.zig");
+const root = @import("../root.zig");
 
 /// fill:
 /// fills available space inside parent bounds

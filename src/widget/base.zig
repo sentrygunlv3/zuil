@@ -16,7 +16,7 @@ const ZLayout = root.types.ZLayout;
 /// 
 /// `type_name` has to have the name of the struct stored in `data`
 pub const ZWidget = struct {
-	type_name: type = "ZWidget",
+	type_name: []const u8 = "ZWidget",
 	mutable_fi: ZWidgetMutableFI = .{},
 	fi: *const ZWidgetFI,
 	flags: packed struct {

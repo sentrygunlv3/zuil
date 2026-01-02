@@ -1,5 +1,6 @@
 const std = @import("std");
-const root = @import("../root.zig");
+const root = @import("../../root.zig");
+const BuilderMixin = @import("../builder.zig").BuilderMixin;
 
 const widget = root.zwidget;
 const ZColor = root.color.ZColor;
@@ -131,6 +132,8 @@ fn renderZIcon(w: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
 }
 
 pub const ZIconBuilder = struct {
+	/// common functions
+	c: BuilderMixin(@This()) = .{},
 	widget: *widget.ZWidget,
 
 	pub fn init() anyerror!*@This() {
@@ -145,47 +148,6 @@ pub const ZIconBuilder = struct {
 		const final = self.widget;
 		root.allocator.destroy(self);
 		return final;
-	}
-
-	pub fn size(self: *@This(), w: root.types.ZUnit, h: root.types.ZUnit) *@This() {
-		self.widget.size = .{
-			.w = w,
-			.h = h
-		};
-		return self;
-	}
-
-	pub fn position(self: *@This(), x: root.types.ZUnit, y: root.types.ZUnit) *@This() {
-		self.widget.position = .{
-			.x = x,
-			.y = y,
-		};
-		return self;
-	}
-
-	pub fn margin(self: *@This(), top: root.types.ZUnit, bottom: root.types.ZUnit, left: root.types.ZUnit, right: root.types.ZUnit) *@This() {
-		self.widget.margin = .{
-			.top = top,
-			.bottom = bottom,
-			.left = left,
-			.right = right
-		};
-		return self;
-	}
-
-	pub fn content_align(self: *@This(), a: types.ZAlign) *@This() {
-		self.widget.content_alignment = a;
-		return self;
-	}
-
-	pub fn layout(self: *@This(), l: types.ZLayout) *@This() {
-		self.widget.layout = l;
-		return self;
-	}
-
-	pub fn eventCallback(self: *@This(), event: *const fn (self: *widget.ZWidget, event: root.input.ZEvent) anyerror!void) *@This() {
-		self.widget.mutable_fi.event = event;
-		return self;
 	}
 
 	pub fn icon(self: *@This(), i: []const u8) *@This() {

@@ -1,5 +1,5 @@
 const std = @import("std");
-const root = @import("root.zig");
+const root = @import("../root.zig");
 
 const types = root.types;
 const ZBounds = root.types.ZBounds;
@@ -9,8 +9,14 @@ const ZMargin = root.types.ZMargin;
 const ZAlign = root.types.ZAlign;
 const ZLayout = root.types.ZLayout;
 
+/// base widget struct
+/// 
+/// when creating a widget setting `fi` is used to choose the type\
+/// `mutable_fi` is for functions that can be changed after creation and are not directly linked to the type
+/// 
+/// `type_name` has to have the name of the struct stored in `data`
 pub const ZWidget = struct {
-	type_name: []const u8 = "ZWidget",
+	type_name: type = "ZWidget",
 	mutable_fi: ZWidgetMutableFI = .{},
 	fi: *const ZWidgetFI,
 	flags: packed struct {

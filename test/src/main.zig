@@ -17,46 +17,46 @@ pub fn main() anyerror!void {
 
 	const list =
 	widgets.list()
-	.layout(.fill)
+	.c.layout(.fill)
 	.children(.{
 		widgets.container()
-		.layout(.fill)
-		.size(.{.dp = 20}, .{.dp = 500})
-		.margin(.{.dp = 10}, .{.dp = 10}, .{.dp = 10}, .{.dp = 10})
+		.c.layout(.fill)
+		.c.size(.{.dp = 20}, .{.dp = 500})
+		.c.margin(.{.dp = 10}, .{.dp = 10}, .{.dp = 10}, .{.dp = 10})
 		.color(colors.rgb(0, 1.0, 0.5))
 		.build(),
 		widgets.container()
-		.position(.{.dp = 50}, .{.dp = -50})
-		.size(.{.dp = 50}, .{.dp = 50})
+		.c.position(.{.dp = 50}, .{.dp = -50})
+		.c.size(.{.dp = 50}, .{.dp = 50})
 		.color(colors.RED)
-		.layout(.absolute)
+		.c.layout(.absolute)
 		.build(),
 		widgets.container()
-		.size(.{.dp = 20}, .{.dp = 500})
+		.c.size(.{.dp = 20}, .{.dp = 500})
 		.color(colors.WHITE)
 		.build(),
 		widgets.list()
 		.direction(.vertical)
-		.layout(.fill)
-		.margin(.{.dp = 1}, .{.dp = 1}, .{.dp = 1}, .{.dp = 1})
+		.c.layout(.fill)
+		.c.margin(.{.dp = 1}, .{.dp = 1}, .{.dp = 1}, .{.dp = 1})
 		.spacing(1)
 		.children(.{
 			widgets.icon()
-			.layout(.fill)
+			.c.layout(.fill)
 			.icon("icon.svg")
 			.build(),
 			widgets.container()
-			.size(.{.dp = 50}, .{.dp = 30})
-			.eventCallback(containerClick)
+			.c.size(.{.dp = 50}, .{.dp = 30})
+			.c.eventCallback(containerClick)
 			.build(),
 			widgets.container()
-			.size(.{.pixel = 50}, .{.dp = 30})
+			.c.size(.{.pixel = 50}, .{.dp = 30})
 			.build(),
 			widgets.container()
-			.size(.{.mm = 50}, .{.dp = 30})
+			.c.size(.{.mm = 50}, .{.dp = 30})
 			.build(),
 			widgets.container()
-			.size(.{.percentage = 0.5}, .{.dp = 30})
+			.c.size(.{.percentage = 0.5}, .{.dp = 30})
 			.build(),
 		})
 		.build()
@@ -65,12 +65,12 @@ pub fn main() anyerror!void {
 
 	const root =
 	widgets.container()
-	.size(.{.dp = 1200}, .{.percentage = 1})
+	.c.size(.{.dp = 1200}, .{.percentage = 1})
 	.color(colors.WHITE)
 	.child(
 		widgets.container()
-		.layout(.fill)
-		.margin(.{.dp = 5}, .{.dp = 5}, .{.dp = 5}, .{.dp = 5})
+		.c.layout(.fill)
+		.c.margin(.{.dp = 5}, .{.dp = 5}, .{.dp = 5}, .{.dp = 5})
 		.color(colors.GREY)
 		.child(list)
 		.build()

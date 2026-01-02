@@ -50,13 +50,14 @@ the `include` directory has headers for `plutosvg`/`plutovg` instead of using th
 widgets are created using builder functions (the functions will probably change in the future)
 
 ```zig
+// .c for common builder functions
 widgets.container()
-.size(.{.dp = 1200}, .{.percentage = 1})
+.c.size(.{.dp = 1200}, .{.percentage = 1})
 .color(colors.WHITE)
 .child(
 	widgets.container()
-	.layout(.fill)
-	.margin(.{.dp = 5}, .{.dp = 5}, .{.dp = 5}, .{.dp = 5})
+	.c.layout(.fill)
+	.c.margin(.{.dp = 5}, .{.dp = 5}, .{.dp = 5}, .{.dp = 5})
 	.color(colors.rgb(0, 1.0, 0.5))
 	.build()
 )

@@ -1,6 +1,6 @@
 const std = @import("std");
-const root = @import("../../root.zig");
-const BuilderMixin = @import("../builder.zig").BuilderMixin;
+const root = @import("../root.zig");
+const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
 
 const widget = root.zwidget;
 const ZColor = root.color.ZColor;

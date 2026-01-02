@@ -1,14 +1,11 @@
 const std = @import("std");
-const root = @import("../root.zig");
+const root = @import("../../root.zig");
 const gl = root.gl;
 
 var shaders: std.StringHashMap(u32) = undefined;
 
 pub fn init(allocator: std.mem.Allocator) void {
 	shaders = std.StringHashMap(u32).init(allocator);
-
-	@import("shaders/container.zig").register();
-	@import("shaders/bitmap.zig").register();
 }
 
 pub fn deinit() void {

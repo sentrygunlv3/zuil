@@ -8,19 +8,21 @@ pub const c = @cImport({
 
 pub const gl = opengl.bindings;
 
-pub const color = @import("types/color.zig");
-pub const input = @import("types/input.zig");
-pub const types = @import("types/generic.zig");
-pub const zwidget = @import("widget/base.zig");
-pub const widgets = @import("widget/widgets.zig");
-pub const assets = @import("assets/asset_registry.zig");
-pub const shader = @import("rendering/shader_registry.zig");
-pub const svg = @import("assets/helpers/svg.zig");
+pub const widgets = @import("widgets.zig");
+pub const shaders = @import("shaders.zig");
 
-pub const ZWindow = @import("window.zig").ZWindow;
-pub const ZError = @import("types/error.zig").ZError;
-pub const ZBitmap = @import("types/bitmap.zig").ZBitmap;
-pub const ZAsset = @import("types/asset.zig").ZAsset;
+pub const color = @import("core/types/color.zig");
+pub const input = @import("core/types/input.zig");
+pub const types = @import("core/types/generic.zig");
+pub const zwidget = @import("core/widget/base.zig");
+pub const assets = @import("core/assets/asset_registry.zig");
+pub const shader = @import("core/rendering/shader_registry.zig");
+pub const svg = @import("core/assets/helpers/svg.zig");
+
+pub const ZWindow = @import("core/window.zig").ZWindow;
+pub const ZError = @import("core/types/error.zig").ZError;
+pub const ZBitmap = @import("core/types/bitmap.zig").ZBitmap;
+pub const ZAsset = @import("core/types/asset.zig").ZAsset;
 
 pub var allocator: std.mem.Allocator = undefined;
 pub var windows: std.AutoHashMap(*glfw.Window, *ZWindow) = undefined;
@@ -33,6 +35,7 @@ pub fn init(a: std.mem.Allocator) !void {
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();
 
+	shader.init(allocator);
 	assets.init();
 
 	windows = std.AutoHashMap(*glfw.Window, *ZWindow).init(allocator);
@@ -50,7 +53,7 @@ pub fn run() !void {
 		return ZError.NoWindowsCreated;
 	}
 	try opengl.loadCoreProfile(glfw.getProcAddress, 4, 0);
-	shader.init(allocator);
+	shaders.registerAll();
 
 	var running = true;
 	while (running) {

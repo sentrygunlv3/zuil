@@ -1,5 +1,5 @@
 const std = @import("std");
-const root = @import("../root.zig");
+const root = @import("../../root.zig");
 
 const types = root.types;
 const ZBounds = root.types.ZBounds;

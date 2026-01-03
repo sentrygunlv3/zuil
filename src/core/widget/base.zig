@@ -131,7 +131,7 @@ pub const ZWidget = struct {
 	}
 
 	pub fn render(self: *@This(), window: *root.ZWindow) anyerror!void {
-		std.debug.print("\n{*}\n", .{self});
+		std.debug.print("\n{*} - {s}\n", .{self, self.type_name});
 		std.debug.print("bounds: {}\n", .{self.clamped_bounds});
 		if (self.fi.render) |func| {
 			try func(self, window);

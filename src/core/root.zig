@@ -14,6 +14,7 @@ pub const types = @import("types/generic.zig");
 pub const zwidget = @import("widget/base.zig");
 pub const assets = @import("assets/asset_registry.zig");
 pub const shader = @import("rendering/shader_registry.zig");
+pub const renderer = @import("rendering/renderer.zig");
 pub const svg = @import("assets/helpers/svg.zig");
 
 pub const ZWindow = @import("window.zig").ZWindow;
@@ -40,6 +41,7 @@ pub fn init(a: std.mem.Allocator) !void {
 
 pub fn deinit() void {
 	shader.deinit();
+	renderer.deinit();
 	glfw.terminate();
 	assets.deinit();
 	windows.deinit();
@@ -50,6 +52,7 @@ pub fn runInit() !void {
 		return ZError.NoWindowsCreated;
 	}
 	try opengl.loadCoreProfile(glfw.getProcAddress, 4, 0);
+	renderer.init();
 }
 
 pub fn runLoop() !void {

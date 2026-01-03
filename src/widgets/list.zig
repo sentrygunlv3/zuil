@@ -7,11 +7,11 @@ const ZColor = root.color.ZColor;
 const shader = root.shader;
 const types = root.types;
 
-pub fn zList() *ZListBuilder {
-	return ZListBuilder.init() catch |e| {
-		std.debug.panic("{}", .{e});
-	};
-}
+pub const ZList = struct {
+	direction: types.ZDirection = types.ZDirection.default(),
+	spacing: f32 = 0,
+	children: std.ArrayList(*widget.ZWidget) = undefined,
+};
 
 pub const ZListFI = widget.ZWidgetFI{
 	.init = initZList,
@@ -103,6 +103,12 @@ fn getChildrenZList(self: *widget.ZWidget) []*widget.ZWidget {
 	return &[0]*widget.ZWidget{};
 }
 
+pub fn zList() *ZListBuilder {
+	return ZListBuilder.init() catch |e| {
+		std.debug.panic("{}", .{e});
+	};
+}
+
 pub const ZListBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
@@ -156,10 +162,4 @@ pub const ZListBuilder = struct {
 		}
 		return self;
 	}
-};
-
-pub const ZList = struct {
-	direction: types.ZDirection = types.ZDirection.default(),
-	spacing: f32 = 0,
-	children: std.ArrayList(*widget.ZWidget) = undefined,
 };

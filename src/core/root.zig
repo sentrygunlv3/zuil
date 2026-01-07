@@ -44,6 +44,7 @@ pub fn deinit() void {
 	renderer.deinit();
 	glfw.terminate();
 	assets.deinit();
+
 	windows.deinit();
 }
 

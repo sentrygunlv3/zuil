@@ -1,0 +1,109 @@
+some old logic for reference when more advanced layout widgets are added
+
+/// dirty forces all widgets from this point on to recalculate their layouts
+pub fn updateWidget(self: *ZWidget, dirty: bool) anyerror!void {
+	const children = self.getChildren() catch {
+		return;
+	};
+
+	for (children) |child| {
+		if (dirty or child.flags.layout_dirty) {
+			_ = try child.updateSize(self.clamped_bounds.w, self.clamped_bounds.h, self.content_alignment);
+			child.clamped_bounds.x += self.clamped_bounds.x;
+			child.clamped_bounds.y += self.clamped_bounds.y;
+			_ = try child.update(true);
+		} else {
+			_ = try child.update(false);
+		}
+	}
+}
+
+pub fn updateSizeWidget(self: *ZWidget, w: f32, h: f32, alignment: ZAlign) anyerror!void {
+	const space: ZBounds = .{
+		.w = w,
+		.h = h,
+	};
+
+	if (self.window == null) {
+		std.debug.print("updateSizeWidget: no window\n", .{});
+		return;
+	}
+
+	const size_bounds = self.size.asBounds(space, self.window.?);
+	const pos_bounds = self.position.asBounds(space, self.window.?);
+	const bounds: ZBounds = .{
+		.w = size_bounds.w,
+		.h = size_bounds.h,
+		.x = pos_bounds.x,
+		.y = pos_bounds.y,
+	};
+	switch (self.layout) {
+		.absolute => {
+			self.clamped_bounds = bounds;
+		},
+		.fill => {
+			self.clamped_bounds = space;
+		},
+		.normal => {
+			self.clamped_bounds = bounds;
+			if (bounds.h > space.h) {
+				self.clamped_bounds.h = space.h;
+			}
+			if (bounds.w > space.w) {
+				self.clamped_bounds.w = space.w;
+			}
+		},
+	}
+
+	var offsetx: f32 = 0;
+	var offsety: f32 = 0;
+
+	switch (alignment) {
+		.topLeft => {},
+		.top => {
+			offsetx = (space.w - self.clamped_bounds.w) * 0.5;
+		},
+		.topRight => {
+			offsetx = space.w - self.clamped_bounds.w;
+		},
+		.left => {
+			offsety = (space.h - self.clamped_bounds.h) * 0.5;
+		},
+		.center => {
+			offsetx = (space.w - self.clamped_bounds.w) * 0.5;
+			offsety = (space.h - self.clamped_bounds.h) * 0.5;
+		},
+		.right => {
+			offsetx = space.w - self.clamped_bounds.w;
+			offsety = (space.h - self.clamped_bounds.h) * 0.5;
+		},
+		.bottomLeft => {
+			offsety = space.h - self.clamped_bounds.h;
+		},
+		.bottom => {
+			offsetx = (space.w - self.clamped_bounds.w) * 0.5;
+			offsety = space.h - self.clamped_bounds.h;
+		},
+		.bottomRight => {
+			offsetx = space.w - self.clamped_bounds.w;
+			offsety = space.h - self.clamped_bounds.h;
+		},
+	}
+
+	switch (self.layout) {
+		.absolute => {
+			self.clamped_bounds.x = (space.x + offsetx) + bounds.x;
+			self.clamped_bounds.y = (space.y + offsety) - bounds.y;
+		},
+		else => {
+			self.clamped_bounds.x = space.x + offsetx;
+			self.clamped_bounds.y = space.y + offsety;
+		}
+	}
+
+	const margin = self.margin.asPixel(space, self.window.?);
+	self.clamped_bounds.w -= (margin.left + margin.right);
+	self.clamped_bounds.h -= (margin.top + margin.bottom);
+	self.clamped_bounds.x += margin.left;
+	self.clamped_bounds.y += margin.top;
+}

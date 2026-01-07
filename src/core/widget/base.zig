@@ -7,7 +7,6 @@ const ZPosition = root.types.ZPosition;
 const ZSize = root.types.ZSize;
 const ZMargin = root.types.ZMargin;
 const ZAlign = root.types.ZAlign;
-const ZLayout = root.types.ZLayout;
 
 /// base widget struct
 /// 
@@ -30,11 +29,9 @@ pub const ZWidget = struct {
 	// calculated
 	clamped_bounds: ZBounds = .zero(),
 	// layout
-	position: ZPosition = .zero(),
 	size: ZSize = .zero(),
-	margin: ZMargin = .zero(),
-	content_alignment: ZAlign = .default(),
-	layout: ZLayout = .default(),
+	size_min: ZSize = .zero(),
+	size_max: ZSize = .fill(),
 
 	pub fn init(fi: *const ZWidgetFI) anyerror!*@This() {
 		const self = try root.allocator.create(@This());
@@ -99,13 +96,8 @@ pub const ZWidget = struct {
 		self.markDirty();
 	}
 
-	pub fn setContentAlignment(self: *@This(), new: ZAlign) void {
-		self.content_alignment = new;
-		self.markDirty();
-	}
-
-	pub fn setLayout(self: *@This(), new: ZLayout) void {
-		self.layout = new;
+	pub fn setAlignment(self: *@This(), new: ZAlign) void {
+		self.alignment = new;
 		self.markDirty();
 	}
 
@@ -138,15 +130,20 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn updateSize(self: *@This(), x: f32, y: f32, alignment: ZAlign) anyerror!void {
-		std.debug.print("\n{*}\n", .{self});
-		if (self.fi.updateSize) |func| {
-			try func(self, x, y, alignment);
+	pub fn updatePreferredSize(self: *@This(), dirty: bool, x: f32, y: f32) anyerror!void {
+		if (self.fi.updatePreferredSize) |func| {
+			try func(self, dirty, x, y);
 		}
 	}
 
-	pub fn update(self: *@This(), dirty: bool) anyerror!void {
-		if (self.fi.update) |func| {
+	pub fn updateActualSize(self: *@This(), dirty: bool, x: f32, y: f32) anyerror!void {
+		if (self.fi.updateActualSize) |func| {
+			try func(self, dirty, x, y);
+		}
+	}
+
+	pub fn updatePosition(self: *@This(), dirty: bool) anyerror!void {
+		if (self.fi.updatePosition) |func| {
 			try func(self, dirty);
 		}
 		self.flags.layout_dirty = false;
@@ -178,8 +175,12 @@ pub const ZWidgetFI = struct {
 	init: ?*const fn (self: *ZWidget) anyerror!void = null,
 	deinit: ?*const fn (self: *ZWidget) void = null,
 
-	updateSize: ?*const fn (self: *ZWidget, x: f32, y: f32, alignment: ZAlign) anyerror!void = updateSizeWidget,
-	update: ?*const fn (self: *ZWidget, dirty: bool) anyerror!void = updateWidget,
+	/// bottom to top
+	updatePreferredSize: ?*const fn (self: *ZWidget, dirty: bool, x: f32, y: f32) anyerror!void = updatePreferredSize,
+	/// top to bottom
+	updateActualSize: ?*const fn (self: *ZWidget, dirty: bool, x: f32, y: f32) anyerror!void = updateActualSize,
+	/// top to bottom
+	updatePosition: ?*const fn (self: *ZWidget, dirty: bool) anyerror!void = updatePosition,
 
 	render: ?*const fn (self: *ZWidget, window: *root.ZWindow) anyerror!void = renderWidget,
 
@@ -205,7 +206,7 @@ pub fn isOverPointWidget(self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?
 	var ref: ?*ZWidget = null;
 	var outside = true;
 
-	if (!parent_outside or self.layout == ZLayout.absolute) {
+	if (!parent_outside) {
 		if (
 			self.clamped_bounds.x < x and
 			self.clamped_bounds.x + self.clamped_bounds.w > x and
@@ -230,110 +231,100 @@ pub fn isOverPointWidget(self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?
 	return ref;
 }
 
-/// dirty forces all widgets from this point on to recalculate their layouts
-pub fn updateWidget(self: *ZWidget, dirty: bool) anyerror!void {
+pub fn updatePreferredSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!void {
+	if (dirty) {
+		const size_w = if (self.size.w == .percentage) 0 else self.size.w.asPixel(false, .{.w = w, .h = h}, self.window.?);
+		const size_h = if (self.size.h == .percentage) 0 else self.size.h.asPixel(true, .{.w = w, .h = h}, self.window.?);
+
+		self.clamped_bounds = .{
+			.w = size_w,
+			.h = size_h,
+		};
+	} else {
+		const children = self.getChildren() catch {
+			return;
+		};
+		for (children) |child| {
+			try child.updatePreferredSize(
+				dirty or child.flags.layout_dirty,
+				w,
+				h
+			);
+		}
+		return;
+	}
+
+	const children = self.getChildren() catch {
+		return;
+	};
+
+	const size_max_w = if (self.size_max.w == .percentage) 0 else self.size_max.w.asPixel(false, .{.w = w, .h = h}, self.window.?);
+	const size_max_h = if (self.size_max.h == .percentage) 0 else self.size_max.h.asPixel(true, .{.w = w, .h = h}, self.window.?);
+
+	for (children) |child| {
+		try child.updatePreferredSize(
+			dirty or child.flags.layout_dirty,
+			w,
+			h
+		);
+		if (self.clamped_bounds.w < child.clamped_bounds.w) {
+			if (child.clamped_bounds.w > size_max_w) {
+				self.clamped_bounds.w = size_max_w;
+			} else {
+				self.clamped_bounds.w = child.clamped_bounds.w;
+			}
+		}
+
+		if (self.clamped_bounds.h < child.clamped_bounds.h) {
+			if (child.clamped_bounds.h > size_max_h) {
+				self.clamped_bounds.h = size_max_h;
+			} else {
+				self.clamped_bounds.h = child.clamped_bounds.h;
+			}
+		}
+	}
+}
+
+pub fn updateActualSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!void {
+	if (dirty) {
+		const size_max_w = self.size_max.w.asPixel(false, .{.w = w, .h = h}, self.window.?);
+		const size_max_h = self.size_max.h.asPixel(true, .{.w = w, .h = h}, self.window.?);
+
+		if (self.size.w == .percentage) {
+			self.clamped_bounds.w = self.size.w.asPixel(false, .{.w = w, .h = h}, self.window.?);
+		}
+		if (self.size.h == .percentage) {
+			self.clamped_bounds.h = self.size.h.asPixel(true, .{.w = w, .h = h}, self.window.?);
+		}
+
+		if (self.clamped_bounds.w > size_max_w) {
+			self.clamped_bounds.w = size_max_w;
+		}
+		if (self.clamped_bounds.h > size_max_h) {
+			self.clamped_bounds.h = size_max_h;
+		}
+	}
+
 	const children = self.getChildren() catch {
 		return;
 	};
 
 	for (children) |child| {
-		if (dirty or child.flags.layout_dirty) {
-			_ = try child.updateSize(self.clamped_bounds.w, self.clamped_bounds.h, self.content_alignment);
-			child.clamped_bounds.x += self.clamped_bounds.x;
-			child.clamped_bounds.y += self.clamped_bounds.y;
-			_ = try child.update(true);
-		} else {
-			_ = try child.update(false);
-		}
+		try child.updateActualSize(
+			dirty or child.flags.layout_dirty,
+			self.clamped_bounds.w,
+			self.clamped_bounds.h
+		);
 	}
 }
 
-pub fn updateSizeWidget(self: *ZWidget, w: f32, h: f32, alignment: ZAlign) anyerror!void {
-	const space: ZBounds = .{
-		.w = w,
-		.h = h,
-	};
-
-	if (self.window == null) {
-		std.debug.print("updateSizeWidget: no window\n", .{});
+/// dirty forces all widgets from this point on to recalculate their layouts
+pub fn updatePosition(self: *ZWidget, dirty: bool) anyerror!void {
+	const children = self.getChildren() catch {
 		return;
-	}
-
-	const size_bounds = self.size.asBounds(space, self.window.?);
-	const pos_bounds = self.position.asBounds(space, self.window.?);
-	const bounds: ZBounds = .{
-		.w = size_bounds.w,
-		.h = size_bounds.h,
-		.x = pos_bounds.x,
-		.y = pos_bounds.y,
 	};
-	switch (self.layout) {
-		.absolute => {
-			self.clamped_bounds = bounds;
-		},
-		.fill => {
-			self.clamped_bounds = space;
-		},
-		.normal => {
-			self.clamped_bounds = bounds;
-			if (bounds.h > space.h) {
-				self.clamped_bounds.h = space.h;
-			}
-			if (bounds.w > space.w) {
-				self.clamped_bounds.w = space.w;
-			}
-		},
+
+	for (children) |child| {
+		try child.updatePosition(dirty or child.flags.layout_dirty);
 	}
-
-	var offsetx: f32 = 0;
-	var offsety: f32 = 0;
-
-	switch (alignment) {
-		.topLeft => {},
-		.top => {
-			offsetx = (space.w - self.clamped_bounds.w) * 0.5;
-		},
-		.topRight => {
-			offsetx = space.w - self.clamped_bounds.w;
-		},
-		.left => {
-			offsety = (space.h - self.clamped_bounds.h) * 0.5;
-		},
-		.center => {
-			offsetx = (space.w - self.clamped_bounds.w) * 0.5;
-			offsety = (space.h - self.clamped_bounds.h) * 0.5;
-		},
-		.right => {
-			offsetx = space.w - self.clamped_bounds.w;
-			offsety = (space.h - self.clamped_bounds.h) * 0.5;
-		},
-		.bottomLeft => {
-			offsety = space.h - self.clamped_bounds.h;
-		},
-		.bottom => {
-			offsetx = (space.w - self.clamped_bounds.w) * 0.5;
-			offsety = space.h - self.clamped_bounds.h;
-		},
-		.bottomRight => {
-			offsetx = space.w - self.clamped_bounds.w;
-			offsety = space.h - self.clamped_bounds.h;
-		},
-	}
-
-	switch (self.layout) {
-		.absolute => {
-			self.clamped_bounds.x = (space.x + offsetx) + bounds.x;
-			self.clamped_bounds.y = (space.y + offsety) - bounds.y;
-		},
-		else => {
-			self.clamped_bounds.x = space.x + offsetx;
-			self.clamped_bounds.y = space.y + offsety;
-		}
-	}
-
-	const margin = self.margin.asPixel(space, self.window.?);
-	self.clamped_bounds.w -= (margin.left + margin.right);
-	self.clamped_bounds.h -= (margin.top + margin.bottom);
-	self.clamped_bounds.x += margin.left;
-	self.clamped_bounds.y += margin.top;
 }

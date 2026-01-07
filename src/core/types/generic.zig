@@ -1,23 +1,5 @@
 const root = @import("../root.zig");
 
-/// fill:
-/// fills available space inside parent bounds
-/// 
-/// absolute:
-/// ignores parent bounds
-/// 
-/// normal:
-/// only follows parent bounds if available space is smaller than self bounds
-pub const ZLayout = enum {
-	fill,
-	absolute,
-	normal,
-
-	pub fn default() @This() {
-		return .normal;
-	}
-};
-
 pub const ZAlign = enum {
 	topLeft,
 	top,
@@ -130,6 +112,13 @@ pub const ZSize = struct {
 		return .{
 			.w = .zero(),
 			.h = .zero(),
+		};
+	}
+
+	pub fn fill() @This() {
+		return .{
+			.w = .{.percentage = 1},
+			.h = .{.percentage = 1},
 		};
 	}
  

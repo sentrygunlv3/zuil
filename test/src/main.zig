@@ -17,32 +17,27 @@ pub fn main() anyerror!void {
 
 	const list =
 	widgets.list()
-	.c.layout(.fill)
+	.c.size(.{.percentage = 1}, .{.percentage = 1})
 	.children(.{
 		widgets.container()
-		.c.layout(.fill)
 		.c.size(.{.dp = 20}, .{.dp = 500})
-		.c.margin(.{.dp = 10}, .{.dp = 10}, .{.dp = 10}, .{.dp = 10})
 		.color(colors.rgb(0, 1.0, 0.5))
 		.build(),
 		widgets.container()
-		.c.position(.{.dp = 50}, .{.dp = -50})
 		.c.size(.{.dp = 50}, .{.dp = 50})
 		.color(colors.RED)
-		.c.layout(.absolute)
 		.build(),
 		widgets.container()
 		.c.size(.{.dp = 20}, .{.dp = 500})
 		.color(colors.WHITE)
 		.build(),
 		widgets.list()
+		.c.size(.{.percentage = 1}, .{.percentage = 1})
 		.direction(.vertical)
-		.c.layout(.fill)
-		.c.margin(.{.dp = 1}, .{.dp = 1}, .{.dp = 1}, .{.dp = 1})
 		.spacing(1)
 		.children(.{
 			widgets.icon()
-			.c.layout(.fill)
+			.c.size(.{.dp = 200}, .{.dp = 200})
 			.icon("icon.svg")
 			.build(),
 			widgets.container()
@@ -69,8 +64,7 @@ pub fn main() anyerror!void {
 	.color(colors.WHITE)
 	.child(
 		widgets.container()
-		.c.layout(.fill)
-		.c.margin(.{.dp = 5}, .{.dp = 5}, .{.dp = 5}, .{.dp = 5})
+		.c.size(.{.percentage = 0.9}, .{.percentage = 0.9})
 		.color(colors.GREY)
 		.child(list)
 		.build()
@@ -83,7 +77,6 @@ pub fn main() anyerror!void {
 		"hello",
 		root
 	);
-	window.content_alignment = zuil.types.ZAlign.center;
 	window.input_handler = processInput;
 
 	zuil.run() catch |e| {
@@ -100,11 +93,13 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 	}
 	switch (event.key.key) {
 		.space => {
-			if (self.content_alignment != .center) {
-				self.setContentAlignment(.center);
+			if (self.root.size.w == .percentage) {
+				self.root.size.w = .{.dp = 1200};
 			} else {
-				self.setContentAlignment(.left);
+				self.root.size.w = .{.percentage = 1};
 			}
+			self.root.markDirty();
+
 			return false;
 		},
 		else => {}

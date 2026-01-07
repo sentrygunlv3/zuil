@@ -17,10 +17,10 @@ pub const ZListFI = widget.ZWidgetFI{
 	.init = initZList,
 	.deinit = deinitZList,
 	.getChildren = getChildrenZList,
-	.update = updateZList,
+	.updatePosition = updatePositionZList,
 };
 
-fn updateZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
+pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
 	const children = try self.getChildren();
 	const children_len: f32 = @floatFromInt(children.len);
 
@@ -39,7 +39,7 @@ fn updateZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
 
 	if (!child_layout_dirty) {
 		for (children) |child| {
-			_ = try child.update(false);
+			_ = try child.updatePosition(false);
 		}
 		return;
 	}
@@ -50,11 +50,9 @@ fn updateZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
 				new_space.w = (new_space.w - data.spacing * (children_len - 1)) / children_len;
 
 				for (children) |child| {
-					_ = try child.updateSize(new_space.w, new_space.h, self.content_alignment);
-					
 					child.clamped_bounds.x += new_space.x;
 					child.clamped_bounds.y += new_space.y;
-					_ = try child.update(true);
+					_ = try child.updatePosition(true);
 
 					new_space.x += new_space.w + data.spacing;
 				}
@@ -63,11 +61,9 @@ fn updateZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
 				new_space.h = (new_space.h - data.spacing * (children_len - 1)) / children_len;
 
 				for (children) |child| {
-					_ = try child.updateSize(new_space.w, new_space.h, self.content_alignment);
-					
 					child.clamped_bounds.x += new_space.x;
 					child.clamped_bounds.y += new_space.y;
-					_ = try child.update(true);
+					_ = try child.updatePosition(true);
 
 					new_space.y += new_space.h + data.spacing;
 				}

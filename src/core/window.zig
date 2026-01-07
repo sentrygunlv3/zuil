@@ -201,12 +201,9 @@ pub const ZWindow = struct {
 	pub fn layout(self: *@This()) anyerror!void {
 		const space = self.getBounds();
 
-		if (self.root.flags.layout_dirty) {
-			try zwidget.updateSizeWidget(self.root, space.w, space.h, self.content_alignment);
-			try self.root.update(true);
-		} else {
-			try self.root.update(false);
-		}
+		try self.root.updatePreferredSize(if (self.root.flags.layout_dirty) true else false, space.w, space.h);
+		try self.root.updateActualSize(if (self.root.flags.layout_dirty) true else false, space.w, space.h);
+		try self.root.updatePosition(if (self.root.flags.layout_dirty) true else false);
 
 		self.flags.layout_dirty = false;
 	}

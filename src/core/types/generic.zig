@@ -149,6 +149,15 @@ pub const ZMargin = struct {
 		};
 	}
 
+	pub fn new(size: f32) @This() {
+		return .{
+			.top = .{.dp = size},
+			.bottom = .{.dp = size},
+			.left = .{.dp = size},
+			.right = .{.dp = size},
+		};
+	}
+
 	pub fn asPixel(self: *@This(), space: ZBounds, window: *root.ZWindow) struct {
 		top: f32,
 		bottom: f32,

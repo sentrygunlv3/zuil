@@ -20,6 +20,14 @@ pub fn BuilderMixin(comptime T: type) type {
 			return builder;
 		}
 
+		pub fn margin(self: *@This(), new: root.types.ZMargin) *T {
+			const builder: *T = @alignCast(@fieldParentPtr("c", self));
+
+			builder.widget.margin = new;
+			builder.widget.markDirty();
+			return builder;
+		}
+
 		pub fn keepSizeRatio(self: *@This(), state: bool) *T {
 			const builder: *T = @alignCast(@fieldParentPtr("c", self));
 

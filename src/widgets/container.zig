@@ -18,6 +18,7 @@ pub const ZContainerFI = widget.ZWidgetFI{
 	.deinit = deinitZContainer,
 	.render = renderZContainer,
 	.getChildren = getChildrenZContainer,
+	.removeChild = removeChildZContainer,
 };
 
 fn initZContainer(self: *widget.ZWidget) anyerror!void {
@@ -30,7 +31,8 @@ fn initZContainer(self: *widget.ZWidget) anyerror!void {
 fn deinitZContainer(self: *widget.ZWidget) void {
 	if (self.getData(ZContainer)) |data| {
 		if (data.child) |c| {
-			c.destroy();
+			c.exitTreeExceptParent();
+			c.deinit();
 		}
 		root.allocator.destroy(data);
 		self.data = null;
@@ -94,6 +96,15 @@ fn getChildrenZContainer(self: *widget.ZWidget) []*widget.ZWidget {
 		}
 	}
 	return &[0]*widget.ZWidget{};
+}
+
+fn removeChildZContainer(self: *widget.ZWidget, child: *widget.ZWidget) anyerror!void {
+	if (self.getData(ZContainer)) |data| {
+		if (data.child == child) {
+			data.child = null;
+		}
+	}
+	return;
 }
 
 pub fn zContainer() *ZContainerBuilder {

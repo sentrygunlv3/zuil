@@ -34,6 +34,7 @@ pub const ZWidget = struct {
 	size: ZSize = .zero(),
 	size_min: ZSize = .zero(),
 	size_max: ZSize = .fill(),
+	margin: ZMargin = .zero(),
 
 	pub fn init(fi: *const ZWidgetFI) anyerror!*@This() {
 		const self = try root.allocator.create(@This());
@@ -54,12 +55,23 @@ pub const ZWidget = struct {
 		root.allocator.destroy(self);
 	}
 
-	pub fn exitTree(self: *@This()) void {
+	/// removes references from everything in the tree except the parent widget
+	pub fn exitTreeExceptParent(self: *@This()) void {
 		if (self.window) |window| {
 			if (window.focused_widget == self) {
 				window.focused_widget = null;
 			}
-			self.window = null;
+			self.setWindow(null);
+		}
+	}
+
+	pub fn exitTree(self: *@This()) void {
+		self.exitTreeExceptParent();
+		if (self.parent != null) {
+			self.parent.?.removeChild(self) catch |e| {
+				std.debug.print("exit tree: {}\n", .{e});
+			};
+			self.parent = null;
 		}
 	}
 
@@ -104,7 +116,7 @@ pub const ZWidget = struct {
 
 	// ---
 
-	pub fn setWindow(self: *@This(), window: *root.ZWindow) void {
+	pub fn setWindow(self: *@This(), window: ?*root.ZWindow) void {
 		self.window = window;
 		const children = self.getChildren() catch {
 			return;
@@ -134,9 +146,9 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn updatePosition(self: *@This(), dirty: bool) anyerror!void {
+	pub fn updatePosition(self: *@This(), dirty: bool, w: f32, h: f32) anyerror!void {
 		if (self.fi.updatePosition) |func| {
-			try func(self, dirty);
+			try func(self, dirty, w, h);
 		}
 		self.flags.layout_dirty = false;
 	}
@@ -160,6 +172,18 @@ pub const ZWidget = struct {
 		}
 		return root.ZError.MissingWidgetFunction;
 	}
+
+	/// this only removes the child from the parent
+	/// 
+	/// to remove the child from the whole tree call `exitTree` on the child
+	/// 
+	/// to destroy the child call `destroy` on the child
+	pub fn removeChild(self: *@This(), child: *@This()) anyerror!void {
+		if (self.fi.removeChild) |func| {
+			try func(self, child);
+		}
+		return root.ZError.MissingWidgetFunction;
+	}
 };
 
 /// widget function interface for widget classes
@@ -172,12 +196,14 @@ pub const ZWidgetFI = struct {
 	/// top to bottom
 	updateActualSize: ?*const fn (self: *ZWidget, dirty: bool, x: f32, y: f32) anyerror!void = updateActualSize,
 	/// top to bottom
-	updatePosition: ?*const fn (self: *ZWidget, dirty: bool) anyerror!void = updatePosition,
+	updatePosition: ?*const fn (self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!void = updatePosition,
 
 	render: ?*const fn (self: *ZWidget, window: *root.ZWindow) anyerror!void = renderWidget,
 
 	isOverPoint: ?*const fn (self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?*ZWidget = isOverPointWidget,
+
 	getChildren: ?*const fn (self: *ZWidget) []*ZWidget = null,
+	removeChild: ?*const fn (self: *ZWidget, child: *ZWidget) anyerror!void = null,
 };
 
 /// widget function interface for per widget functions
@@ -280,15 +306,18 @@ pub fn updatePreferredSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror
 }
 
 pub fn updateActualSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!void {
+	const margin = self.margin.asPixel(.{.w = w, .h = h}, self.window.?);
+	const width = w - (margin.left + margin.right);
+	const height = h - (margin.top + margin.bottom);
 	if (dirty) {
-		const size_max_w = self.size_max.w.asPixel(false, .{.w = w, .h = h}, self.window.?);
-		const size_max_h = self.size_max.h.asPixel(true, .{.w = w, .h = h}, self.window.?);
+		const size_max_w = self.size_max.w.asPixel(false, .{.w = width, .h = height}, self.window.?);
+		const size_max_h = self.size_max.h.asPixel(true, .{.w = width, .h = height}, self.window.?);
 
 		if (self.size.w == .percentage) {
-			self.clamped_bounds.w = self.size.w.asPixel(false, .{.w = w, .h = h}, self.window.?);
+			self.clamped_bounds.w = self.size.w.asPixel(false, .{.w = width, .h = height}, self.window.?);
 		}
 		if (self.size.h == .percentage) {
-			self.clamped_bounds.h = self.size.h.asPixel(true, .{.w = w, .h = h}, self.window.?);
+			self.clamped_bounds.h = self.size.h.asPixel(true, .{.w = width, .h = height}, self.window.?);
 		}
 
 		if (self.clamped_bounds.w > size_max_w) {
@@ -299,7 +328,7 @@ pub fn updateActualSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!vo
 		}
 
 		if (self.flags.keep_size_ratio) {
-			if (w < h) {
+			if (width < height) {
 				self.clamped_bounds.h = self.clamped_bounds.w / self.size_ratio;
 			} else {
 				self.clamped_bounds.w = self.clamped_bounds.h * self.size_ratio;
@@ -321,12 +350,18 @@ pub fn updateActualSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!vo
 }
 
 /// dirty forces all widgets from this point on to recalculate their layouts
-pub fn updatePosition(self: *ZWidget, dirty: bool) anyerror!void {
+pub fn updatePosition(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!void {
+	const margin = self.margin.asPixel(.{.w = w, .h = h}, self.window.?);
+	self.clamped_bounds.x += margin.left;
+	self.clamped_bounds.y += margin.top;
+
 	const children = self.getChildren() catch {
 		return;
 	};
 
 	for (children) |child| {
-		try child.updatePosition(dirty or child.flags.layout_dirty);
+		child.clamped_bounds.x = self.clamped_bounds.x;
+		child.clamped_bounds.y = self.clamped_bounds.y;
+		try child.updatePosition(dirty or child.flags.layout_dirty, self.clamped_bounds.w, self.clamped_bounds.h);
 	}
 }

@@ -203,7 +203,7 @@ pub const ZWindow = struct {
 
 		try self.root.updatePreferredSize(if (self.root.flags.layout_dirty) true else false, space.w, space.h);
 		try self.root.updateActualSize(if (self.root.flags.layout_dirty) true else false, space.w, space.h);
-		try self.root.updatePosition(if (self.root.flags.layout_dirty) true else false);
+		try self.root.updatePosition(if (self.root.flags.layout_dirty) true else false, space.w, space.h);
 
 		self.flags.layout_dirty = false;
 	}

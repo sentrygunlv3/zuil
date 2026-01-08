@@ -17,6 +17,7 @@ pub const ZListFI = widget.ZWidgetFI{
 	.init = initZList,
 	.deinit = deinitZList,
 	.getChildren = getChildrenZList,
+	.removeChild = removeChildZList,
 	.updateActualSize = updateActualSizeZList,
 	.updatePosition = updatePositionZList,
 };
@@ -98,9 +99,13 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 	}
 }
 
-pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
+pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) anyerror!void {
 	const children = try self.getChildren();
 	const children_len: f32 = @floatFromInt(children.len);
+
+	const margin = self.margin.asPixel(.{.w = w, .h = h}, self.window.?);
+	self.clamped_bounds.x += margin.left;
+	self.clamped_bounds.y += margin.top;
 
 	var new_space = self.clamped_bounds;
 	var child_layout_dirty = true;
@@ -117,7 +122,7 @@ pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
 
 	if (!child_layout_dirty) {
 		for (children) |child| {
-			_ = try child.updatePosition(false);
+			_ = try child.updatePosition(false, self.clamped_bounds.w, self.clamped_bounds.h);
 		}
 		return;
 	}
@@ -130,7 +135,7 @@ pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
 				for (children) |child| {
 					child.clamped_bounds.x += new_space.x;
 					child.clamped_bounds.y += new_space.y;
-					_ = try child.updatePosition(true);
+					_ = try child.updatePosition(true, self.clamped_bounds.w, self.clamped_bounds.h);
 
 					new_space.x += new_space.w + data.spacing;
 				}
@@ -141,7 +146,7 @@ pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
 				for (children) |child| {
 					child.clamped_bounds.x += new_space.x;
 					child.clamped_bounds.y += new_space.y;
-					_ = try child.updatePosition(true);
+					_ = try child.updatePosition(true, self.clamped_bounds.w, self.clamped_bounds.h);
 
 					new_space.y += new_space.h + data.spacing;
 				}
@@ -162,7 +167,8 @@ fn initZList(self: *widget.ZWidget) anyerror!void {
 fn deinitZList(self: *widget.ZWidget) void {
 	if (self.getData(ZList)) |data| {
 		for (data.children.items) |c| {
-			c.destroy();
+			c.exitTreeExceptParent();
+			c.deinit();
 		}
 		data.children.deinit(root.allocator);
 		root.allocator.destroy(data);
@@ -175,6 +181,18 @@ fn getChildrenZList(self: *widget.ZWidget) []*widget.ZWidget {
 		return data.children.items;
 	}
 	return &[0]*widget.ZWidget{};
+}
+
+fn removeChildZList(self: *widget.ZWidget, child: *widget.ZWidget) anyerror!void {
+	if (self.getData(ZList)) |data| {
+		for (data.children.items, 0..) |item, i| {
+			if (item == child) {
+				_ = data.children.orderedRemove(i);
+				break;
+			}
+		}
+	}
+	return;
 }
 
 pub fn zList() *ZListBuilder {

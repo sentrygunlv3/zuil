@@ -65,7 +65,8 @@ pub fn main() anyerror!void {
 	.color(colors.WHITE)
 	.child(
 		widgets.container()
-		.c.size(.{.percentage = 0.9}, .{.percentage = 0.9})
+		.c.size(.fill(), .fill())
+		.c.margin(.new(20))
 		.color(colors.GREY)
 		.child(list)
 		.build()

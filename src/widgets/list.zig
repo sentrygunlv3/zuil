@@ -17,8 +17,86 @@ pub const ZListFI = widget.ZWidgetFI{
 	.init = initZList,
 	.deinit = deinitZList,
 	.getChildren = getChildrenZList,
+	.updateActualSize = updateActualSizeZList,
 	.updatePosition = updatePositionZList,
 };
+
+pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) anyerror!void {
+	if (dirty) {
+		const size_max_w = self.size_max.w.asPixel(false, .{.w = w, .h = h}, self.window.?);
+		const size_max_h = self.size_max.h.asPixel(true, .{.w = w, .h = h}, self.window.?);
+
+		if (self.size.w == .percentage) {
+			self.clamped_bounds.w = self.size.w.asPixel(false, .{.w = w, .h = h}, self.window.?);
+		}
+		if (self.size.h == .percentage) {
+			self.clamped_bounds.h = self.size.h.asPixel(true, .{.w = w, .h = h}, self.window.?);
+		}
+
+		if (self.clamped_bounds.w > size_max_w) {
+			self.clamped_bounds.w = size_max_w;
+		}
+		if (self.clamped_bounds.h > size_max_h) {
+			self.clamped_bounds.h = size_max_h;
+		}
+	}
+
+	const children = self.getChildren() catch {
+		return;
+	};
+	const children_len: f32 = @floatFromInt(children.len);
+
+	var new_space = self.clamped_bounds;
+	var child_layout_dirty = true;
+
+	if (!dirty) {
+		child_layout_dirty = false;
+		for (children) |child| {
+			if (child.flags.layout_dirty) {
+				child_layout_dirty = true;
+				break;
+			}
+		}
+	}
+
+	if (!child_layout_dirty) {
+		for (children) |child| {
+			_ = try child.updateActualSize(
+				dirty or child.flags.layout_dirty,
+				self.clamped_bounds.w,
+				self.clamped_bounds.h
+			);
+		}
+		return;
+	}
+
+	if (self.getData(ZList)) |data| {
+		switch (data.direction) {
+			.horizontal => {
+				new_space.w = (new_space.w - data.spacing * (children_len - 1)) / children_len;
+
+				for (children) |child| {
+					_ = try child.updateActualSize(
+						dirty or child.flags.layout_dirty,
+						new_space.w,
+						new_space.h
+					);
+				}
+			},
+			.vertical => {
+				new_space.h = (new_space.h - data.spacing * (children_len - 1)) / children_len;
+
+				for (children) |child| {
+					_ = try child.updateActualSize(
+						dirty or child.flags.layout_dirty,
+						new_space.w,
+						new_space.h
+					);
+				}
+			},
+		}
+	}
+}
 
 pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool) anyerror!void {
 	const children = try self.getChildren();

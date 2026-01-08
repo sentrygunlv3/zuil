@@ -52,6 +52,10 @@ pub const ZUnit = union(enum) {
 		return .{ .dp = 0 };
 	}
 
+	pub fn fill() @This() {
+		return .{.percentage = 1};
+	}
+
 	/// returns raw value
 	pub fn value(self: *@This()) f32 {
 		return switch (self) {

@@ -20,6 +20,13 @@ pub fn BuilderMixin(comptime T: type) type {
 			return builder;
 		}
 
+		pub fn keepSizeRatio(self: *@This(), state: bool) *T {
+			const builder: *T = @alignCast(@fieldParentPtr("c", self));
+
+			builder.widget.setKeepRatio(state);
+			return builder;
+		}
+
 		pub fn eventCallback(self: *@This(), event: *const fn (self: *root.zwidget.ZWidget, event: root.input.ZEvent) anyerror!void) *T {
 			const builder: *T = @alignCast(@fieldParentPtr("c", self));
 

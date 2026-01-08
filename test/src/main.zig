@@ -17,7 +17,7 @@ pub fn main() anyerror!void {
 
 	const list =
 	widgets.list()
-	.c.size(.{.percentage = 1}, .{.percentage = 1})
+	.c.size(.fill(), .fill())
 	.children(.{
 		widgets.container()
 		.c.size(.{.dp = 20}, .{.dp = 500})
@@ -32,12 +32,13 @@ pub fn main() anyerror!void {
 		.color(colors.WHITE)
 		.build(),
 		widgets.list()
-		.c.size(.{.percentage = 1}, .{.percentage = 1})
+		.c.size(.fill(), .fill())
 		.direction(.vertical)
 		.spacing(1)
 		.children(.{
 			widgets.icon()
 			.c.size(.{.dp = 200}, .{.dp = 200})
+			.c.keepSizeRatio(true)
 			.icon("icon.svg")
 			.build(),
 			widgets.container()
@@ -60,7 +61,7 @@ pub fn main() anyerror!void {
 
 	const root =
 	widgets.container()
-	.c.size(.{.dp = 1200}, .{.percentage = 1})
+	.c.size(.{.dp = 1200}, .fill())
 	.color(colors.WHITE)
 	.child(
 		widgets.container()

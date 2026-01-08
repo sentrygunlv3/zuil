@@ -20,7 +20,8 @@ pub const ZWidget = struct {
 	fi: *const ZWidgetFI,
 	flags: packed struct {
 		layout_dirty: bool = true,
-		_: u7 = 0,
+		keep_size_ratio: bool = false,
+		_: u6 = 0,
 	} = .{},
 	data: ?*anyopaque = null,
 	// tree
@@ -28,6 +29,7 @@ pub const ZWidget = struct {
 	window: ?*root.ZWindow = null,
 	// calculated
 	clamped_bounds: ZBounds = .zero(),
+	size_ratio: f32 = 0,
 	// layout
 	size: ZSize = .zero(),
 	size_min: ZSize = .zero(),
@@ -81,23 +83,13 @@ pub const ZWidget = struct {
 
 	// ---
 
-	pub fn setPosition(self: *@This(), new: ZPosition) void {
-		self.position = new;
-		self.markDirty();
-	}
-
 	pub fn setSize(self: *@This(), new: ZSize) void {
 		self.size = new;
 		self.markDirty();
 	}
 
-	pub fn setMargin(self: *@This(), new: ZMargin) void {
-		self.margin = new;
-		self.markDirty();
-	}
-
-	pub fn setAlignment(self: *@This(), new: ZAlign) void {
-		self.alignment = new;
+	pub fn setKeepRatio(self: *@This(), new: bool) void {
+		self.flags.keep_size_ratio = new;
 		self.markDirty();
 	}
 
@@ -240,6 +232,8 @@ pub fn updatePreferredSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror
 			.w = size_w,
 			.h = size_h,
 		};
+
+		self.size_ratio = size_w / size_h;
 	} else {
 		const children = self.getChildren() catch {
 			return;
@@ -302,6 +296,14 @@ pub fn updateActualSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!vo
 		}
 		if (self.clamped_bounds.h > size_max_h) {
 			self.clamped_bounds.h = size_max_h;
+		}
+
+		if (self.flags.keep_size_ratio) {
+			if (w < h) {
+				self.clamped_bounds.h = self.clamped_bounds.w / self.size_ratio;
+			} else {
+				self.clamped_bounds.w = self.clamped_bounds.h * self.size_ratio;
+			}
 		}
 	}
 

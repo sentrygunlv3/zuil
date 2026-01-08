@@ -55,10 +55,31 @@ widgets.container()
 .c.size(.{.dp = 1200}, .{.percentage = 1})
 .color(colors.WHITE)
 .child(
-	widgets.container()
-	.c.layout(.fill)
-	.c.margin(.{.dp = 5}, .{.dp = 5}, .{.dp = 5}, .{.dp = 5})
-	.color(colors.rgb(0, 1.0, 0.5))
+	widgets.list()
+	.c.size(.fill(), .fill()) // fill is same as .{.percentage = 1}
+	.direction(.vertical)
+	.spacing(1)
+	.children(.{
+		widgets.icon()
+		.c.size(.{.dp = 200}, .{.dp = 200})
+		.c.keepSizeRatio(true)
+		.icon("icon.svg")
+		.build(),
+		widgets.container()
+		.c.size(.{.dp = 50}, .{.dp = 30})
+		.c.eventCallback(containerClick) // fn (*ZWidget, ZEvent) anyerror!void
+		.color(colors.rgb(0, 1.0, 0.5))
+		.build(),
+		widgets.container()
+		.c.size(.{.pixel = 50}, .{.dp = 30})
+		.build(),
+		widgets.container()
+		.c.size(.{.mm = 50}, .{.dp = 30})
+		.build(),
+		widgets.container()
+		.c.size(.{.percentage = 0.5}, .{.dp = 30})
+		.build(),
+	})
 	.build()
 )
 .build();

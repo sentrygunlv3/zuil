@@ -1,8 +1,9 @@
-<div style="display:flex; align-items:center; justify-content:center">
-<img src="./icon.svg" height="64" width="64">
-<p style="font-size:58; margin:0">ZUIL</p>
-</div>
-<hr style="height:1px; margin-top:0">
+<h1 align="center">
+<sub>
+<img src="./icon.svg" height="36" width="36">
+</sub>
+ZUIL
+</h1>
 
 > [!CAUTION]
 > WIP

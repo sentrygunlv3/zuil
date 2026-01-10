@@ -1,9 +1,8 @@
-<h1 align="center">
-<sub>
-<img src="./icon.svg" height="38" width="38">
-</sub>
-ZUIL
-</h1>
+<div style="display:flex; align-items:center; justify-content:center">
+<img src="./icon.svg" height="64" width="64">
+<p style="font-size:58; margin:0">ZUIL</p>
+</div>
+<hr style="height:1px; margin-top:0">
 
 > [!CAUTION]
 > WIP
@@ -28,14 +27,14 @@ the `include` directory has headers for `plutosvg`/`plutovg` instead of using th
 
 > container, list(row/column) and icon widgets
 
-## features
+### features/done
 
 - modular widget system
 - asset and shader registries/managers
-- bitmap rendering
+- icon rendering
 - input system (keyboard and mouse only)
 
-### missing
+### missing features/todo
 
 - text rendering
 - more optimized rendering

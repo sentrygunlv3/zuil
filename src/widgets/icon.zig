@@ -10,6 +10,11 @@ const types = root.types;
 
 pub const ZIcon = struct {
 	icon: []const u8 = "",
+
+	pub fn setIcon(self: *@This(), self_widget: *widget.ZWidget, icon: []const u8) !void {
+		_ = self_widget;
+		self.icon = icon;
+	}
 };
 
 pub const ZIconFI = widget.ZWidgetFI{
@@ -40,34 +45,15 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
 
 	const window_size = window.getBounds();
 
-	var texture: u32 = 0;
-
-	const image = try root.assets.getAsset(icon);
-	const bitmap = try root.svg.svgToBitmap(image, @intFromFloat(self.clamped_bounds.w), @intFromFloat(self.clamped_bounds.h));
-
-	root.gl.genTextures(1, &texture);
-	root.gl.activeTexture(root.gl.TEXTURE0);
-	root.gl.bindTexture(root.gl.TEXTURE_2D, texture);
-	root.gl.texParameteri(root.gl.TEXTURE_2D, root.gl.TEXTURE_MIN_FILTER, root.gl.NEAREST);
-	root.gl.texParameteri(root.gl.TEXTURE_2D, root.gl.TEXTURE_MAG_FILTER, root.gl.NEAREST);
-	root.gl.texImage2D(
-		root.gl.TEXTURE_2D,
-		0,
-		root.gl.RGBA,
-		@intCast(bitmap.w),
-		@intCast(bitmap.h),
-		0,
-		root.gl.BGRA,
-		root.gl.UNSIGNED_BYTE,
-		bitmap.data.ptr
-	);
-	defer root.gl.deleteTextures(1, &texture);
-
 	const sizew = (self.clamped_bounds.w / window_size.w) * 2;
 	const sizeh = (self.clamped_bounds.h / window_size.h) * 2;
 
 	const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
 	const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
+
+	const image = try root.assets.getAsset(icon);
+	var bitmap = try root.svg.svgToBitmap(image, @intFromFloat(self.clamped_bounds.w), @intFromFloat(self.clamped_bounds.h));
+	defer bitmap.deinit();
 
 	try renderer.renderCommand(.{
 		.shader = try shader.getShader("bitmap"),
@@ -88,7 +74,7 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
 			},
 			.{
 				.name = "color",
-				.value = .{.uniform1i = @intCast(texture)}
+				.value = .{.texture = &bitmap}
 			},
 		},
 	});
@@ -121,7 +107,7 @@ pub const ZIconBuilder = struct {
 
 	pub fn icon(self: *@This(), i: []const u8) *@This() {
 		if (self.widget.getData(ZIcon)) |data| {
-			data.icon = i;
+			data.setIcon(self.widget, i) catch {};
 		}
 		return self;
 	}

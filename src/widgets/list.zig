@@ -45,7 +45,6 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 	const children = self.getChildren() catch {
 		return;
 	};
-	const children_len: f32 = @floatFromInt(children.len);
 
 	var new_space = self.clamped_bounds;
 	var child_layout_dirty = true;
@@ -63,7 +62,7 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 	if (!child_layout_dirty) {
 		for (children) |child| {
 			_ = try child.updateActualSize(
-				dirty or child.flags.layout_dirty,
+				false,
 				self.clamped_bounds.w,
 				self.clamped_bounds.h
 			);
@@ -74,25 +73,23 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 	if (self.getData(ZList)) |data| {
 		switch (data.direction) {
 			.horizontal => {
-				new_space.w = (new_space.w - data.spacing * (children_len - 1)) / children_len;
-
 				for (children) |child| {
 					_ = try child.updateActualSize(
 						dirty or child.flags.layout_dirty,
-						new_space.w,
+						if (child.clamped_bounds.w > new_space.w or child.size.w == .percentage) new_space.w else child.clamped_bounds.w,
 						new_space.h
 					);
+					new_space.w -= child.clamped_bounds.w;
 				}
 			},
 			.vertical => {
-				new_space.h = (new_space.h - data.spacing * (children_len - 1)) / children_len;
-
 				for (children) |child| {
 					_ = try child.updateActualSize(
 						dirty or child.flags.layout_dirty,
 						new_space.w,
-						new_space.h
+						if (child.clamped_bounds.h > new_space.h or child.size.h == .percentage) new_space.h else child.clamped_bounds.h
 					);
+					new_space.h -= child.clamped_bounds.h;
 				}
 			},
 		}
@@ -101,7 +98,6 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 
 pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) anyerror!void {
 	const children = try self.getChildren();
-	const children_len: f32 = @floatFromInt(children.len);
 
 	const margin = self.margin.asPixel(.{.w = w, .h = h}, self.window.?);
 	self.clamped_bounds.x += margin.left;
@@ -130,25 +126,23 @@ pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) a
 	if (self.getData(ZList)) |data| {
 		switch (data.direction) {
 			.horizontal => {
-				new_space.w = (new_space.w - data.spacing * (children_len - 1)) / children_len;
-
 				for (children) |child| {
+					const width = child.clamped_bounds.w;
 					child.clamped_bounds.x += new_space.x;
 					child.clamped_bounds.y += new_space.y;
 					_ = try child.updatePosition(true, self.clamped_bounds.w, self.clamped_bounds.h);
 
-					new_space.x += new_space.w + data.spacing;
+					new_space.x += width + data.spacing;
 				}
 			},
 			.vertical => {
-				new_space.h = (new_space.h - data.spacing * (children_len - 1)) / children_len;
-
 				for (children) |child| {
+					const height = child.clamped_bounds.h;
 					child.clamped_bounds.x += new_space.x;
 					child.clamped_bounds.y += new_space.y;
 					_ = try child.updatePosition(true, self.clamped_bounds.w, self.clamped_bounds.h);
 
-					new_space.y += new_space.h + data.spacing;
+					new_space.y += height + data.spacing;
 				}
 			},
 		}

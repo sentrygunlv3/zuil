@@ -32,14 +32,13 @@ the `include` directory has headers for `plutosvg`/`plutovg` instead of using th
 
 - modular widget system
 - asset and shader registries/managers
-- bitmap rendering (currently used by icons only)
-- input system (keyboard and mouse only) (WIP)
+- bitmap rendering
+- input system (keyboard and mouse only)
 
 ### missing
 
 - text rendering
 - more optimized rendering
-- rendering abstraction (currently widgets directly use opengl)
 - and more
 
 ## example

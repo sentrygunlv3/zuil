@@ -4,10 +4,11 @@ pub const ZError = error{
 	// widget
 	MissingWidgetFunction,
 	NoWidgetData,
-	// shader
+	// rendering
 	FailedToCompileShader,
 	FailedToLinkShader,
 	MissingShader,
+	MissingTexture,
 	// assets
 	MissingAsset,
 	WrongAssetType,

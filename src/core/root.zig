@@ -33,7 +33,7 @@ pub fn init(a: std.mem.Allocator) !void {
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();
 
-	shader.init(allocator);
+	shader.init();
 	assets.init();
 
 	windows = std.AutoHashMap(*glfw.Window, *ZWindow).init(allocator);

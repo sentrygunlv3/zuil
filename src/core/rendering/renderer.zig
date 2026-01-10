@@ -39,6 +39,7 @@ pub const ShaderParameter = struct {
 			d: f32,
 		},
 		uniform1i: i32,
+		texture: *root.ZBitmap,
 	}
 };
 
@@ -62,6 +63,8 @@ pub fn deinit() void {
 }
 
 pub fn renderCommand(command: RenderCommand) anyerror!void {
+	var textures = try std.ArrayList(u32).initCapacity(root.allocator, 0);
+
 	gl.useProgram(command.shader);
 
 	gl.bindVertexArray(vertex_arrays);
@@ -102,8 +105,36 @@ pub fn renderCommand(command: RenderCommand) anyerror!void {
 				const loc = gl.getUniformLocation(command.shader, value.name.ptr);
 				gl.uniform1i(loc, value.value.uniform1i);
 			},
+			.texture => {
+				var texture: u32 = 0;
+
+				root.gl.genTextures(1, &texture);
+				root.gl.activeTexture(root.gl.TEXTURE0);
+				root.gl.bindTexture(root.gl.TEXTURE_2D, texture);
+				root.gl.texParameteri(root.gl.TEXTURE_2D, root.gl.TEXTURE_MIN_FILTER, root.gl.NEAREST);
+				root.gl.texParameteri(root.gl.TEXTURE_2D, root.gl.TEXTURE_MAG_FILTER, root.gl.NEAREST);
+				root.gl.texImage2D(
+					root.gl.TEXTURE_2D,
+					0,
+					root.gl.RGBA,
+					@intCast(value.value.texture.w),
+					@intCast(value.value.texture.h),
+					0,
+					root.gl.BGRA,
+					root.gl.UNSIGNED_BYTE,
+					value.value.texture.data.ptr
+				);
+				try textures.append(root.allocator, texture);
+
+				const loc = gl.getUniformLocation(command.shader, value.name.ptr);
+				gl.uniform1i(loc, @intCast(texture));
+			},
 		}
 	}
 
 	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
+
+	for (textures.items) |item| {
+		root.gl.deleteTextures(1, &item);
+	}
 }

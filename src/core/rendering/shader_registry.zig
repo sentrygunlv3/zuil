@@ -4,8 +4,8 @@ const gl = root.gl;
 
 var shaders: std.StringHashMap(u32) = undefined;
 
-pub fn init(allocator: std.mem.Allocator) void {
-	shaders = std.StringHashMap(u32).init(allocator);
+pub fn init() void {
+	shaders = std.StringHashMap(u32).init(root.allocator);
 }
 
 pub fn deinit() void {

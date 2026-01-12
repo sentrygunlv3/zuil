@@ -44,6 +44,7 @@ pub fn main() anyerror!void {
 			widgets.container()
 			.c.size(.{.dp = 50}, .{.dp = 30})
 			.c.eventCallback(containerClick)
+			.color(colors.BLUE)
 			.build(),
 			widgets.container()
 			.c.size(.{.pixel = 50}, .{.dp = 30})

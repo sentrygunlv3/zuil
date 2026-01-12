@@ -41,10 +41,9 @@ the `include` directory has headers for `plutosvg`/`plutovg` instead of using th
 - more optimized rendering
 - and more
 
-## example
+## examples
 
-> test/example project: `test/`\
-> run with `./test.sh`
+### widgets
 
 widgets are created using builder functions (the functions will probably change in the future)
 
@@ -83,6 +82,18 @@ widgets.container()
 )
 .build();
 ```
+
+### example/test project
+
+the test/example project is in the `test` directory\
+build and run with `./test.sh` or build manually
+
+keybinds:
+
+- `space`: change the layout
+- `F1`: spawn a new window
+
+(the blue widget under the icon widget is clickable)
 
 ## technical info
 

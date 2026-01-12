@@ -1,3 +1,5 @@
+const std = @import("std");
+
 pub const core = @import("core/root.zig");
 pub const widgets = @import("widgets.zig");
 pub const shaders = @import("shaders.zig");
@@ -10,11 +12,14 @@ pub const types = core.types;
 
 pub const ZWindow = core.ZWindow;
 
-pub const init = core.init;
+pub fn init(a: std.mem.Allocator) !void {
+	shaders.registerAll();
+	try core.init(a);
+}
+
 pub const deinit = core.deinit;
 
 pub fn run() !void {
 	try core.runInit();
-	shaders.registerAll();
 	try core.runLoop();
 }

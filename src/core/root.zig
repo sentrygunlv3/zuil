@@ -25,6 +25,8 @@ pub const ZAsset = @import("types/asset.zig").ZAsset;
 pub var allocator: std.mem.Allocator = undefined;
 pub var windows: std.AutoHashMap(*glfw.Window, *ZWindow) = undefined;
 
+pub var onWindowCreate: ?*const fn (self: *ZWindow) anyerror!void = null;
+
 pub var modifiers = input.ZModifiers{};
 
 pub fn init(a: std.mem.Allocator) !void {
@@ -33,15 +35,12 @@ pub fn init(a: std.mem.Allocator) !void {
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();
 
-	shader.init();
 	assets.init();
 
 	windows = std.AutoHashMap(*glfw.Window, *ZWindow).init(allocator);
 }
 
 pub fn deinit() void {
-	shader.deinit();
-	renderer.deinit();
 	glfw.terminate();
 	assets.deinit();
 
@@ -52,7 +51,6 @@ pub fn runInit() !void {
 	if (windows.count() == 0) {
 		return ZError.NoWindowsCreated;
 	}
-	renderer.init();
 }
 
 pub fn runLoop() !void {

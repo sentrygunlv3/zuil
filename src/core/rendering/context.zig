@@ -50,14 +50,30 @@ pub const Resource = struct {
 
 pub const RendererContext = struct {
 	resources: std.ArrayList(*Resource) = undefined,
+	shaders: std.StringHashMap(u32) = undefined,
+	vertex_arrays: u32 = 0,
+	buffers: u32 = 0,
+	element_buffer: u32 = 0,
 
 	pub fn init() !@This() {
-		return .{
+		var self = @This(){
 			.resources = try std.ArrayList(*Resource).initCapacity(root.allocator, 16),
+			.shaders = std.StringHashMap(u32).init(root.allocator),
 		};
+
+		root.gl.genVertexArrays(1, &self.vertex_arrays);
+		root.gl.genBuffers(1, &self.buffers);
+		root.gl.genBuffers(1, &self.element_buffer);
+
+		return self;
 	}
 
 	pub fn deinit(self: *@This()) void {
+		root.gl.deleteVertexArrays(1, &self.vertex_arrays);
+		root.gl.deleteBuffers(1, &self.buffers);
+		root.gl.deleteBuffers(1, &self.element_buffer);
+
+		self.shaders.deinit();
 		self.resources.deinit(root.allocator);
 	}
 

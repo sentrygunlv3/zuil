@@ -29,7 +29,6 @@ pub const ZWindow = struct {
 
 		self.* = .{
 			.window = try glfw.Window.create(width, height, title, null),
-			.context = try .init(),
 			.key_events = try std.ArrayList(input.ZEvent).initCapacity(root.allocator, 0),
 			.root = root_widget,
 		};
@@ -38,6 +37,9 @@ pub const ZWindow = struct {
 		std.debug.print("set context\n", .{});
 
 		try root.opengl.loadCoreProfile(glfw.getProcAddress, 4, 0);
+
+		root.gl.enable(root.gl.BLEND);
+		root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
 
 		const arrow_cursor = try glfw.createStandardCursor(.arrow);
 		glfw.setCursor(self.window, arrow_cursor);
@@ -55,6 +57,10 @@ pub const ZWindow = struct {
 				.y = @as(f32, @floatFromInt(mode.height)) / @as(f32, @floatFromInt(size[1])),
 			};
 		}
+
+		self.context = try .init();
+
+		try root.onWindowCreate.?(self);
 
 		self.root.setWindow(self);
 
@@ -138,6 +144,7 @@ pub const ZWindow = struct {
 
 	fn resizeCallback(window: *glfw.Window, w: c_int, h: c_int) callconv(.c) void {
 		root.windows.get(window).?.root.markDirty();
+		glfw.makeContextCurrent(window);
 		root.gl.viewport(0, 0, w, h);
 	}
 
@@ -225,7 +232,7 @@ pub const ZWindow = struct {
 			std.log.err("failed to render window: {}\n", .{e});
 			switch (e) {
 				root.ZError.MissingShader => {
-					root.shader.debugPrintAll();
+					root.shader.debugPrintAll(&self.context);
 				},
 				else => {}
 			}

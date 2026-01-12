@@ -32,8 +32,9 @@ const fragment =
 	\\}
 ;
 
-pub fn register() void {
+pub fn register(c: *shader.context.RendererContext) void {
 	shader.registerShader(
+		c,
 		name,
 		vertex,
 		fragment

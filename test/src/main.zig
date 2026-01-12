@@ -104,6 +104,27 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 
 			return false;
 		},
+		.fn_1 => {
+			_ = zuil.ZWindow.init(
+				400,
+				200,
+				"child window",
+				widgets.container()
+				.c.size(.fill(), .fill())
+				.color(colors.BLACK)
+				.child(
+					widgets.container()
+					.c.size(.fill(), .fill())
+					.c.margin(.new(20))
+					.color(colors.BLUE)
+					.build()
+				)
+				.build()
+			) catch |e| {
+				std.debug.print("{}\n", .{e});
+			};
+			return false;
+		},
 		else => {}
 	}
 	return true;

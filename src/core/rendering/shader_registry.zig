@@ -2,25 +2,17 @@ const std = @import("std");
 const root = @import("../root.zig");
 const gl = root.gl;
 
-var shaders: std.StringHashMap(u32) = undefined;
+pub const context = @import("context.zig");
 
-pub fn init() void {
-	shaders = std.StringHashMap(u32).init(root.allocator);
-}
-
-pub fn deinit() void {
-	shaders.deinit();
-}
-
-pub fn getShader(name: []const u8) !u32 {
-	const shader = shaders.get(name);
+pub fn getShader(c: *context.RendererContext, name: []const u8) !u32 {
+	const shader = c.shaders.get(name);
 	if (shader) |s| {
 		return s;
 	}
 	return root.ZError.MissingShader;
 }
 
-pub fn registerShader(name: []const u8, v: []const u8, f: []const u8) !void {
+pub fn registerShader(c: *context.RendererContext, name: []const u8, v: []const u8, f: []const u8) !void {
 	const vertex = try compileShader(gl.VERTEX_SHADER, v);
 	const fragment = try compileShader(gl.FRAGMENT_SHADER, f);
 	
@@ -38,7 +30,7 @@ pub fn registerShader(name: []const u8, v: []const u8, f: []const u8) !void {
 	gl.deleteShader(vertex);
 	gl.deleteShader(fragment);
 
-	try shaders.put(name, program);
+	try c.shaders.put(name, program);
 }
 
 fn compileShader(shader_type: u32, source: []const u8) !u32 {
@@ -53,8 +45,8 @@ fn compileShader(shader_type: u32, source: []const u8) !u32 {
 	return shader;
 }
 
-pub fn debugPrintAll() void {
-	var iterator = shaders.keyIterator();
+pub fn debugPrintAll(c: *context.RendererContext) void {
+	var iterator = c.shaders.keyIterator();
 	while (iterator.next()) |key| {
 		std.debug.print("{s}\n", .{key.*});
 	}

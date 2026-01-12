@@ -6,22 +6,6 @@ pub const context = @import("context.zig");
 const shader = root.shader;
 const gl = root.gl;
 
-const vertices = [_]f32{
-	// bottom left
-	0, -1, 0, 1,
-	// bottom right
-	1, -1, 1, 1,
-	// top right
-	1, 0, 1, 0,
-	// top left
-	0, 0, 0, 0,
-};
-
-pub const indices = [_]u32{
-	0, 1, 2,
-	0, 2, 3,
-};
-
 pub const RenderCommand = struct {
 	shader: u32,
 	parameters: []const ShaderParameter,
@@ -45,34 +29,31 @@ pub const ShaderParameter = struct {
 	}
 };
 
-var vertex_arrays: u32 = 0;
-var buffers: u32 = 0;
-var element_buffer: u32 = 0;
+const vertices = [_]f32{
+	// bottom left
+	0, -1, 0, 1,
+	// bottom right
+	1, -1, 1, 1,
+	// top right
+	1, 0, 1, 0,
+	// top left
+	0, 0, 0, 0,
+};
 
-pub fn init() void {
-	root.gl.genVertexArrays(1, &vertex_arrays);
-	root.gl.genBuffers(1, &buffers);
-	root.gl.genBuffers(1, &element_buffer);
+pub const indices = [_]u32{
+	0, 1, 2,
+	0, 2, 3,
+};
 
-	root.gl.enable(root.gl.BLEND);
-	root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
-}
-
-pub fn deinit() void {
-	root.gl.deleteVertexArrays(1, &vertex_arrays);
-	root.gl.deleteBuffers(1, &buffers);
-	root.gl.deleteBuffers(1, &element_buffer);
-}
-
-pub fn renderCommand(command: RenderCommand) anyerror!void {
+pub fn renderCommand(c: *context.RendererContext, command: RenderCommand) anyerror!void {
 	gl.useProgram(command.shader);
 
-	gl.bindVertexArray(vertex_arrays);
+	gl.bindVertexArray(c.vertex_arrays);
 
-	gl.bindBuffer(gl.ARRAY_BUFFER, buffers);
+	gl.bindBuffer(gl.ARRAY_BUFFER, c.buffers);
 	gl.bufferData(gl.ARRAY_BUFFER, vertices.len * @sizeOf(f32), &vertices, gl.STATIC_DRAW);
 
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, element_buffer);
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, c.element_buffer);
 	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices.len * @sizeOf(u32), &indices, gl.STATIC_DRAW);
 
 	gl.vertexAttribPointer(0, 2, gl.FLOAT, gl.FALSE, 4 * @sizeOf(f32), null);

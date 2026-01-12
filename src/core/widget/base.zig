@@ -129,8 +129,6 @@ pub const ZWidget = struct {
 		self.window = window;
 		if (window != null) {
 			self.enterTree();
-		} else {
-			self.exitTree();
 		}
 		const children = self.getChildren() catch {
 			return;

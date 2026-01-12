@@ -8,6 +8,7 @@ const types = root.types;
 
 pub const ZWindow = struct {
 	window: *glfw.Window = undefined,
+	context: root.renderer.context.RendererContext = undefined,
 	flags: packed struct {
 		layout_dirty: bool = true,
 		render_dirty: bool = true,
@@ -28,15 +29,18 @@ pub const ZWindow = struct {
 
 		self.* = .{
 			.window = try glfw.Window.create(width, height, title, null),
+			.context = try .init(),
 			.key_events = try std.ArrayList(input.ZEvent).initCapacity(root.allocator, 0),
 			.root = root_widget,
 		};
-		self.root.setWindow(self);
+
+		glfw.makeContextCurrent(self.window);
+		std.debug.print("set context\n", .{});
+
+		try root.opengl.loadCoreProfile(glfw.getProcAddress, 4, 0);
 
 		const arrow_cursor = try glfw.createStandardCursor(.arrow);
 		glfw.setCursor(self.window, arrow_cursor);
-
-		glfw.makeContextCurrent(self.window);
 
 		_ = glfw.setWindowSizeCallback(self.window, resizeCallback);
 		_ = glfw.setKeyCallback(self.window, keyCallback);
@@ -52,6 +56,8 @@ pub const ZWindow = struct {
 			};
 		}
 
+		self.root.setWindow(self);
+
 		try root.windows.put(self.window, self);
 		return self;
 	}
@@ -59,6 +65,7 @@ pub const ZWindow = struct {
 	pub fn deinit(self: *@This()) void {
 		self.root.destroy();
 		_ = root.windows.remove(self.window);
+		self.context.deinit();
 		self.window.destroy();
 		self.key_events.deinit(root.allocator);
 		root.allocator.destroy(self);

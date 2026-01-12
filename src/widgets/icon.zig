@@ -10,6 +10,7 @@ const types = root.types;
 
 pub const ZIcon = struct {
 	icon: []const u8 = "",
+	resource: root.renderer.context.ResourceHandle = undefined,
 
 	pub fn setIcon(self: *@This(), self_widget: *widget.ZWidget, icon: []const u8) !void {
 		_ = self_widget;
@@ -20,6 +21,8 @@ pub const ZIcon = struct {
 pub const ZIconFI = widget.ZWidgetFI{
 	.init = initZIcon,
 	.deinit = deinitZIcon,
+	.enterTree = enterTreeZIcon,
+	.exitTree = exitTreeZIcon,
 	.render = renderZIcon,
 };
 
@@ -37,47 +40,61 @@ fn deinitZIcon(self: *widget.ZWidget) void {
 	}
 }
 
-fn renderZIcon(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
-	var icon: []const u8 = "";
+fn enterTreeZIcon(self: *widget.ZWidget) void {
 	if (self.getData(ZIcon)) |data| {
-		icon = data.icon;
+		const icon = root.assets.getAsset(data.icon) catch {
+			return;
+		};
+		data.resource = self.window.?.context.createTexture(
+			icon,
+			256,
+			256
+		) catch {
+			return;
+		};
 	}
+}
 
-	const window_size = window.getBounds();
+fn exitTreeZIcon(self: *widget.ZWidget) void {
+	if (self.getData(ZIcon)) |data| {
+		data.resource.deinit();
+	}
+}
 
-	const sizew = (self.clamped_bounds.w / window_size.w) * 2;
-	const sizeh = (self.clamped_bounds.h / window_size.h) * 2;
+fn renderZIcon(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
+	if (self.getData(ZIcon)) |data| {
+		const window_size = window.getBounds();
 
-	const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
-	const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
+		const sizew = (self.clamped_bounds.w / window_size.w) * 2;
+		const sizeh = (self.clamped_bounds.h / window_size.h) * 2;
 
-	const image = try root.assets.getAsset(icon);
-	var bitmap = try root.svg.svgToBitmap(image, @intFromFloat(self.clamped_bounds.w), @intFromFloat(self.clamped_bounds.h));
-	defer bitmap.deinit();
+		const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
+		const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
 
-	try renderer.renderCommand(.{
-		.shader = try shader.getShader("bitmap"),
-		.parameters = &[_]renderer.ShaderParameter{
-			.{
-				.name = "pos",
-				.value = .{.uniform2f = .{
-					.a = posx,
-					.b = posy,
-				}}
+		try renderer.renderCommand(.{
+			.shader = try shader.getShader("bitmap"),
+			.parameters = &[_]renderer.ShaderParameter{
+				.{
+					.name = "pos",
+					.value = .{.uniform2f = .{
+						.a = posx,
+						.b = posy,
+					}}
+				},
+				.{
+					.name = "size",
+					.value = .{.uniform2f = .{
+						.a = sizew,
+						.b = sizeh,
+					}}
+				},
+				.{
+					.name = "color",
+					.value = .{.texture = &data.resource}
+				},
 			},
-			.{
-				.name = "size",
-				.value = .{.uniform2f = .{
-					.a = sizew,
-					.b = sizeh,
-				}}
-			},
-			.{
-				.name = "color",
-				.value = .{.texture = &bitmap}
-			},
-		},
-	});
+		});
+	}
 }
 
 pub fn zIcon() *ZIconBuilder {

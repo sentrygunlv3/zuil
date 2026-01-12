@@ -52,7 +52,6 @@ pub fn runInit() !void {
 	if (windows.count() == 0) {
 		return ZError.NoWindowsCreated;
 	}
-	try opengl.loadCoreProfile(glfw.getProcAddress, 4, 0);
 	renderer.init();
 }
 

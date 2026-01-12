@@ -55,8 +55,17 @@ pub const ZWidget = struct {
 		root.allocator.destroy(self);
 	}
 
+	pub fn enterTree(self: *@This()) void {
+		if (self.fi.enterTree) |func| {
+			func(self);
+		}
+	}
+
 	/// removes references from everything in the tree except the parent widget
 	pub fn exitTreeExceptParent(self: *@This()) void {
+		if (self.fi.exitTree) |func| {
+			func(self);
+		}
 		if (self.window) |window| {
 			if (window.focused_widget == self) {
 				window.focused_widget = null;
@@ -118,6 +127,11 @@ pub const ZWidget = struct {
 
 	pub fn setWindow(self: *@This(), window: ?*root.ZWindow) void {
 		self.window = window;
+		if (window != null) {
+			self.enterTree();
+		} else {
+			self.exitTree();
+		}
 		const children = self.getChildren() catch {
 			return;
 		};
@@ -190,6 +204,9 @@ pub const ZWidget = struct {
 pub const ZWidgetFI = struct {
 	init: ?*const fn (self: *ZWidget) anyerror!void = null,
 	deinit: ?*const fn (self: *ZWidget) void = null,
+
+	enterTree: ?*const fn (self: *ZWidget) void = null,
+	exitTree: ?*const fn (self: *ZWidget) void = null,
 
 	/// bottom to top
 	updatePreferredSize: ?*const fn (self: *ZWidget, dirty: bool, x: f32, y: f32) anyerror!void = updatePreferredSize,

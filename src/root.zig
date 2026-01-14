@@ -12,14 +12,11 @@ pub const types = core.types;
 
 pub const ZWindow = core.ZWindow;
 
+/// helper that setups builtins and calls the core init
 pub fn init(a: std.mem.Allocator) !void {
-	shaders.registerAll();
+	core.onContextCreate = shaders.registerAllFunc;
 	try core.init(a);
 }
 
 pub const deinit = core.deinit;
-
-pub fn run() !void {
-	try core.runInit();
-	try core.runLoop();
-}
+pub const run = core.run;

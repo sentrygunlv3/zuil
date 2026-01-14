@@ -96,12 +96,14 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 	}
 	switch (event.key.key) {
 		.space => {
-			if (self.root.size.w == .percentage) {
-				self.root.size.w = .{.dp = 1200};
-			} else {
-				self.root.size.w = .{.percentage = 1};
+			if (self.root) |r| {
+				if (r.size.w == .percentage) {
+					r.size.w = .{.dp = 1200};
+				} else {
+					r.size.w = .{.percentage = 1};
+				}
+				r.markDirty();
 			}
-			self.root.markDirty();
 
 			return false;
 		},

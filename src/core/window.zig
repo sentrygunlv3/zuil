@@ -41,12 +41,13 @@ pub const ZWindow = struct {
 	/// return true to pass input to widget tree
 	input_handler: ?*const fn (self: *@This(), event: input.ZEvent) bool = null,
 	// ---
-	root: *zwidget.ZWidget = undefined,
+	root: ?*zwidget.ZWidget = undefined,
 	content_alignment: types.ZAlign = .default(),
 	display_size: struct {x: f32, y: f32} = .{.x = 0, .y = 0},
 
-	pub fn init(width: i32, height: i32, title: [:0]const u8, root_widget: *zwidget.ZWidget) !*@This() {
+	pub fn init(width: i32, height: i32, title: [:0]const u8, root_widget: ?*zwidget.ZWidget) !*@This() {
 		const self = try root.allocator.create(@This());
+		errdefer self.deinit();
 
 		if (root.main_window) |main| {
 			self.* = .{
@@ -55,6 +56,8 @@ pub const ZWindow = struct {
 				.root = root_widget,
 			};
 			self.flags.shared_contex = true;
+
+			glfw.makeContextCurrent(self.window);
 		} else {
 			self.* = .{
 				.window = try glfw.Window.create(width, height, title, null),
@@ -62,15 +65,14 @@ pub const ZWindow = struct {
 				.root = root_widget,
 			};
 			root.main_window = self;
+
+			glfw.makeContextCurrent(self.window);
+
+			try root.opengl.loadCoreProfile(glfw.getProcAddress, 4, 0);
+
+			root.gl.enable(root.gl.BLEND);
+			root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
 		}
-
-		glfw.makeContextCurrent(self.window);
-		std.debug.print("set context\n", .{});
-
-		try root.opengl.loadCoreProfile(glfw.getProcAddress, 4, 0);
-
-		root.gl.enable(root.gl.BLEND);
-		root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
 
 		const arrow_cursor = try glfw.createStandardCursor(.arrow);
 		glfw.setCursor(self.window, arrow_cursor);
@@ -93,18 +95,21 @@ pub const ZWindow = struct {
 			self.context = root.main_window.?.context;
 		} else {
 			self.context = try root.renderer.context.RendererContext.init();
+			try root.onContextCreate.?(self.context);
 		}
 
-		try root.onWindowCreate.?(self);
-
-		self.root.setWindow(self);
+		if (self.root) |r| {
+			r.setWindow(self);
+		}
 
 		try root.windows.put(self.window, self);
 		return self;
 	}
 
 	pub fn deinit(self: *@This()) void {
-		self.root.destroy();
+		if (self.root) |r| {
+			r.destroy();
+		}
 		_ = root.windows.remove(self.window);
 		if (!self.flags.shared_contex) {
 			self.context.deinit();
@@ -112,6 +117,13 @@ pub const ZWindow = struct {
 		self.window.destroy();
 		self.key_events.deinit(root.allocator);
 		root.allocator.destroy(self);
+	}
+
+	pub fn setRoot(self: *@This(), root_widget: ?*zwidget.ZWidget) void {
+		if (self.root) |r| {
+			r.destroy();
+		}
+		self.root = root_widget;
 	}
 
 	pub fn markDirty(self: *@This()) void {
@@ -180,7 +192,9 @@ pub const ZWindow = struct {
 	}
 
 	fn resizeCallback(window: *glfw.Window, w: c_int, h: c_int) callconv(.c) void {
-		root.windows.get(window).?.root.markDirty();
+		if (root.windows.get(window).?.root) |r| {
+			r.markDirty();
+		}
 		glfw.makeContextCurrent(window);
 		root.gl.viewport(0, 0, w, h);
 	}
@@ -216,13 +230,15 @@ pub const ZWindow = struct {
 							}
 						},
 						.mouse => {
-							if (self.root.isOverPoint(event.mouse.x, event.mouse.y, false)) |hovered| {
-								std.debug.print("{*}\n", .{hovered});
-								hovered.event(event) catch |e| {
-									std.log.err("event: {}", .{e});
-								};
-							} else {
-								std.debug.print("nothing hovered\n", .{});
+							if (self.root) |r| {
+								if (r.isOverPoint(event.mouse.x, event.mouse.y, false)) |hovered| {
+									std.debug.print("{*}\n", .{hovered});
+									hovered.event(event) catch |e| {
+										std.log.err("event: {}", .{e});
+									};
+								} else {
+									std.debug.print("nothing hovered\n", .{});
+								}
 							}
 						},
 						else => {}
@@ -252,9 +268,11 @@ pub const ZWindow = struct {
 	pub fn layout(self: *@This()) anyerror!void {
 		const space = self.getBounds();
 
-		try self.root.updatePreferredSize(if (self.root.flags.layout_dirty) true else false, space.w, space.h);
-		try self.root.updateActualSize(if (self.root.flags.layout_dirty) true else false, space.w, space.h);
-		try self.root.updatePosition(if (self.root.flags.layout_dirty) true else false, space.w, space.h);
+		if (self.root) |r| {
+			try r.updatePreferredSize(if (r.flags.layout_dirty) true else false, space.w, space.h);
+			try r.updateActualSize(if (r.flags.layout_dirty) true else false, space.w, space.h);
+			try r.updatePosition(if (r.flags.layout_dirty) true else false, space.w, space.h);
+		}
 
 		self.flags.layout_dirty = false;
 	}
@@ -265,15 +283,17 @@ pub const ZWindow = struct {
 		const clear_color = [_]f32{0.192, 0.212, 0.231, 1.0};
 		root.gl.clearBufferfv(root.gl.COLOR, 0, &clear_color);
 
-		self.root.render(self) catch |e| {
-			std.log.err("failed to render window: {}\n", .{e});
-			switch (e) {
-				root.ZError.MissingShader => {
-					root.shader.debugPrintAll(self.context);
-				},
-				else => {}
-			}
-		};
+		if (self.root) |r| {
+			r.render(self) catch |e| {
+				std.log.err("failed to render window: {}\n", .{e});
+				switch (e) {
+					root.ZError.MissingShader => {
+						root.shader.debugPrintAll(self.context);
+					},
+					else => {}
+				}
+			};
+		}
 		
 		self.window.swapBuffers();
 		self.flags.render_dirty = false;

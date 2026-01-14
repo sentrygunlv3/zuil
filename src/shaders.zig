@@ -8,11 +8,7 @@ pub const container = @import("shaders/container.zig");
 pub const bitmap = @import("shaders/bitmap.zig");
 
 /// registers all builtin shaders
-pub fn registerAll() void {
-	core.onWindowCreate = registerAllFunc;
-}
-
-fn registerAllFunc(self: *core.ZWindow) anyerror!void {
-	container.register(self.context);
-	bitmap.register(self.context);
+pub fn registerAllFunc(context: *core.renderer.context.RendererContext) anyerror!void {
+	container.register(context);
+	bitmap.register(context);
 }

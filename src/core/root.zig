@@ -26,7 +26,7 @@ pub var allocator: std.mem.Allocator = undefined;
 pub var windows: std.AutoHashMap(*glfw.Window, *ZWindow) = undefined;
 pub var main_window: ?*ZWindow = null;
 
-pub var onWindowCreate: ?*const fn (self: *ZWindow) anyerror!void = null;
+pub var onContextCreate: ?*const fn (self: *renderer.context.RendererContext) anyerror!void = null;
 
 pub var modifiers = input.ZModifiers{};
 
@@ -49,13 +49,11 @@ pub fn deinit() void {
 	windows.deinit();
 }
 
-pub fn runInit() !void {
+pub fn run() !void {
 	if (windows.count() == 0) {
 		return ZError.NoWindowsCreated;
 	}
-}
 
-pub fn runLoop() !void {
 	var running = true;
 	while (running) {
 		if (windows.count() == 0) {

@@ -31,11 +31,14 @@ pub const Resource = struct {
 		texture: u32,
 	};
 
-	pub fn init(t: Type) anyerror!*@This() {
+	pub fn init(t: Type, fake_user: bool) anyerror!*@This() {
 		const self = try root.allocator.create(@This());
 		self.* = @This(){
 			.type = t,
 		};
+		if (fake_user) {
+			self.users = 1;
+		}
 		return self;
 	}
 
@@ -93,13 +96,13 @@ pub const RendererContext = struct {
 	}
 
 	pub fn createTexture(self: *@This(), image: root.ZAsset, width: u32, height: u32) !ResourceHandle {
-		std.debug.print("{}x{}\n", .{width, height});
 		var bitmap = try root.svg.svgToBitmap(image, width, height);
 		defer bitmap.deinit();
 
 		var texture: u32 = 0;
 
 		gl.genTextures(1, &texture);
+		errdefer gl.deleteTextures(1, texture);
 		gl.activeTexture(gl.TEXTURE0);
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -116,7 +119,8 @@ pub const RendererContext = struct {
 			bitmap.data.ptr
 		);
 
-		const resource = try Resource.init(.{.texture = texture});
+		const resource = try Resource.init(.{.texture = texture}, false);
+		errdefer resource.deinit();
 		try self.resources.append(root.allocator, resource);
 
 		return .init(self, resource);

@@ -2,6 +2,7 @@ const std = @import("std");
 const root = @import("../root.zig");
 
 const shader = root.shader;
+const glfw = root.glfw;
 const gl = root.gl;
 
 pub const ResourceHandle = struct {
@@ -41,7 +42,7 @@ pub const Resource = struct {
 	pub fn deinit(self: *@This()) void {
 		switch (self.type) {
 			.texture => {
-				root.gl.deleteTextures(1, self.type.texture);
+				gl.deleteTextures(1, self.type.texture);
 			}
 		}
 		root.allocator.destroy(self);
@@ -55,26 +56,30 @@ pub const RendererContext = struct {
 	buffers: u32 = 0,
 	element_buffer: u32 = 0,
 
-	pub fn init() !@This() {
-		var self = @This(){
+	pub fn init() !*@This() {
+		const self = try root.allocator.create(@This());
+
+		self.* = @This(){
 			.resources = try std.ArrayList(*Resource).initCapacity(root.allocator, 16),
 			.shaders = std.StringHashMap(u32).init(root.allocator),
 		};
 
-		root.gl.genVertexArrays(1, &self.vertex_arrays);
-		root.gl.genBuffers(1, &self.buffers);
-		root.gl.genBuffers(1, &self.element_buffer);
+		gl.genVertexArrays(1, &self.vertex_arrays);
+		gl.genBuffers(1, &self.buffers);
+		gl.genBuffers(1, &self.element_buffer);
 
 		return self;
 	}
 
 	pub fn deinit(self: *@This()) void {
-		root.gl.deleteVertexArrays(1, &self.vertex_arrays);
-		root.gl.deleteBuffers(1, &self.buffers);
-		root.gl.deleteBuffers(1, &self.element_buffer);
+		gl.deleteVertexArrays(1, &self.vertex_arrays);
+		gl.deleteBuffers(1, &self.buffers);
+		gl.deleteBuffers(1, &self.element_buffer);
 
 		self.shaders.deinit();
 		self.resources.deinit(root.allocator);
+
+		root.allocator.destroy(self);
 	}
 
 	pub fn update(self: *@This()) void {
@@ -94,20 +99,20 @@ pub const RendererContext = struct {
 
 		var texture: u32 = 0;
 
-		root.gl.genTextures(1, &texture);
-		root.gl.activeTexture(root.gl.TEXTURE0);
-		root.gl.bindTexture(root.gl.TEXTURE_2D, texture);
-		root.gl.texParameteri(root.gl.TEXTURE_2D, root.gl.TEXTURE_MIN_FILTER, root.gl.NEAREST);
-		root.gl.texParameteri(root.gl.TEXTURE_2D, root.gl.TEXTURE_MAG_FILTER, root.gl.NEAREST);
-		root.gl.texImage2D(
-			root.gl.TEXTURE_2D,
+		gl.genTextures(1, &texture);
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texImage2D(
+			gl.TEXTURE_2D,
 			0,
-			root.gl.RGBA,
+			gl.RGBA,
 			@intCast(bitmap.w),
 			@intCast(bitmap.h),
 			0,
-			root.gl.BGRA,
-			root.gl.UNSIGNED_BYTE,
+			gl.BGRA,
+			gl.UNSIGNED_BYTE,
 			bitmap.data.ptr
 		);
 

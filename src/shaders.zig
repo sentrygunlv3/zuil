@@ -13,6 +13,6 @@ pub fn registerAll() void {
 }
 
 fn registerAllFunc(self: *core.ZWindow) anyerror!void {
-	container.register(&self.context);
-	bitmap.register(&self.context);
+	container.register(self.context);
+	bitmap.register(self.context);
 }

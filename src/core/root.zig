@@ -24,6 +24,7 @@ pub const ZAsset = @import("types/asset.zig").ZAsset;
 
 pub var allocator: std.mem.Allocator = undefined;
 pub var windows: std.AutoHashMap(*glfw.Window, *ZWindow) = undefined;
+pub var main_window: ?*ZWindow = null;
 
 pub var onWindowCreate: ?*const fn (self: *ZWindow) anyerror!void = null;
 
@@ -34,6 +35,7 @@ pub fn init(a: std.mem.Allocator) !void {
 
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();
+	// glfw.windowHint(.client_api, glfw.ClientApi.no_api);
 
 	assets.init();
 
@@ -63,6 +65,9 @@ pub fn runLoop() !void {
 		var iterator = windows.valueIterator();
 		while (iterator.next()) |window| {
 			if (!window.*.process()) {
+				if (window.* == main_window.?) {
+					running = false;
+				}
 				window.*.deinit();
 				break;
 			}

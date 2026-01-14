@@ -53,8 +53,8 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void 
 	const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
 	const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
 
-	try renderer.renderCommand(&self.window.?.context, .{
-		.shader = try shader.getShader(&self.window.?.context, "container"),
+	try renderer.renderCommand(self.window.?.context, .{
+		.shader = try shader.getShader(self.window.?.context, "container"),
 		.parameters = &[_]renderer.ShaderParameter{
 			.{
 				.name = "pos",

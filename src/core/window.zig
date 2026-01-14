@@ -6,13 +6,34 @@ const input = root.input;
 const zwidget = root.zwidget;
 const types = root.types;
 
+/// glfw.Window.create is missing share
+pub fn createWindow(
+    width: c_int,
+    height: c_int,
+    title: [:0]const u8,
+    monitor: ?*glfw.Monitor,
+	share: ?*glfw.Window,
+) glfw.Error!*glfw.Window {
+    if (glfwCreateWindow(width, height, title, monitor, share)) |window| return window;
+    try glfw.maybeError();
+    unreachable;
+}
+extern fn glfwCreateWindow(
+    width: c_int,
+    height: c_int,
+    title: [*:0]const u8,
+    monitor: ?*glfw.Monitor,
+    share: ?*glfw.Window,
+) ?*glfw.Window;
+
 pub const ZWindow = struct {
 	window: *glfw.Window = undefined,
-	context: root.renderer.context.RendererContext = undefined,
+	context: *root.renderer.context.RendererContext = undefined,
 	flags: packed struct {
 		layout_dirty: bool = true,
 		render_dirty: bool = true,
-		_: u6 = 0,
+		shared_contex: bool = false,
+		_: u5 = 0,
 	} = .{},
 	// --- input
 	key_events: std.ArrayList(input.ZEvent) = undefined,
@@ -27,11 +48,21 @@ pub const ZWindow = struct {
 	pub fn init(width: i32, height: i32, title: [:0]const u8, root_widget: *zwidget.ZWidget) !*@This() {
 		const self = try root.allocator.create(@This());
 
-		self.* = .{
-			.window = try glfw.Window.create(width, height, title, null),
-			.key_events = try std.ArrayList(input.ZEvent).initCapacity(root.allocator, 0),
-			.root = root_widget,
-		};
+		if (root.main_window) |main| {
+			self.* = .{
+				.window = try createWindow(width, height, title, null, main.window),
+				.key_events = try std.ArrayList(input.ZEvent).initCapacity(root.allocator, 0),
+				.root = root_widget,
+			};
+			self.flags.shared_contex = true;
+		} else {
+			self.* = .{
+				.window = try glfw.Window.create(width, height, title, null),
+				.key_events = try std.ArrayList(input.ZEvent).initCapacity(root.allocator, 0),
+				.root = root_widget,
+			};
+			root.main_window = self;
+		}
 
 		glfw.makeContextCurrent(self.window);
 		std.debug.print("set context\n", .{});
@@ -58,7 +89,11 @@ pub const ZWindow = struct {
 			};
 		}
 
-		self.context = try .init();
+		if (root.main_window.? != self) {
+			self.context = root.main_window.?.context;
+		} else {
+			self.context = try root.renderer.context.RendererContext.init();
+		}
 
 		try root.onWindowCreate.?(self);
 
@@ -71,7 +106,9 @@ pub const ZWindow = struct {
 	pub fn deinit(self: *@This()) void {
 		self.root.destroy();
 		_ = root.windows.remove(self.window);
-		self.context.deinit();
+		if (!self.flags.shared_contex) {
+			self.context.deinit();
+		}
 		self.window.destroy();
 		self.key_events.deinit(root.allocator);
 		root.allocator.destroy(self);
@@ -232,7 +269,7 @@ pub const ZWindow = struct {
 			std.log.err("failed to render window: {}\n", .{e});
 			switch (e) {
 				root.ZError.MissingShader => {
-					root.shader.debugPrintAll(&self.context);
+					root.shader.debugPrintAll(self.context);
 				},
 				else => {}
 			}

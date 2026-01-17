@@ -39,7 +39,7 @@ fn deinitZContainer(self: *widget.ZWidget) void {
 	}
 }
 
-fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
+fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow, commands: *std.ArrayList(*root.renderer.RenderCommand)) anyerror!void {
 	var color = ZColor.default();
 	if (self.getData(ZContainer)) |data| {
 		color = data.color;
@@ -53,9 +53,9 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void 
 	const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
 	const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
 
-	try renderer.renderCommand(self.window.?.context, .{
-		.shader = try shader.getShader(self.window.?.context, "container"),
-		.parameters = &[_]renderer.ShaderParameter{
+	try commands.append(root.allocator, try .init(
+		try shader.getShader(self.window.?.context, "container"),
+		&[_]renderer.ShaderParameter{
 			.{
 				.name = "pos",
 				.value = .{.uniform2f = .{
@@ -80,11 +80,11 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void 
 				}}
 			},
 		},
-	});
+	));
 
 	if (self.getData(ZContainer)) |data| {
 		if (data.child) |child| {
-			try child.render(window);
+			try child.render(window, commands);
 		}
 	}
 }

@@ -61,7 +61,7 @@ fn exitTreeZIcon(self: *widget.ZWidget) void {
 	}
 }
 
-fn renderZIcon(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
+fn renderZIcon(self: *widget.ZWidget, window: *root.ZWindow, commands: *std.ArrayList(*root.renderer.RenderCommand)) anyerror!void {
 	if (self.getData(ZIcon)) |data| {
 		const window_size = window.getBounds();
 
@@ -71,9 +71,9 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
 		const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
 		const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
 
-		try renderer.renderCommand(self.window.?.context, .{
-			.shader = try shader.getShader(self.window.?.context, "bitmap"),
-			.parameters = &[_]renderer.ShaderParameter{
+		try commands.append(root.allocator, try .init(
+			try shader.getShader(self.window.?.context, "bitmap"),
+			&[_]renderer.ShaderParameter{
 				.{
 					.name = "pos",
 					.value = .{.uniform2f = .{
@@ -93,7 +93,7 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.ZWindow) anyerror!void {
 					.value = .{.texture = &data.resource}
 				},
 			},
-		});
+		));
 	}
 }
 

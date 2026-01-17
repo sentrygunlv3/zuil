@@ -138,11 +138,11 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn render(self: *@This(), window: *root.ZWindow) anyerror!void {
+	pub fn render(self: *@This(), window: *root.ZWindow, commands: *std.ArrayList(*root.renderer.RenderCommand)) anyerror!void {
 		std.debug.print("\n{*} - {s}\n", .{self, self.type_name});
 		std.debug.print("bounds: {}\n", .{self.clamped_bounds});
 		if (self.fi.render) |func| {
-			try func(self, window);
+			try func(self, window, commands);
 		}
 	}
 
@@ -213,7 +213,7 @@ pub const ZWidgetFI = struct {
 	/// top to bottom
 	updatePosition: ?*const fn (self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!void = updatePosition,
 
-	render: ?*const fn (self: *ZWidget, window: *root.ZWindow) anyerror!void = renderWidget,
+	render: ?*const fn (self: *ZWidget, window: *root.ZWindow, commands: *std.ArrayList(*root.renderer.RenderCommand)) anyerror!void = renderWidget,
 
 	isOverPoint: ?*const fn (self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?*ZWidget = isOverPointWidget,
 
@@ -226,12 +226,12 @@ pub const ZWidgetMutableFI = struct {
 	event: ?*const fn (self: *ZWidget, event: root.input.ZEvent) anyerror!void = null,
 };
 
-pub fn renderWidget(self: *ZWidget, window: *root.ZWindow) anyerror!void {
+pub fn renderWidget(self: *ZWidget, window: *root.ZWindow, commands: *std.ArrayList(*root.renderer.RenderCommand)) anyerror!void {
 	const children = self.getChildren() catch {
 		return;
 	};
 	for (children) |child| {
-		_ = try child.render(window);
+		_ = try child.render(window, commands);
 	}
 }
 

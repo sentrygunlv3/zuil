@@ -8,7 +8,29 @@ const gl = root.gl;
 
 pub const RenderCommand = struct {
 	shader: u32,
-	parameters: []const ShaderParameter,
+	parameters: []ShaderParameter,
+
+	pub fn init(s: u32, p: []const ShaderParameter) !*@This() {
+		const self = try root.allocator.create(@This());
+
+		const parameters = try root.allocator.alloc(ShaderParameter, p.len);
+		@memcpy(parameters, p);
+
+		self.* = @This(){
+			.shader = s,
+			.parameters = parameters,
+		};
+
+		return self;
+	}
+
+	pub fn deinit(self: *@This()) void {
+		for (self.parameters.ptr) |value| {
+			value.deinit();
+		}
+		root.allocator.free(self.parameters);
+		root.allocator.destroy(self);
+	}
 };
 
 pub const ShaderParameter = struct {
@@ -26,6 +48,14 @@ pub const ShaderParameter = struct {
 		},
 		uniform1i: i32,
 		texture: *context.ResourceHandle,
+	},
+
+	pub fn deinit(self: *@This()) void {
+		switch (self.value) {
+			.texture => {
+				self.value.texture.deinit();
+			}
+		}
 	}
 };
 
@@ -45,9 +75,7 @@ pub const indices = [_]u32{
 	0, 2, 3,
 };
 
-pub fn renderCommand(c: *context.RendererContext, command: RenderCommand) anyerror!void {
-	gl.useProgram(command.shader);
-
+pub fn renderCommands(c: *context.RendererContext, commands: *std.ArrayList(*root.renderer.RenderCommand)) anyerror!void {
 	gl.bindVertexArray(c.vertex_arrays);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, c.buffers);
@@ -62,40 +90,44 @@ pub fn renderCommand(c: *context.RendererContext, command: RenderCommand) anyerr
 	gl.vertexAttribPointer(2, 2, root.gl.FLOAT, root.gl.FALSE, 4 * @sizeOf(f32), null);
 	gl.enableVertexAttribArray(2);
 
-	for (command.parameters) |value| {
-		switch (value.value) {
-			.uniform2f => {
-				const loc = gl.getUniformLocation(command.shader, value.name.ptr);
-				gl.uniform2f(
-					loc,
-					value.value.uniform2f.a,
-					value.value.uniform2f.b
-				);
-			},
-			.uniform4f => {
-				const loc = gl.getUniformLocation(command.shader, value.name.ptr);
-				gl.uniform4f(
-					loc,
-					value.value.uniform4f.a,
-					value.value.uniform4f.b,
-					value.value.uniform4f.c,
-					value.value.uniform4f.d
-				);
-			},
-			.uniform1i => {
-				const loc = gl.getUniformLocation(command.shader, value.name.ptr);
-				gl.uniform1i(loc, value.value.uniform1i);
-			},
-			.texture => {
-				if (value.value.texture.resource.type != .texture) {
-					continue;
-				}
+	for (commands.items) |command| {
+		gl.useProgram(command.shader);
 
-				const loc = gl.getUniformLocation(command.shader, value.name.ptr);
-				gl.uniform1i(loc, @intCast(value.value.texture.resource.type.texture));
-			},
+		for (command.parameters) |value| {
+			switch (value.value) {
+				.uniform2f => {
+					const loc = gl.getUniformLocation(command.shader, value.name.ptr);
+					gl.uniform2f(
+						loc,
+						value.value.uniform2f.a,
+						value.value.uniform2f.b
+					);
+				},
+				.uniform4f => {
+					const loc = gl.getUniformLocation(command.shader, value.name.ptr);
+					gl.uniform4f(
+						loc,
+						value.value.uniform4f.a,
+						value.value.uniform4f.b,
+						value.value.uniform4f.c,
+						value.value.uniform4f.d
+					);
+				},
+				.uniform1i => {
+					const loc = gl.getUniformLocation(command.shader, value.name.ptr);
+					gl.uniform1i(loc, value.value.uniform1i);
+				},
+				.texture => {
+					if (value.value.texture.resource.type != .texture) {
+						continue;
+					}
+
+					const loc = gl.getUniformLocation(command.shader, value.name.ptr);
+					gl.uniform1i(loc, @intCast(value.value.texture.resource.type.texture));
+				},
+			}
 		}
-	}
 
-	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
+		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
+	}
 }

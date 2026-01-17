@@ -256,11 +256,27 @@ pub const ZWindow = struct {
 
 			std.debug.print("\n--- process render ---\n", .{});
 
-			self.render();
+			self.render() catch |e| {
+				std.log.err("failed to render window: {}\n", .{e});
+				switch (e) {
+					root.ZError.MissingShader => {
+						root.shader.debugPrintAll(self.context);
+					},
+					else => {}
+				}
+			};
 		} else if (self.flags.render_dirty) {
 			std.debug.print("\n--- process render ---\n", .{});
 
-			self.render();
+			self.render() catch |e| {
+				std.log.err("failed to render window: {}\n", .{e});
+				switch (e) {
+					root.ZError.MissingShader => {
+						root.shader.debugPrintAll(self.context);
+					},
+					else => {}
+				}
+			};
 		}
 		return true;
 	}
@@ -277,24 +293,21 @@ pub const ZWindow = struct {
 		self.flags.layout_dirty = false;
 	}
 
-	pub fn render(self: *@This()) void {
+	pub fn render(self: *@This()) anyerror!void {
 		glfw.makeContextCurrent(self.window);
-		
+
 		const clear_color = [_]f32{0.192, 0.212, 0.231, 1.0};
 		root.gl.clearBufferfv(root.gl.COLOR, 0, &clear_color);
 
 		if (self.root) |r| {
-			r.render(self) catch |e| {
-				std.log.err("failed to render window: {}\n", .{e});
-				switch (e) {
-					root.ZError.MissingShader => {
-						root.shader.debugPrintAll(self.context);
-					},
-					else => {}
-				}
-			};
+			var commands = try std.ArrayList(*root.renderer.RenderCommand).initCapacity(root.allocator, 16);
+			defer commands.deinit(root.allocator);
+
+			try r.render(self, &commands);
+
+			try root.renderer.renderCommands(self.context, &commands);
 		}
-		
+
 		self.window.swapBuffers();
 		self.flags.render_dirty = false;
 	}

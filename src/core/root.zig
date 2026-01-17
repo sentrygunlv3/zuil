@@ -35,7 +35,6 @@ pub fn init(a: std.mem.Allocator) !void {
 
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();
-	// glfw.windowHint(.client_api, glfw.ClientApi.no_api);
 
 	assets.init();
 

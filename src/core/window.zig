@@ -1,6 +1,7 @@
 const std = @import("std");
 const root = @import("root.zig");
 
+const gl = root.gl;
 const glfw = root.glfw;
 const input = root.input;
 const zwidget = root.zwidget;
@@ -28,13 +29,18 @@ extern fn glfwCreateWindow(
 
 pub const ZWindow = struct {
 	window: *glfw.Window = undefined,
+	render_texture: u32 = 0,
+	render_frame: u32 = 0,
+	// ---
 	context: *root.renderer.context.RendererContext = undefined,
 	flags: packed struct {
 		layout_dirty: bool = true,
 		render_dirty: bool = true,
+		render_dirty_full: bool = true,
 		shared_contex: bool = false,
-		_: u5 = 0,
+		_: u4 = 0,
 	} = .{},
+	dirty: types.ZBounds = .zero(),
 	// --- input
 	key_events: std.ArrayList(input.ZEvent) = undefined,
 	focused_widget: ?*zwidget.ZWidget = null,
@@ -74,6 +80,8 @@ pub const ZWindow = struct {
 			root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
 		}
 
+		self.initRenderTexture(width, height);
+
 		const arrow_cursor = try glfw.createStandardCursor(.arrow);
 		glfw.setCursor(self.window, arrow_cursor);
 
@@ -106,6 +114,36 @@ pub const ZWindow = struct {
 		return self;
 	}
 
+	pub fn initRenderTexture(self: *@This(), w: i32, h: i32) void {
+		gl.genTextures(1, &self.render_texture);
+		gl.bindTexture(gl.TEXTURE_2D, self.render_texture);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texImage2D(
+			gl.TEXTURE_2D,
+			0,
+			gl.RGBA,
+			w,
+			h,
+			0,
+			gl.RGBA,
+			gl.UNSIGNED_BYTE,
+			null
+		);
+
+		gl.genFramebuffers(1, &self.render_frame);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, self.render_frame);
+		gl.framebufferTexture2D(
+			gl.FRAMEBUFFER, 
+			gl.COLOR_ATTACHMENT0, 
+			gl.TEXTURE_2D, 
+			self.render_texture, 
+			0
+		);
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, 0);
+	}
+
 	pub fn deinit(self: *@This()) void {
 		if (self.root) |r| {
 			r.destroy();
@@ -128,6 +166,15 @@ pub const ZWindow = struct {
 
 	pub fn markDirty(self: *@This()) void {
 		self.flags.layout_dirty = true;
+	}
+
+	pub fn markDirtyRender(self: *@This(), area: types.ZBounds) void {
+		self.flags.render_dirty = true;
+
+		self.dirty.x = @max(self.dirty.x, area.x);
+		self.dirty.y = @max(self.dirty.y, area.y);
+		self.dirty.w = @max(self.dirty.w, area.w);
+		self.dirty.h = @max(self.dirty.h, area.h);
 	}
 
 	pub fn setContentAlignment(self: *@This(), new: types.ZAlign) void {
@@ -192,11 +239,28 @@ pub const ZWindow = struct {
 	}
 
 	fn resizeCallback(window: *glfw.Window, w: c_int, h: c_int) callconv(.c) void {
-		if (root.windows.get(window).?.root) |r| {
-			r.markDirty();
-		}
 		glfw.makeContextCurrent(window);
 		root.gl.viewport(0, 0, w, h);
+		if (root.windows.get(window)) |win| {
+			if (win.root) |r| {
+				r.markDirty();
+			}
+			win.flags.render_dirty_full = true;
+
+			gl.bindTexture(gl.TEXTURE_2D, win.render_texture);
+			gl.texImage2D(
+				gl.TEXTURE_2D,
+				0,
+				gl.RGBA,
+				w,
+				h,
+				0,
+				gl.RGBA,
+				gl.UNSIGNED_BYTE,
+				null
+			);
+			gl.bindTexture(gl.TEXTURE_2D, 0);
+		}
 	}
 
 	pub fn getBounds(self: *@This()) types.ZBounds {
@@ -294,21 +358,59 @@ pub const ZWindow = struct {
 	}
 
 	pub fn render(self: *@This()) anyerror!void {
+		std.debug.print("area: {}\nflags: {}\n", .{self.dirty, self.flags});
+
 		glfw.makeContextCurrent(self.window);
 
-		const clear_color = [_]f32{0.192, 0.212, 0.231, 1.0};
-		root.gl.clearBufferfv(root.gl.COLOR, 0, &clear_color);
+		var width: i32 = undefined;
+		var height: i32 = undefined;
+		glfw.getFramebufferSize(self.window, &width, &height);
+
+		root.gl.bindFramebuffer(root.gl.FRAMEBUFFER, self.render_frame);
+
+		gl.viewport(0, 0, width, height);
+
+		if (self.flags.render_dirty_full) {
+			const clear_color = [_]f32{0.192, 0.212, 0.231, 1.0};
+			root.gl.clearBufferfv(root.gl.COLOR, 0, &clear_color);
+		}
 
 		if (self.root) |r| {
 			var commands = try std.ArrayList(*root.renderer.RenderCommand).initCapacity(root.allocator, 16);
 			defer commands.deinit(root.allocator);
 
-			try r.render(self, &commands);
+			var area = if (self.flags.render_dirty_full) null else self.dirty;
 
-			try root.renderer.renderCommands(self.context, &commands);
+			try r.render(
+				self,
+				&commands,
+				area
+			);
+
+			if (area != null) {
+				area.?.y = self.getBounds().h - area.?.h - area.?.y;
+			}
+			try root.renderer.renderCommands(
+				self.context,
+				&commands,
+				area
+			);
 		}
+		gl.disable(gl.SCISSOR_TEST);
+
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, self.render_frame);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, 0);
+
+		gl.blitFramebuffer(
+			0, 0, width, height,
+			0, 0, width, height,
+			gl.COLOR_BUFFER_BIT,
+			gl.LINEAR
+		);
 
 		self.window.swapBuffers();
 		self.flags.render_dirty = false;
+		self.flags.render_dirty_full = false;
+		self.dirty = .zero();
 	}
 };

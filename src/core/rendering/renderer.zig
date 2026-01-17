@@ -25,9 +25,6 @@ pub const RenderCommand = struct {
 	}
 
 	pub fn deinit(self: *@This()) void {
-		for (self.parameters.ptr) |value| {
-			value.deinit();
-		}
 		root.allocator.free(self.parameters);
 		root.allocator.destroy(self);
 	}
@@ -49,14 +46,6 @@ pub const ShaderParameter = struct {
 		uniform1i: i32,
 		texture: *context.ResourceHandle,
 	},
-
-	pub fn deinit(self: *@This()) void {
-		switch (self.value) {
-			.texture => {
-				self.value.texture.deinit();
-			}
-		}
-	}
 };
 
 const vertices = [_]f32{
@@ -75,7 +64,7 @@ pub const indices = [_]u32{
 	0, 2, 3,
 };
 
-pub fn renderCommands(c: *context.RendererContext, commands: *std.ArrayList(*root.renderer.RenderCommand)) anyerror!void {
+pub fn renderCommands(c: *context.RendererContext, commands: *std.ArrayList(*root.renderer.RenderCommand), area: ?root.types.ZBounds) anyerror!void {
 	gl.bindVertexArray(c.vertex_arrays);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, c.buffers);
@@ -89,6 +78,18 @@ pub fn renderCommands(c: *context.RendererContext, commands: *std.ArrayList(*roo
 
 	gl.vertexAttribPointer(2, 2, root.gl.FLOAT, root.gl.FALSE, 4 * @sizeOf(f32), null);
 	gl.enableVertexAttribArray(2);
+
+	if (area) |a| {
+		gl.enable(gl.SCISSOR_TEST);
+		gl.scissor(
+			@intFromFloat(@floor(a.x)),
+			@intFromFloat(@floor(a.y)),
+			@intFromFloat(@floor(a.w)),
+			@intFromFloat(@floor(a.h))
+		);
+	} else {
+		gl.disable(gl.SCISSOR_TEST);
+	}
 
 	for (commands.items) |command| {
 		gl.useProgram(command.shader);
@@ -122,8 +123,11 @@ pub fn renderCommands(c: *context.RendererContext, commands: *std.ArrayList(*roo
 						continue;
 					}
 
+					gl.activeTexture(gl.TEXTURE0);
+					gl.bindTexture(gl.TEXTURE_2D, value.value.texture.resource.type.texture);
+
 					const loc = gl.getUniformLocation(command.shader, value.name.ptr);
-					gl.uniform1i(loc, @intCast(value.value.texture.resource.type.texture));
+					gl.uniform1i(loc, 0);
 				},
 			}
 		}

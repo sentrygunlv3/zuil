@@ -39,52 +39,68 @@ fn deinitZContainer(self: *widget.ZWidget) void {
 	}
 }
 
-fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow, commands: *std.ArrayList(*root.renderer.RenderCommand)) anyerror!void {
-	var color = ZColor.default();
-	if (self.getData(ZContainer)) |data| {
-		color = data.color;
+fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow, commands: *std.ArrayList(*root.renderer.RenderCommand), area: ?types.ZBounds) anyerror!void {
+	block: {
+		if (area) |a| {
+			if (
+				self.clamped_bounds.x > a.x or
+				self.clamped_bounds.y > a.y
+			) {
+				break :block;
+			} else if (
+				self.clamped_bounds.x + self.clamped_bounds.w < a.x and
+				self.clamped_bounds.y + self.clamped_bounds.h < a.y
+			) {
+				break :block;
+			}
+		}
+
+		var color = ZColor.default();
+		if (self.getData(ZContainer)) |data| {
+			color = data.color;
+		}
+
+		const window_size = window.getBounds();
+
+		const sizew = (self.clamped_bounds.w / window_size.w) * 2;
+		const sizeh = (self.clamped_bounds.h / window_size.h) * 2;
+
+		const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
+		const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
+
+		try commands.append(root.allocator, try .init(
+			try shader.getShader(self.window.?.context, "container"),
+			&[_]renderer.ShaderParameter{
+				.{
+					.name = "pos",
+					.value = .{.uniform2f = .{
+						.a = posx,
+						.b = posy,
+					}}
+				},
+				.{
+					.name = "size",
+					.value = .{.uniform2f = .{
+						.a = sizew,
+						.b = sizeh,
+					}}
+				},
+				.{
+					.name = "color",
+					.value = .{.uniform4f = .{
+						.a = color.r,
+						.b = color.g,
+						.c = color.b,
+						.d = color.a,
+					}}
+				},
+			},
+		));
 	}
-
-	const window_size = window.getBounds();
-
-	const sizew = (self.clamped_bounds.w / window_size.w) * 2;
-	const sizeh = (self.clamped_bounds.h / window_size.h) * 2;
-
-	const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
-	const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
-
-	try commands.append(root.allocator, try .init(
-		try shader.getShader(self.window.?.context, "container"),
-		&[_]renderer.ShaderParameter{
-			.{
-				.name = "pos",
-				.value = .{.uniform2f = .{
-					.a = posx,
-					.b = posy,
-				}}
-			},
-			.{
-				.name = "size",
-				.value = .{.uniform2f = .{
-					.a = sizew,
-					.b = sizeh,
-				}}
-			},
-			.{
-				.name = "color",
-				.value = .{.uniform4f = .{
-					.a = color.r,
-					.b = color.g,
-					.c = color.b,
-					.d = color.a,
-				}}
-			},
-		},
-	));
 
 	if (self.getData(ZContainer)) |data| {
 		if (data.child) |child| {
-			try child.render(window, commands);
+			try child.render(window, commands, area);
 		}
 	}
 }

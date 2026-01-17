@@ -55,6 +55,16 @@ pub fn main() anyerror!void {
 			widgets.container()
 			.c.size(.{.percentage = 0.5}, .{.dp = 30})
 			.build(),
+			widgets.position()
+			.c.size(.fill(), .fill())
+			.absolute(true)
+			.child(
+				widgets.container()
+				.c.size(.{.dp = 500}, .{.dp = 500})
+				.color(colors.RED)
+				.build()
+			)
+			.build(),
 		})
 		.build()
 	})

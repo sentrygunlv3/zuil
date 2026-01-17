@@ -64,7 +64,26 @@ pub const indices = [_]u32{
 	0, 2, 3,
 };
 
-pub fn renderCommands(c: *context.RendererContext, commands: *std.ArrayList(*root.renderer.RenderCommand), area: ?root.types.ZBounds) anyerror!void {
+pub fn clip(area: ?root.types.ZBounds) void {
+	if (area) |a| {
+		gl.enable(gl.SCISSOR_TEST);
+		gl.scissor(
+			@intFromFloat(@floor(a.x)),
+			@intFromFloat(@floor(a.y)),
+			@intFromFloat(@floor(a.w)),
+			@intFromFloat(@floor(a.h))
+		);
+	} else {
+		gl.disable(gl.SCISSOR_TEST);
+	}
+}
+
+pub fn clear(color: root.color.ZColor) void {
+	const clear_color = [_]f32{color.r, color.g, color.b, color.a};
+	root.gl.clearBufferfv(root.gl.COLOR, 0, &clear_color);
+}
+
+pub fn renderCommands(c: *context.RendererContext, commands: *std.ArrayList(*root.renderer.RenderCommand)) anyerror!void {
 	gl.bindVertexArray(c.vertex_arrays);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, c.buffers);
@@ -78,18 +97,6 @@ pub fn renderCommands(c: *context.RendererContext, commands: *std.ArrayList(*roo
 
 	gl.vertexAttribPointer(2, 2, root.gl.FLOAT, root.gl.FALSE, 4 * @sizeOf(f32), null);
 	gl.enableVertexAttribArray(2);
-
-	if (area) |a| {
-		gl.enable(gl.SCISSOR_TEST);
-		gl.scissor(
-			@intFromFloat(@floor(a.x)),
-			@intFromFloat(@floor(a.y)),
-			@intFromFloat(@floor(a.w)),
-			@intFromFloat(@floor(a.h))
-		);
-	} else {
-		gl.disable(gl.SCISSOR_TEST);
-	}
 
 	for (commands.items) |command| {
 		gl.useProgram(command.shader);

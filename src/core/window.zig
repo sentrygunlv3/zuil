@@ -40,7 +40,7 @@ pub const ZWindow = struct {
 		shared_contex: bool = false,
 		_: u4 = 0,
 	} = .{},
-	dirty: types.ZBounds = .zero(),
+	dirty: ?types.ZBounds = .zero(),
 	// --- input
 	key_events: std.ArrayList(input.ZEvent) = undefined,
 	focused_widget: ?*zwidget.ZWidget = null,
@@ -171,10 +171,14 @@ pub const ZWindow = struct {
 	pub fn markDirtyRender(self: *@This(), area: types.ZBounds) void {
 		self.flags.render_dirty = true;
 
-		self.dirty.x = @max(self.dirty.x, area.x);
-		self.dirty.y = @max(self.dirty.y, area.y);
-		self.dirty.w = @max(self.dirty.w, area.w);
-		self.dirty.h = @max(self.dirty.h, area.h);
+		if (self.dirty != null) {
+			self.dirty.?.x = @min(self.dirty.?.x, area.x);
+			self.dirty.?.y = @min(self.dirty.?.y, area.y);
+			self.dirty.?.w = @max(self.dirty.?.w, area.w);
+			self.dirty.?.h = @max(self.dirty.?.h, area.h);
+		} else {
+			self.dirty = area;
+		}
 	}
 
 	pub fn setContentAlignment(self: *@This(), new: types.ZAlign) void {
@@ -358,7 +362,7 @@ pub const ZWindow = struct {
 	}
 
 	pub fn render(self: *@This()) anyerror!void {
-		std.debug.print("area: {}\nflags: {}\n", .{self.dirty, self.flags});
+		std.debug.print("area: {}\nflags: {}\n", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero(), self.flags});
 
 		glfw.makeContextCurrent(self.window);
 
@@ -369,11 +373,6 @@ pub const ZWindow = struct {
 		root.gl.bindFramebuffer(root.gl.FRAMEBUFFER, self.render_frame);
 
 		gl.viewport(0, 0, width, height);
-
-		if (self.flags.render_dirty_full) {
-			const clear_color = [_]f32{0.192, 0.212, 0.231, 1.0};
-			root.gl.clearBufferfv(root.gl.COLOR, 0, &clear_color);
-		}
 
 		if (self.root) |r| {
 			var commands = try std.ArrayList(*root.renderer.RenderCommand).initCapacity(root.allocator, 16);
@@ -386,14 +385,17 @@ pub const ZWindow = struct {
 				&commands,
 				area
 			);
+			std.debug.print("total commands: {}\n", .{commands.items.len});
 
 			if (area != null) {
+				// to opengl coordinates
 				area.?.y = self.getBounds().h - area.?.h - area.?.y;
 			}
+			root.renderer.clip(area);
+			root.renderer.clear(root.color.GREY);
 			try root.renderer.renderCommands(
 				self.context,
-				&commands,
-				area
+				&commands
 			);
 		}
 		gl.disable(gl.SCISSOR_TEST);
@@ -411,6 +413,6 @@ pub const ZWindow = struct {
 		self.window.swapBuffers();
 		self.flags.render_dirty = false;
 		self.flags.render_dirty_full = false;
-		self.dirty = .zero();
+		self.dirty = null;
 	}
 };

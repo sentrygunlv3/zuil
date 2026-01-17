@@ -43,12 +43,9 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow, commands: *std
 	block: {
 		if (area) |a| {
 			if (
-				self.clamped_bounds.x > a.x or
-				self.clamped_bounds.y > a.y
-			) {
-				break :block;
-			} else if (
-				self.clamped_bounds.x + self.clamped_bounds.w < a.x and
+				self.clamped_bounds.x > a.x + a.w or
+				self.clamped_bounds.x + self.clamped_bounds.w < a.x or
+				self.clamped_bounds.y > a.y + a.h or
 				self.clamped_bounds.y + self.clamped_bounds.h < a.y
 			) {
 				break :block;

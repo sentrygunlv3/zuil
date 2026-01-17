@@ -375,8 +375,9 @@ pub const ZWindow = struct {
 		gl.viewport(0, 0, width, height);
 
 		if (self.root) |r| {
-			var commands = try std.ArrayList(*root.renderer.RenderCommand).initCapacity(root.allocator, 16);
-			defer commands.deinit(root.allocator);
+			var arena = std.heap.ArenaAllocator.init(root.allocator);
+			defer arena.deinit();
+			var commands = try root.renderer.RenderCommandList.init(arena.allocator());
 
 			var area = if (self.flags.render_dirty_full) null else self.dirty;
 
@@ -385,7 +386,7 @@ pub const ZWindow = struct {
 				&commands,
 				area
 			);
-			std.debug.print("total commands: {}\n", .{commands.items.len});
+			std.debug.print("total commands: {}\n", .{commands.commands.items.len});
 
 			if (area != null) {
 				// to opengl coordinates

@@ -39,7 +39,7 @@ fn deinitZContainer(self: *widget.ZWidget) void {
 	}
 }
 
-fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow, commands: *std.ArrayList(*root.renderer.RenderCommand), area: ?types.ZBounds) anyerror!void {
+fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow, commands: *root.renderer.RenderCommandList, area: ?types.ZBounds) anyerror!void {
 	block: {
 		if (area) |a| {
 			if (
@@ -65,7 +65,7 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow, commands: *std
 		const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
 		const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
 
-		try commands.append(root.allocator, try .init(
+		try commands.append(
 			try shader.getShader(self.window.?.context, "container"),
 			&[_]renderer.ShaderParameter{
 				.{
@@ -92,7 +92,7 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow, commands: *std
 					}}
 				},
 			},
-		));
+		);
 	}
 
 	if (self.getData(ZContainer)) |data| {

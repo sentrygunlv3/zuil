@@ -6,28 +6,35 @@ pub const context = @import("context.zig");
 const shader = root.shader;
 const gl = root.gl;
 
-pub const RenderCommand = struct {
-	shader: u32,
-	parameters: []ShaderParameter,
+pub const RenderCommandList = struct {
+	allocator: std.mem.Allocator,
+	commands: std.ArrayList(*root.renderer.RenderCommand),
 
-	pub fn init(s: u32, p: []const ShaderParameter) !*@This() {
-		const self = try root.allocator.create(@This());
+	pub fn init(a: std.mem.Allocator) !@This() {
+		return .{
+			.allocator = a,
+			.commands = try std.ArrayList(*root.renderer.RenderCommand).initCapacity(a, 16),
+		};
+	}
 
-		const parameters = try root.allocator.alloc(ShaderParameter, p.len);
+	pub fn append(self: *@This(), s: u32, p: []const ShaderParameter) !void {
+		const item = try self.allocator.create(RenderCommand);
+
+		const parameters = try self.allocator.alloc(ShaderParameter, p.len);
 		@memcpy(parameters, p);
 
-		self.* = @This(){
+		item.* = RenderCommand{
 			.shader = s,
 			.parameters = parameters,
 		};
 
-		return self;
+		try self.commands.append(self.allocator, item);
 	}
+};
 
-	pub fn deinit(self: *@This()) void {
-		root.allocator.free(self.parameters);
-		root.allocator.destroy(self);
-	}
+pub const RenderCommand = struct {
+	shader: u32,
+	parameters: []ShaderParameter,
 };
 
 pub const ShaderParameter = struct {
@@ -83,7 +90,7 @@ pub fn clear(color: root.color.ZColor) void {
 	root.gl.clearBufferfv(root.gl.COLOR, 0, &clear_color);
 }
 
-pub fn renderCommands(c: *context.RendererContext, commands: *std.ArrayList(*root.renderer.RenderCommand)) anyerror!void {
+pub fn renderCommands(c: *context.RendererContext, commands: *root.renderer.RenderCommandList) anyerror!void {
 	gl.bindVertexArray(c.vertex_arrays);
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, c.buffers);
@@ -98,7 +105,7 @@ pub fn renderCommands(c: *context.RendererContext, commands: *std.ArrayList(*roo
 	gl.vertexAttribPointer(2, 2, root.gl.FLOAT, root.gl.FALSE, 4 * @sizeOf(f32), null);
 	gl.enableVertexAttribArray(2);
 
-	for (commands.items) |command| {
+	for (commands.commands.items) |command| {
 		gl.useProgram(command.shader);
 
 		for (command.parameters) |value| {

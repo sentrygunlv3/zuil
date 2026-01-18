@@ -3,7 +3,7 @@ set -e
 
 cd test
 
-zig build
+zig build "$@"
 
 cd ..
 

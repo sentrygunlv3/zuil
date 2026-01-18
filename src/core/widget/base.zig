@@ -140,8 +140,10 @@ pub const ZWidget = struct {
 	}
 
 	pub fn render(self: *@This(), window: *root.ZWindow, commands: *root.renderer.RenderCommandList, area: ?types.ZBounds) anyerror!void {
-		std.debug.print("\n{*} - {s}\n", .{self, self.type_name});
-		std.debug.print("bounds: {}\n", .{self.clamped_bounds});
+		if (@import("build_options").debug) {
+			std.debug.print("\n{*} - {s}\n", .{self, self.type_name});
+			std.debug.print("bounds: {}\n", .{self.clamped_bounds});
+		}
 		if (self.fi.render) |func| {
 			try func(self, window, commands, area);
 		}

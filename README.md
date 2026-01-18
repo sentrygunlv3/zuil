@@ -86,7 +86,8 @@ widgets.container()
 ### example/test project
 
 the test/example project is in the `test` directory\
-build and run with `./test.sh` or build manually
+build and run with `./test.sh` or `./test.sh -Ddebug`
+or build manually
 
 keybinds:
 

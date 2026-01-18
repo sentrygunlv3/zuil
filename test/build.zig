@@ -4,7 +4,7 @@ pub fn build(b: *std.Build) void {
 	const target = b.standardTargetOptions(.{});
 	const optimize = b.standardOptimizeOption(.{});
 
-	const zuil = b.dependency("zuil", .{});
+	const zuil = b.dependency("zuil", .{.debug = b.option(bool, "debug", "enable debug") orelse false});
 
 	const exe = b.addExecutable(.{
 		.name = "test",

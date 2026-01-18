@@ -4,6 +4,9 @@ pub fn build(b: *std.Build) void {
 	const target = b.standardTargetOptions(.{});
 	const optimize = b.standardOptimizeOption(.{});
 
+	const build_options = b.addOptions();
+	build_options.addOption(bool, "debug", b.option(bool, "debug", "enable debug") orelse false);
+
 	const glfw = b.dependency("zglfw", .{});
 	const opengl = b.dependency("zopengl", .{});
 
@@ -16,6 +19,7 @@ pub fn build(b: *std.Build) void {
 			.optimize = optimize,
 		}),
 	});
+	lib.root_module.addOptions("build_options", build_options);
 	lib.root_module.addSystemIncludePath(b.path("include"));
 
 	lib.root_module.addImport("glfw", glfw.module("root"));

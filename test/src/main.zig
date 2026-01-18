@@ -98,7 +98,6 @@ pub fn main() anyerror!void {
 }
 
 fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
-	std.debug.print("{}\n", .{event});
 	if (event != zuil.input.ZEvent.key) {
 		return true;
 	} else if (event.key.action != .release) {

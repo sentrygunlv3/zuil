@@ -282,7 +282,7 @@ pub const ZWindow = struct {
 			return false;
 		}
 		if (self.key_events.items.len != 0) {
-			std.debug.print("\n--- process input ---\n", .{});
+			if (@import("build_options").debug) std.debug.print("\n--- process input ---\n", .{});
 			for (self.key_events.items) |event| {
 				if (self.input_handler) |func| {
 					if (!func(self, event)) {
@@ -291,7 +291,7 @@ pub const ZWindow = struct {
 					switch (event) {
 						.key => {
 							if (self.focused_widget) |focused| {
-								std.debug.print("{*}\n", .{focused});
+								if (@import("build_options").debug) std.debug.print("{*}\n", .{focused});
 								focused.event(event) catch |e| {
 									std.log.err("event: {}", .{e});
 								};
@@ -300,12 +300,12 @@ pub const ZWindow = struct {
 						.mouse => {
 							if (self.root) |r| {
 								if (r.isOverPoint(event.mouse.x, event.mouse.y, false)) |hovered| {
-									std.debug.print("{*}\n", .{hovered});
+									if (@import("build_options").debug) std.debug.print("{*}\n", .{hovered});
 									hovered.event(event) catch |e| {
 										std.log.err("event: {}", .{e});
 									};
 								} else {
-									std.debug.print("nothing hovered\n", .{});
+									if (@import("build_options").debug) std.debug.print("nothing hovered\n", .{});
 								}
 							}
 						},
@@ -317,16 +317,16 @@ pub const ZWindow = struct {
 		}
 		const Timer = std.time.Timer;
 		if (self.flags.layout_dirty) {
-			std.debug.print("\n--- process layout ---\n", .{});
+			if (@import("build_options").debug) std.debug.print("\n--- process layout ---\n", .{});
 			var timer = Timer.start() catch {return true;};
 
 			self.layout() catch |e| {
 				std.log.err("layout: {}", .{e});
 			};
-			std.debug.print("time: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
+			if (@import("build_options").debug) std.debug.print("time: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 		}
 		if (self.flags.layout_dirty or self.flags.render_dirty) {
-			std.debug.print("\n--- process render ---\n", .{});
+			if (@import("build_options").debug) std.debug.print("\n--- process render ---\n", .{});
 			var timer = Timer.start() catch {return true;};
 
 			self.render() catch |e| {
@@ -338,7 +338,7 @@ pub const ZWindow = struct {
 					else => {}
 				}
 			};
-			std.debug.print("time: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
+			if (@import("build_options").debug) std.debug.print("time: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 		}
 		return true;
 	}
@@ -347,11 +347,11 @@ pub const ZWindow = struct {
 		const space = self.getBounds();
 
 		if (self.root) |r| {
-			std.debug.print("updatePreferredSize\n", .{});
+			if (@import("build_options").debug) std.debug.print("updatePreferredSize\n", .{});
 			try r.updatePreferredSize(if (r.flags.layout_dirty) true else false, space.w, space.h);
-			std.debug.print("updateActualSize\n", .{});
+			if (@import("build_options").debug) std.debug.print("updateActualSize\n", .{});
 			try r.updateActualSize(if (r.flags.layout_dirty) true else false, space.w, space.h);
-			std.debug.print("updatePosition\n", .{});
+			if (@import("build_options").debug) std.debug.print("updatePosition\n", .{});
 			try r.updatePosition(if (r.flags.layout_dirty) true else false, space.w, space.h);
 		}
 
@@ -359,8 +359,6 @@ pub const ZWindow = struct {
 	}
 
 	pub fn render(self: *@This()) anyerror!void {
-		std.debug.print("area: {}\nflags: {}\n", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero(), self.flags});
-
 		glfw.makeContextCurrent(self.window);
 
 		var width: i32 = undefined;
@@ -383,7 +381,10 @@ pub const ZWindow = struct {
 				&commands,
 				area
 			);
-			std.debug.print("total commands: {}\n", .{commands.commands.items.len});
+			if (@import("build_options").debug) {
+				std.debug.print("area: {}\nflags: {}\n", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero(), self.flags});
+				std.debug.print("total commands: {}\n", .{commands.commands.items.len});
+			}
 
 			if (area != null) {
 				// to opengl coordinates

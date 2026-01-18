@@ -315,14 +315,19 @@ pub const ZWindow = struct {
 			}
 			self.key_events.clearAndFree(root.allocator);
 		}
+		const Timer = std.time.Timer;
 		if (self.flags.layout_dirty) {
 			std.debug.print("\n--- process layout ---\n", .{});
+			var timer = Timer.start() catch {return true;};
 
 			self.layout() catch |e| {
 				std.log.err("layout: {}", .{e});
 			};
-
+			std.debug.print("time: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
+		}
+		if (self.flags.layout_dirty or self.flags.render_dirty) {
 			std.debug.print("\n--- process render ---\n", .{});
+			var timer = Timer.start() catch {return true;};
 
 			self.render() catch |e| {
 				std.log.err("failed to render window: {}\n", .{e});
@@ -333,18 +338,7 @@ pub const ZWindow = struct {
 					else => {}
 				}
 			};
-		} else if (self.flags.render_dirty) {
-			std.debug.print("\n--- process render ---\n", .{});
-
-			self.render() catch |e| {
-				std.log.err("failed to render window: {}\n", .{e});
-				switch (e) {
-					root.ZError.MissingShader => {
-						root.shader.debugPrintAll(self.context);
-					},
-					else => {}
-				}
-			};
+			std.debug.print("time: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 		}
 		return true;
 	}
@@ -353,8 +347,11 @@ pub const ZWindow = struct {
 		const space = self.getBounds();
 
 		if (self.root) |r| {
+			std.debug.print("updatePreferredSize\n", .{});
 			try r.updatePreferredSize(if (r.flags.layout_dirty) true else false, space.w, space.h);
+			std.debug.print("updateActualSize\n", .{});
 			try r.updateActualSize(if (r.flags.layout_dirty) true else false, space.w, space.h);
+			std.debug.print("updatePosition\n", .{});
 			try r.updatePosition(if (r.flags.layout_dirty) true else false, space.w, space.h);
 		}
 

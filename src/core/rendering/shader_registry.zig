@@ -4,7 +4,7 @@ const gl = root.gl;
 
 pub const context = @import("context.zig");
 
-pub fn getShader(c: *context.RendererContext, name: []const u8) !u32 {
+pub fn getShader(c: *context.RendererContext, name: []const u8) !context.ResourceHandle {
 	const shader = c.shaders.get(name);
 	if (shader) |s| {
 		return s;
@@ -30,7 +30,13 @@ pub fn registerShader(c: *context.RendererContext, name: []const u8, v: []const 
 	gl.deleteShader(vertex);
 	gl.deleteShader(fragment);
 
-	try c.shaders.put(name, program);
+	const resource = try context.Resource.init(.{.shader = .{
+		.shader = program,
+	}}, false);
+	errdefer resource.deinit();
+	try c.resources.append(root.allocator, resource);
+
+	try c.shaders.put(name, context.ResourceHandle.init(c, resource));
 }
 
 fn compileShader(shader_type: u32, source: []const u8) !u32 {

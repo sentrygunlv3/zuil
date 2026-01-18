@@ -73,7 +73,7 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.ZWindow, commands: *root.ren
 		const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
 
 		try commands.append(
-			try shader.getShader(self.window.?.context, "bitmap"),
+			"bitmap",
 			&[_]renderer.ShaderParameter{
 				.{
 					.name = "pos",

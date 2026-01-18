@@ -29,6 +29,20 @@ pub const Resource = struct {
 
 	pub const Type = union(enum) {
 		texture: u32,
+		shader: struct {
+			shader: u32,
+			locations: std.StringHashMap(i32) = undefined,
+
+			pub fn getLocation(self: *@This(), name: []const u8) !c_int {
+				if (self.locations.get(name)) |r| {
+					return @intCast(r);
+				} else {
+					const loc: i32 = @intCast(gl.getUniformLocation(self.shader, name.ptr));
+					try self.locations.put(name, loc);
+					return @intCast(loc);
+				}
+			}
+		},
 	};
 
 	pub fn init(t: Type, fake_user: bool) anyerror!*@This() {
@@ -36,6 +50,12 @@ pub const Resource = struct {
 		self.* = @This(){
 			.type = t,
 		};
+		switch (self.type) {
+			.shader => {
+				self.type.shader.locations = .init(root.allocator);
+			},
+			else => {}
+		}
 		if (fake_user) {
 			self.users = 1;
 		}
@@ -46,6 +66,9 @@ pub const Resource = struct {
 		switch (self.type) {
 			.texture => {
 				gl.deleteTextures(1, self.type.texture);
+			},
+			.shader => {
+				self.type.shader.locations.deinit();
 			}
 		}
 		root.allocator.destroy(self);
@@ -54,7 +77,7 @@ pub const Resource = struct {
 
 pub const RendererContext = struct {
 	resources: std.ArrayList(*Resource) = undefined,
-	shaders: std.StringHashMap(u32) = undefined,
+	shaders: std.StringHashMap(ResourceHandle) = undefined,
 	vertex_arrays: u32 = 0,
 	buffers: u32 = 0,
 	element_buffer: u32 = 0,
@@ -63,8 +86,8 @@ pub const RendererContext = struct {
 		const self = try root.allocator.create(@This());
 
 		self.* = @This(){
-			.resources = try std.ArrayList(*Resource).initCapacity(root.allocator, 16),
-			.shaders = std.StringHashMap(u32).init(root.allocator),
+			.resources = try .initCapacity(root.allocator, 16),
+			.shaders = .init(root.allocator),
 		};
 
 		gl.genVertexArrays(1, &self.vertex_arrays);

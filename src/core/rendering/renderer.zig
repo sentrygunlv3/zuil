@@ -17,7 +17,7 @@ pub const RenderCommandList = struct {
 		};
 	}
 
-	pub fn append(self: *@This(), s: u32, p: []const ShaderParameter) !void {
+	pub fn append(self: *@This(), s: []const u8, p: []const ShaderParameter) !void {
 		const item = try self.allocator.create(RenderCommand);
 
 		const parameters = try self.allocator.alloc(ShaderParameter, p.len);
@@ -33,7 +33,7 @@ pub const RenderCommandList = struct {
 };
 
 pub const RenderCommand = struct {
-	shader: u32,
+	shader: []const u8,
 	parameters: []ShaderParameter,
 };
 
@@ -105,23 +105,26 @@ pub fn renderCommands(c: *context.RendererContext, commands: *root.renderer.Rend
 	gl.vertexAttribPointer(2, 2, root.gl.FLOAT, root.gl.FALSE, 4 * @sizeOf(f32), null);
 	gl.enableVertexAttribArray(2);
 
+	var current: u32 = 0;
 	for (commands.commands.items) |command| {
-		gl.useProgram(command.shader);
+		const shader_handle = try shader.getShader(c, command.shader);
+		if (shader_handle.resource.type.shader.shader != current) {
+			gl.useProgram(shader_handle.resource.type.shader.shader);
+			current = shader_handle.resource.type.shader.shader;
+		}
 
 		for (command.parameters) |value| {
 			switch (value.value) {
 				.uniform2f => {
-					const loc = gl.getUniformLocation(command.shader, value.name.ptr);
 					gl.uniform2f(
-						loc,
+						try shader_handle.resource.type.shader.getLocation(value.name),
 						value.value.uniform2f.a,
 						value.value.uniform2f.b
 					);
 				},
 				.uniform4f => {
-					const loc = gl.getUniformLocation(command.shader, value.name.ptr);
 					gl.uniform4f(
-						loc,
+						try shader_handle.resource.type.shader.getLocation(value.name),
 						value.value.uniform4f.a,
 						value.value.uniform4f.b,
 						value.value.uniform4f.c,
@@ -129,8 +132,10 @@ pub fn renderCommands(c: *context.RendererContext, commands: *root.renderer.Rend
 					);
 				},
 				.uniform1i => {
-					const loc = gl.getUniformLocation(command.shader, value.name.ptr);
-					gl.uniform1i(loc, value.value.uniform1i);
+					gl.uniform1i(
+						try shader_handle.resource.type.shader.getLocation(value.name),
+						value.value.uniform1i
+					);
 				},
 				.texture => {
 					if (value.value.texture.resource.type != .texture) {
@@ -140,8 +145,10 @@ pub fn renderCommands(c: *context.RendererContext, commands: *root.renderer.Rend
 					gl.activeTexture(gl.TEXTURE0);
 					gl.bindTexture(gl.TEXTURE_2D, value.value.texture.resource.type.texture);
 
-					const loc = gl.getUniformLocation(command.shader, value.name.ptr);
-					gl.uniform1i(loc, 0);
+					gl.uniform1i(
+						try shader_handle.resource.type.shader.getLocation(value.name),
+						0
+					);
 				},
 			}
 		}

@@ -61,7 +61,7 @@ fn exitTreeZIcon(self: *widget.ZWidget) void {
 	}
 }
 
-fn renderZIcon(self: *widget.ZWidget, window: *root.ZWindow, commands: *root.renderer.RenderCommandList, area: ?types.ZBounds) anyerror!void {
+fn renderZIcon(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.RenderCommandList, area: ?types.ZBounds) anyerror!void {
 	_ = area;
 	if (self.getData(ZIcon)) |data| {
 		const window_size = window.getBounds();

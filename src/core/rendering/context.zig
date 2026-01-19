@@ -2,7 +2,6 @@ const std = @import("std");
 const root = @import("../root.zig");
 
 const shader = root.shader;
-const glfw = root.glfw;
 const gl = root.gl;
 
 pub const ResourceHandle = struct {
@@ -110,7 +109,7 @@ pub const RendererContext = struct {
 
 	pub fn update(self: *@This()) void {
 		for (self.resources.items, 0..) |item, index| {
-			if (@import("build_options").debug) std.debug.print("[resource {}] {*} - {d}\n", .{index, item, item.users});
+			if (@import("build_options").debug) std.debug.print("[resource {d:3.}] {*} - {s} ({d} users)\n", .{index, item, @tagName(item.type), item.users});
 			if (item.users <= 0) {
 				const removed = self.resources.swapRemove(index);
 				removed.deinit();

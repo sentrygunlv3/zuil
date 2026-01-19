@@ -39,7 +39,7 @@ fn deinitZContainer(self: *widget.ZWidget) void {
 	}
 }
 
-fn renderZContainer(self: *widget.ZWidget, window: *root.ZWindow, commands: *root.renderer.RenderCommandList, area: ?types.ZBounds) anyerror!void {
+fn renderZContainer(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.RenderCommandList, area: ?types.ZBounds) anyerror!void {
 	block: {
 		if (area) |a| {
 			if (

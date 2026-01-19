@@ -106,7 +106,9 @@ pub fn renderCommands(c: *context.RendererContext, commands: *root.renderer.Rend
 	gl.enableVertexAttribArray(2);
 
 	var current: u32 = 0;
+	const Timer = std.time.Timer;
 	for (commands.commands.items) |command| {
+		var timer = try Timer.start();
 		const shader_handle = try shader.getShader(c, command.shader);
 		if (shader_handle.resource.type.shader.shader != current) {
 			gl.useProgram(shader_handle.resource.type.shader.shader);
@@ -154,5 +156,6 @@ pub fn renderCommands(c: *context.RendererContext, commands: *root.renderer.Rend
 		}
 
 		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
+		if (@import("build_options").debug) std.debug.print("{s} {d:.3}ms\n", .{command.shader, @as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 	}
 }

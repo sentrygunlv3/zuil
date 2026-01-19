@@ -105,7 +105,7 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 	}
 	switch (event.key.key) {
 		.space => {
-			if (self.root) |r| {
+			if (self.tree.root) |r| {
 				if (r.size.w == .percentage) {
 					r.size.w = .{.dp = 1200};
 				} else {

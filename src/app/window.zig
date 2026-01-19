@@ -139,8 +139,8 @@ pub const ZWindow = struct {
 		glfw.getCursorPos(window, &posx, &posy);
 		const event = input.ZEvent{
 			.mouse = .{
-				.key = input.ZMouseKey.fromGlfw(button),
-				.action = .fromGlfw(action),
+				.key = root.inputGlfw.mouseKeyFromGlfw(button),
+				.action = root.inputGlfw.actionFromGlfw(action),
 				.modifiers = root.modifiers,
 				.x = @floatCast(posx),
 				.y = @floatCast(posy),
@@ -162,7 +162,7 @@ pub const ZWindow = struct {
 	}
 
 	fn processGlfwKey(key: glfw.Key, scancode: c_int, action: glfw.Action) input.ZEvent {
-		const ukey = input.ZKey.fromGlfw(key);
+		const ukey = root.inputGlfw.keyFromGlfw(key);
 		const state = if (action != glfw.Action.release) true else false;
 
 		switch (ukey) {
@@ -180,7 +180,7 @@ pub const ZWindow = struct {
 		return .{
 			.key = .{
 				.key = ukey,
-				.action = .fromGlfw(action),
+				.action = root.inputGlfw.actionFromGlfw(action),
 				.modifiers = root.modifiers,
 				.scan_code = scancode,
 			}

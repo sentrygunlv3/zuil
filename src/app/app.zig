@@ -5,13 +5,12 @@ pub const gl = opengl.bindings;
 
 pub const ZuilCore = @import("../core/root.zig");
 
+pub const inputGlfw = @import("input.zig");
 pub const ZWindow = @import("window.zig").ZWindow;
 
 pub var allocator: std.mem.Allocator = undefined;
-
 pub var windows: std.AutoHashMap(*glfw.Window, *ZWindow) = undefined;
 pub var main_window: ?*ZWindow = null;
-
 pub var modifiers = ZuilCore.input.ZModifiers{};
 
 pub const ZAppError = error{
@@ -20,7 +19,7 @@ pub const ZAppError = error{
 
 pub fn init(a: std.mem.Allocator) !void {
 	allocator = a;
-	ZuilCore.allocator = a;
+	ZuilCore.init(a, ZuilCore.renderer.ZRenderFIOpengl.ZRenderFIOpengl);
 
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();

@@ -159,8 +159,8 @@ pub const ZWidgetTree = struct {
 				// to opengl coordinates
 				area.?.y = self.getBounds().h - area.?.h - area.?.y;
 			}
-			root.renderer.clip(area);
-			root.renderer.clear(root.color.GREY);
+			try root.renderer.clip(area);
+			try root.renderer.clear(root.color.GREY);
 			try root.renderer.renderCommands(
 				self.context,
 				&commands

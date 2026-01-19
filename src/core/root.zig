@@ -1,5 +1,4 @@
 const std = @import("std");
-pub const glfw = @import("glfw");
 pub const opengl = @import("opengl");
 
 pub const c = @cImport({
@@ -23,5 +22,10 @@ pub const ZBitmap = @import("types/bitmap.zig").ZBitmap;
 pub const ZAsset = @import("types/asset.zig").ZAsset;
 
 pub var allocator: std.mem.Allocator = undefined;
-
+pub var render_fi: renderer.ZRenderFI = undefined;
 pub var onContextCreate: ?*const fn (self: *renderer.context.RendererContext) anyerror!void = null;
+
+pub fn init(a: std.mem.Allocator, backend: renderer.ZRenderFI) void {
+	allocator = a;
+	render_fi = backend;
+}

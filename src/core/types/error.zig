@@ -4,6 +4,7 @@ pub const ZError = error{
 	MissingWidgetFunction,
 	NoWidgetData,
 	// rendering
+	NotSupportedByBackend,
 	FailedToCompileShader,
 	FailedToLinkShader,
 	MissingShader,

@@ -8,7 +8,8 @@ ZUIL
 > [!CAUTION]
 > WIP
 
-> [!IMPORTANT]NOT TESTED ON WINDOWS
+> [!IMPORTANT]
+> NOT TESTED ON WINDOWS\
 > the `build.zig` links some libraries as system libraries\
 > which i assume doesnt work on windows
 

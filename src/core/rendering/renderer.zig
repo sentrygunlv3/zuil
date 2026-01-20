@@ -9,59 +9,40 @@ const gl = root.gl;
 pub const ZRenderFIOpengl = @import("backend/opengl.zig");
 
 pub const ZRenderFI = struct {
+	init: *const fn () anyerror!void = undefined,
+	deinit: *const fn () void = undefined,
+	resourceRemoveUser: ?*const fn (resource: *context.ResourceHandle) anyerror!void = null,
+	resourcesUpdate: ?*const fn () void = null,
 	clip: ?*const fn (area: ?root.types.ZBounds) void = null,
 	clear: ?*const fn (color: root.color.ZColor) void = null,
-	renderCommands: ?*const fn (c: *context.RendererContext, commands: *root.renderer.RenderCommandList) anyerror!void = null,
+	renderCommands: ?*const fn (c: *context.RenderContext, commands: *context.RenderCommandList) anyerror!void = null,
+	createTexture: ?*const fn (image: root.ZAsset, width: u32, height: u32) anyerror!context.ResourceHandle = null,
+	createShader: ?*const fn (v: []const u8, f: []const u8) anyerror!context.ResourceHandle = null,
 };
 
-pub const RenderCommandList = struct {
-	allocator: std.mem.Allocator,
-	commands: std.ArrayList(*root.renderer.RenderCommand),
+pub fn init() anyerror!void {
+	try root.render_fi.init();
+}
 
-	pub fn init(a: std.mem.Allocator) !@This() {
-		return .{
-			.allocator = a,
-			.commands = try std.ArrayList(*root.renderer.RenderCommand).initCapacity(a, 16),
-		};
+pub fn deinit() void {
+	root.render_fi.deinit();
+}
+
+pub fn resourceRemoveUser(resource: *context.ResourceHandle) anyerror!void {
+	if (root.render_fi.resourceRemoveUser) |func| {
+		try func(resource);
+		return;
 	}
+	return root.ZError.NotSupportedByBackend;
+}
 
-	pub fn append(self: *@This(), s: []const u8, p: []const ShaderParameter) !void {
-		const item = try self.allocator.create(RenderCommand);
-
-		const parameters = try self.allocator.alloc(ShaderParameter, p.len);
-		@memcpy(parameters, p);
-
-		item.* = RenderCommand{
-			.shader = s,
-			.parameters = parameters,
-		};
-
-		try self.commands.append(self.allocator, item);
+pub fn resourcesUpdate() anyerror!void {
+	if (root.render_fi.resourcesUpdate) |func| {
+		func();
+		return;
 	}
-};
-
-pub const RenderCommand = struct {
-	shader: []const u8,
-	parameters: []ShaderParameter,
-};
-
-pub const ShaderParameter = struct {
-	name: []const u8,
-	value: union(enum) {
-		uniform2f: struct {
-			a: f32,
-			b: f32,
-		},
-		uniform4f: struct {
-			a: f32,
-			b: f32,
-			c: f32,
-			d: f32,
-		},
-		uniform1i: i32,
-		texture: *context.ResourceHandle,
-	},
-};
+	return root.ZError.NotSupportedByBackend;
+}
 
 pub fn clip(area: ?root.types.ZBounds) !void {
 	if (root.render_fi.clip) |func| {
@@ -79,10 +60,24 @@ pub fn clear(color: root.color.ZColor) !void {
 	return root.ZError.NotSupportedByBackend;
 }
 
-pub fn renderCommands(c: *context.RendererContext, commands: *root.renderer.RenderCommandList) anyerror!void {
+pub fn renderCommands(c: *context.RenderContext, commands: *context.RenderCommandList) anyerror!void {
 	if (root.render_fi.renderCommands) |func| {
 		try func(c, commands);
 		return;
+	}
+	return root.ZError.NotSupportedByBackend;
+}
+
+pub fn createTexture(image: root.ZAsset, width: u32, height: u32) anyerror!context.ResourceHandle {
+	if (root.render_fi.createTexture) |func| {
+		return try func(image, width, height);
+	}
+	return root.ZError.NotSupportedByBackend;
+}
+
+pub fn createShader(v: []const u8, f: []const u8) !context.ResourceHandle {
+	if (root.render_fi.createShader) |func| {
+		return try func(v, f);
 	}
 	return root.ZError.NotSupportedByBackend;
 }

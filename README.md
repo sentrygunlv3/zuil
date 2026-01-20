@@ -28,12 +28,13 @@ the `include` directory has headers for `plutosvg`/`plutovg` instead of using th
 
 > container, list(row/column) and icon widgets
 
-### features/done
+### features
 
 - modular widget system
 - asset and shader registries/managers
 - icon rendering
 - input system (keyboard and mouse only)
+- rendering abstraction (only core and shaders are written for opengl)
 
 ### missing features/todo
 

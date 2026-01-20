@@ -4,147 +4,78 @@ const root = @import("../root.zig");
 const shader = root.shader;
 const gl = root.gl;
 
-pub const ResourceHandle = struct {
-	resource: *Resource,
-	context: *RendererContext,
-
-	pub fn init(context: *RendererContext, resource: *Resource) @This() {
-		resource.users += 1;
-		return .{
-			.context = context,
-			.resource = resource,
-		};
-	}
-
-	pub fn deinit(self: *@This()) void {
-		self.resource.users -= 1;
-		self.context.update();
-	}
-};
-
-pub const Resource = struct {
-	users: u32 = 0,
-	type: Type,
-
-	pub const Type = union(enum) {
-		texture: u32,
-		shader: struct {
-			shader: u32,
-			locations: std.StringHashMap(i32) = undefined,
-
-			pub fn getLocation(self: *@This(), name: []const u8) !c_int {
-				if (self.locations.get(name)) |r| {
-					return @intCast(r);
-				} else {
-					const loc: i32 = @intCast(gl.getUniformLocation(self.shader, name.ptr));
-					try self.locations.put(name, loc);
-					return @intCast(loc);
-				}
-			}
-		},
-	};
-
-	pub fn init(t: Type, fake_user: bool) anyerror!*@This() {
-		const self = try root.allocator.create(@This());
-		self.* = @This(){
-			.type = t,
-		};
-		switch (self.type) {
-			.shader => {
-				self.type.shader.locations = .init(root.allocator);
-			},
-			else => {}
-		}
-		if (fake_user) {
-			self.users = 1;
-		}
-		return self;
-	}
-
-	pub fn deinit(self: *@This()) void {
-		switch (self.type) {
-			.texture => {
-				gl.deleteTextures(1, self.type.texture);
-			},
-			.shader => {
-				self.type.shader.locations.deinit();
-			}
-		}
-		root.allocator.destroy(self);
-	}
-};
-
-pub const RendererContext = struct {
-	resources: std.ArrayList(*Resource) = undefined,
-	shaders: std.StringHashMap(ResourceHandle) = undefined,
-	vertex_arrays: u32 = 0,
-	buffers: u32 = 0,
-	element_buffer: u32 = 0,
+pub const RenderContext = struct {
+	shaders: std.StringHashMap(ResourceHandle),
 
 	pub fn init() !*@This() {
 		const self = try root.allocator.create(@This());
-
 		self.* = @This(){
-			.resources = try .initCapacity(root.allocator, 16),
-			.shaders = .init(root.allocator),
+			.shaders = std.StringHashMap(ResourceHandle).init(root.allocator),
 		};
-
-		gl.genVertexArrays(1, &self.vertex_arrays);
-		gl.genBuffers(1, &self.buffers);
-		gl.genBuffers(1, &self.element_buffer);
-
 		return self;
 	}
 
 	pub fn deinit(self: *@This()) void {
-		gl.deleteVertexArrays(1, &self.vertex_arrays);
-		gl.deleteBuffers(1, &self.buffers);
-		gl.deleteBuffers(1, &self.element_buffer);
-
 		self.shaders.deinit();
-		self.resources.deinit(root.allocator);
-
 		root.allocator.destroy(self);
 	}
+};
 
-	pub fn update(self: *@This()) void {
-		for (self.resources.items, 0..) |item, index| {
-			if (@import("build_options").debug) std.debug.print("[resource {d:3.}] {*} - {s} ({d} users)\n", .{index, item, @tagName(item.type), item.users});
-			if (item.users <= 0) {
-				const removed = self.resources.swapRemove(index);
-				removed.deinit();
-			}
-		}
+pub const ResourceHandle = struct {
+	resource: *anyopaque,
+
+	pub fn deinit(self: *@This()) void {
+		root.renderer.resourceRemoveUser(self) catch |e| {
+			std.debug.print("resource: {}\n", .{e});
+		};
+	}
+};
+
+pub const RenderCommandList = struct {
+	allocator: std.mem.Allocator,
+	commands: std.ArrayList(*RenderCommand),
+
+	pub fn init(a: std.mem.Allocator) !@This() {
+		return .{
+			.allocator = a,
+			.commands = try std.ArrayList(*RenderCommand).initCapacity(a, 16),
+		};
 	}
 
-	pub fn createTexture(self: *@This(), image: root.ZAsset, width: u32, height: u32) !ResourceHandle {
-		var bitmap = try root.svg.svgToBitmap(image, width, height);
-		defer bitmap.deinit();
+	pub fn append(self: *@This(), s: []const u8, p: []const ShaderParameter) !void {
+		const item = try self.allocator.create(RenderCommand);
 
-		var texture: u32 = 0;
+		const parameters = try self.allocator.alloc(ShaderParameter, p.len);
+		@memcpy(parameters, p);
 
-		gl.genTextures(1, &texture);
-		errdefer gl.deleteTextures(1, texture);
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, texture);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texImage2D(
-			gl.TEXTURE_2D,
-			0,
-			gl.RGBA,
-			@intCast(bitmap.w),
-			@intCast(bitmap.h),
-			0,
-			gl.BGRA,
-			gl.UNSIGNED_BYTE,
-			bitmap.data.ptr
-		);
+		item.* = RenderCommand{
+			.shader = s,
+			.parameters = parameters,
+		};
 
-		const resource = try Resource.init(.{.texture = texture}, false);
-		errdefer resource.deinit();
-		try self.resources.append(root.allocator, resource);
-
-		return .init(self, resource);
+		try self.commands.append(self.allocator, item);
 	}
+};
+
+pub const RenderCommand = struct {
+	shader: []const u8,
+	parameters: []ShaderParameter,
+};
+
+pub const ShaderParameter = struct {
+	name: []const u8,
+	value: union(enum) {
+		uniform2f: struct {
+			a: f32,
+			b: f32,
+		},
+		uniform4f: struct {
+			a: f32,
+			b: f32,
+			c: f32,
+			d: f32,
+		},
+		uniform1i: i32,
+		texture: *ResourceHandle,
+	},
 };

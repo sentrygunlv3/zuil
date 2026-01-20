@@ -45,7 +45,7 @@ fn enterTreeZIcon(self: *widget.ZWidget) void {
 		const icon = root.assets.getAsset(data.icon) catch {
 			return;
 		};
-		data.resource = self.window.?.context.createTexture(
+		data.resource = root.renderer.createTexture(
 			icon,
 			256,
 			256
@@ -61,7 +61,7 @@ fn exitTreeZIcon(self: *widget.ZWidget) void {
 	}
 }
 
-fn renderZIcon(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.RenderCommandList, area: ?types.ZBounds) anyerror!void {
+fn renderZIcon(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
 	_ = area;
 	if (self.getData(ZIcon)) |data| {
 		const window_size = window.getBounds();
@@ -74,7 +74,7 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root
 
 		try commands.append(
 			"bitmap",
-			&[_]renderer.ShaderParameter{
+			&[_]renderer.context.ShaderParameter{
 				.{
 					.name = "pos",
 					.value = .{.uniform2f = .{

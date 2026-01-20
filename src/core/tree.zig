@@ -8,13 +8,13 @@ const types = root.types;
 
 pub const ZWidgetTree = struct {
 	arena: std.heap.ArenaAllocator = undefined,
-	context: *root.renderer.context.RendererContext = undefined,
+	context: *root.renderer.context.RenderContext = undefined,
 	current_bounds: types.ZBounds = .zero(),
 	flags: packed struct {
 		layout_dirty: bool = true,
 		render_dirty: bool = true,
 		render_dirty_full: bool = true,
-		shared_contex: bool = false,
+		shared_context: bool = false,
 		_: u4 = 0,
 	} = .{},
 	dirty: ?types.ZBounds = .zero(),
@@ -26,22 +26,24 @@ pub const ZWidgetTree = struct {
 	content_alignment: types.ZAlign = .default(),
 	display_size: struct {x: f32 = 0, y: f32 = 0} = .{},
 
-	pub fn init(physical_w: f32, physical_h: f32, root_widget: ?*zwidget.ZWidget, context: ?*root.renderer.context.RendererContext) !*@This() {
+	pub fn init(physical_w: f32, physical_h: f32, root_widget: ?*zwidget.ZWidget, context: ?*root.renderer.context.RenderContext) !*@This() {
 		const self = try root.allocator.create(@This());
 		errdefer self.deinit();
-
-		if (context) |c| {
-			self.context = c;
-			self.flags.shared_contex = true;
-		} else {
-			self.context = try root.renderer.context.RendererContext.init();
-			try root.onContextCreate.?(self.context);
-		}
 
 		self.* = .{
 			.key_events = try std.ArrayList(input.ZEvent).initCapacity(root.allocator, 0),
 			.root = root_widget,
 		};
+
+		if (context) |c| {
+			self.context = c;
+			self.flags.shared_context = true;
+		} else {
+			self.context = try root.renderer.context.RenderContext.init();
+			if (root.onContextCreate) |func| {
+				try func(self.context);
+			}
+		}
 
 		root.gl.enable(root.gl.BLEND);
 		root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
@@ -61,7 +63,7 @@ pub const ZWidgetTree = struct {
 		if (self.root) |r| {
 			r.destroy();
 		}
-		if (!self.flags.shared_contex) {
+		if (!self.flags.shared_context) {
 			self.context.deinit();
 		}
 		self.key_events.deinit(root.allocator);
@@ -141,7 +143,7 @@ pub const ZWidgetTree = struct {
 
 	pub fn render(self: *@This()) anyerror!void {
 		if (self.root) |r| {
-			var commands = try root.renderer.RenderCommandList.init(self.arena.allocator());
+			var commands = try root.renderer.context.RenderCommandList.init(self.arena.allocator());
 
 			var area = if (self.flags.render_dirty_full) null else self.dirty;
 
@@ -161,15 +163,14 @@ pub const ZWidgetTree = struct {
 			}
 			try root.renderer.clip(area);
 			try root.renderer.clear(root.color.GREY);
-			try root.renderer.renderCommands(
-				self.context,
-				&commands
-			);
+			try root.renderer.renderCommands(self.context, &commands);
 		}
-		gl.disable(gl.SCISSOR_TEST);
+		try root.renderer.clip(null);
 
 		self.flags.render_dirty = false;
 		self.flags.render_dirty_full = false;
 		self.dirty = null;
+
+		try root.renderer.resourcesUpdate();
 	}
 };

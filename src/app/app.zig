@@ -19,7 +19,7 @@ pub const ZAppError = error{
 
 pub fn init(a: std.mem.Allocator) !void {
 	allocator = a;
-	ZuilCore.init(a, ZuilCore.renderer.ZRenderFIOpengl.ZRenderFIOpengl);
+	try ZuilCore.init(a, ZuilCore.renderer.ZRenderFIOpengl.ZRenderFIOpengl);
 
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();
@@ -31,6 +31,8 @@ pub fn deinit() void {
 	glfw.terminate();
 
 	windows.deinit();
+
+	ZuilCore.deinit();
 }
 
 pub fn run() !void {

@@ -21,11 +21,18 @@ pub const ZError = @import("types/error.zig").ZError;
 pub const ZBitmap = @import("types/bitmap.zig").ZBitmap;
 pub const ZAsset = @import("types/asset.zig").ZAsset;
 
+pub var onContextCreate: ?*const fn (context: *renderer.context.RenderContext) anyerror!void = null;
+
 pub var allocator: std.mem.Allocator = undefined;
 pub var render_fi: renderer.ZRenderFI = undefined;
-pub var onContextCreate: ?*const fn (self: *renderer.context.RendererContext) anyerror!void = null;
 
-pub fn init(a: std.mem.Allocator, backend: renderer.ZRenderFI) void {
+pub fn init(a: std.mem.Allocator, backend: renderer.ZRenderFI) anyerror!void {
 	allocator = a;
 	render_fi = backend;
+
+	try renderer.init();
+}
+
+pub fn deinit() void {
+	renderer.deinit();
 }

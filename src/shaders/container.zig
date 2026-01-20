@@ -32,7 +32,7 @@ const fragment =
 	\\}
 ;
 
-pub fn register(c: *shader.context.RendererContext) void {
+pub fn register(c: *shader.context.RenderContext) void {
 	shader.registerShader(
 		c,
 		name,

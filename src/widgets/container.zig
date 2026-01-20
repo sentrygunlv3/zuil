@@ -39,7 +39,7 @@ fn deinitZContainer(self: *widget.ZWidget) void {
 	}
 }
 
-fn renderZContainer(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.RenderCommandList, area: ?types.ZBounds) anyerror!void {
+fn renderZContainer(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
 	block: {
 		if (area) |a| {
 			if (
@@ -67,7 +67,7 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: 
 
 		try commands.append(
 			"container",
-			&[_]renderer.ShaderParameter{
+			&[_]renderer.context.ShaderParameter{
 				.{
 					.name = "pos",
 					.value = .{.uniform2f = .{

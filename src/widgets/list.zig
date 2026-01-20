@@ -4,7 +4,6 @@ const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
 
 const widget = root.zwidget;
 const ZColor = root.color.ZColor;
-const shader = root.shader;
 const types = root.types;
 
 pub const ZList = struct {

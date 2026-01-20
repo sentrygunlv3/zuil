@@ -12,7 +12,6 @@ pub const input = @import("types/input.zig");
 pub const types = @import("types/generic.zig");
 pub const zwidget = @import("widget/base.zig");
 pub const assets = @import("assets/asset_registry.zig");
-pub const shader = @import("rendering/shader_registry.zig");
 pub const renderer = @import("rendering/renderer.zig");
 pub const svg = @import("assets/helpers/svg.zig");
 

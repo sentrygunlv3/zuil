@@ -4,6 +4,8 @@ const root = @import("../root.zig");
 const shader = root.shader;
 const gl = root.gl;
 
+pub const context = @import("context.zig");
+
 pub const RenderContext = struct {
 	shaders: std.StringHashMap(ResourceHandle),
 
@@ -19,6 +21,27 @@ pub const RenderContext = struct {
 		self.shaders.deinit();
 		root.allocator.destroy(self);
 	}
+
+	pub fn getShader(self: *@This(), name: []const u8) !context.ResourceHandle {
+		const handle = self.shaders.get(name);
+		if (handle) |s| {
+			return s;
+		}
+		return root.ZError.MissingShader;
+	}
+
+	pub fn registerShader(self: *@This(), name: []const u8, v: []const u8, f: []const u8) !void {
+		const handle = try root.renderer.createShader(v, f);
+
+		try self.shaders.put(name, handle);
+	}
+
+	pub fn debugPrintAll(self: *@This(), ) void {
+		var iterator = self.shaders.keyIterator();
+		while (iterator.next()) |key| {
+			std.debug.print("{s}\n", .{key.*});
+		}
+	}
 };
 
 pub const ResourceHandle = struct {
@@ -33,22 +56,20 @@ pub const ResourceHandle = struct {
 
 pub const RenderCommandList = struct {
 	allocator: std.mem.Allocator,
-	commands: std.ArrayList(*RenderCommand),
+	commands: std.ArrayList(RenderCommand),
 
 	pub fn init(a: std.mem.Allocator) !@This() {
 		return .{
 			.allocator = a,
-			.commands = try std.ArrayList(*RenderCommand).initCapacity(a, 16),
+			.commands = try std.ArrayList(RenderCommand).initCapacity(a, 16),
 		};
 	}
 
 	pub fn append(self: *@This(), s: []const u8, p: []const ShaderParameter) !void {
-		const item = try self.allocator.create(RenderCommand);
-
 		const parameters = try self.allocator.alloc(ShaderParameter, p.len);
 		@memcpy(parameters, p);
 
-		item.* = RenderCommand{
+		const item = RenderCommand{
 			.shader = s,
 			.parameters = parameters,
 		};

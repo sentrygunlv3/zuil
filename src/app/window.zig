@@ -52,6 +52,8 @@ pub const ZWindow = struct {
 
 			glfw.makeContextCurrent(self.window);
 
+			glfw.swapInterval(0);
+
 			try root.opengl.loadCoreProfile(glfw.getProcAddress, 4, 0);
 
 			root.gl.enable(root.gl.BLEND);
@@ -281,7 +283,7 @@ pub const ZWindow = struct {
 		var height: i32 = undefined;
 		glfw.getFramebufferSize(self.window, &width, &height);
 
-		root.gl.bindFramebuffer(root.gl.FRAMEBUFFER, self.render_frame);
+		root.gl.bindFramebuffer(gl.FRAMEBUFFER, self.render_frame);
 
 		gl.viewport(0, 0, width, height);
 
@@ -290,6 +292,7 @@ pub const ZWindow = struct {
 		timer = try Timer.start();
 
 		try self.tree.render();
+
 		if (@import("build_options").debug) std.debug.print("tree: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 
 		timer = try Timer.start();

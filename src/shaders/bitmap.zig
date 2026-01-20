@@ -1,5 +1,5 @@
 const std = @import("std");
-const shader = @import("../shaders.zig").shader;
+const renderer = @import("../shaders.zig").renderer;
 
 const name = "bitmap";
 
@@ -38,9 +38,8 @@ const fragment =
 	\\}
 ;
 
-pub fn register(c: *shader.context.RenderContext) void {
-	shader.registerShader(
-		c,
+pub fn register(c: *renderer.context.RenderContext) void {
+	c.registerShader(
 		name,
 		vertex,
 		fragment

@@ -8,9 +8,8 @@ ZUIL
 > [!CAUTION]
 > WIP
 
-> [!IMPORTANT]
-> not tested on windows\
-> and the `build.zig` links some libraries as system libraries\
+> [!IMPORTANT]NOT TESTED ON WINDOWS
+> the `build.zig` links some libraries as system libraries\
 > which i assume doesnt work on windows
 
 ---
@@ -20,19 +19,18 @@ ZUIL (Zig UI Library)
 basic ui framework made with zig\
 using `zglfw`, `zopengl`, `plutosvg`/`plutovg` and `freetype` (no text rendering yet)
 
-the `include` directory has headers for `plutosvg`/`plutovg` instead of using the system installed headers mainly to stop zls from giving false errors
+the core widget system uses a rendering abstraction\
+currently only has an opengl backend (the default shaders are also written for opengl only)
 
 ---
 
 <img src="./screenshot.png">
 
-> container, list(row/column) and icon widgets
-
 ### features
 
 - modular widget system
-- asset and shader registries/managers
-- icon rendering
+- asset/file registry
+- icon/texture rendering with a resource system
 - input system (keyboard and mouse only)
 - rendering abstraction (only core and shaders are written for opengl)
 
@@ -97,9 +95,23 @@ keybinds:
 
 (the blue widget under the icon widget is clickable)
 
+## project structure
+
+the `include` directory has headers for `plutosvg`/`plutovg` instead of using the system installed headers mainly to stop zls from giving false errors
+
+inside `src`:
+
+- `core` directory has the base widget system
+- `app` directory has glfw specific things and can be used to create windows that use the core widget system
+- `shaders`/`shaders.zig` and `widgets`/`widgets.zig` directories/files have the default widgets/shaders
+- `root.zig` is basically the lib root for the `app` module
+
+its designed like this so at some point the `app`, `core` and the default widgets can be separated to different repos/libraries\
+but for now it will be a mono repo because its WIP and a lot of things are changing
+
 ## technical info
 
-window processing order/logic
+window processing logic overview
 
 1. process input from queue
    1. send to global input handler
@@ -110,6 +122,9 @@ window processing order/logic
    - if root widgets layout is dirty then recalculate the whole tree
    - if root widget is not dirty go down a step with no recalculation
      - if a child widget is dirty recalculate layout from that widget down
-     - else continue doing down
+     - else continue going down
 3. if the windows render is marked dirty
-   - render entire widget tree (the plan is to only render widgets inside a dirty area)
+   - if entire is dirty
+     - render entire widget tree
+   - if only a part is dirty
+     - render only that area

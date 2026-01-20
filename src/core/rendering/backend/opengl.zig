@@ -3,7 +3,6 @@ const root = @import("../../root.zig");
 
 pub const renderer = @import("../renderer.zig");
 
-const shader = root.shader;
 const gl = root.gl;
 
 /// global resource array
@@ -247,7 +246,7 @@ pub fn renderCommands(c: *renderer.context.RenderContext, commands: *renderer.co
 	const Timer = std.time.Timer;
 	for (commands.commands.items) |command| {
 		var timer = try Timer.start();
-		const handle = shader.getShader(c, command.shader) catch |e| {
+		const handle = c.getShader(command.shader) catch |e| {
 			std.debug.print("{}\n", .{e});
 			continue;
 		};

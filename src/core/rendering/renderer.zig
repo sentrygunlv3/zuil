@@ -3,7 +3,6 @@ const root = @import("../root.zig");
 
 pub const context = @import("context.zig");
 
-const shader = root.shader;
 const gl = root.gl;
 
 pub const ZRenderFIOpengl = @import("backend/opengl.zig");

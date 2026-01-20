@@ -1,4 +1,3 @@
-pub const shader = @import("core/rendering/shader_registry.zig");
 pub const renderer = @import("core/rendering/renderer.zig");
 pub const core = @import("core/root.zig");
 

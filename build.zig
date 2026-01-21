@@ -19,7 +19,7 @@ pub fn build(b: *std.Build) void {
 	var lib = b.addLibrary(.{
 		.name = "zuil",
 		.linkage = .static,
-		.root_module = b.createModule(.{
+		.root_module = b.addModule("root", .{
 			.root_source_file = b.path("src/root.zig"),
 			.target = target,
 			.optimize = optimize,
@@ -28,16 +28,14 @@ pub fn build(b: *std.Build) void {
 	lib.root_module.addImport("build.zig.zon", build_zig_zon);
 
 	lib.root_module.addOptions("build_options", build_options);
-	lib.root_module.addSystemIncludePath(b.path("include"));
+	//lib.root_module.addSystemIncludePath(b.path("include"));
 
 	lib.root_module.addImport("glfw", glfw.module("root"));
-	lib.root_module.addImport("opengl", opengl.module("root"));
 	lib.root_module.linkLibrary(glfw.artifact("glfw"));
+	lib.root_module.addImport("opengl", opengl.module("root"));
 
 	lib.root_module.linkSystemLibrary("freetype", .{});
 	lib.root_module.linkSystemLibrary("plutosvg", .{});
-
-	b.modules.put("root", lib.root_module) catch {};
 
 	b.installArtifact(lib);
 

@@ -18,8 +18,7 @@
 		"build.zig.zon",
 		"src",
 		"include",
-		// For example...
-		//"LICENSE",
-		//"README.md",
+		"LICENSE",
+		"README.md",
 	},
 }

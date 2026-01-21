@@ -5,6 +5,8 @@ pub const opengl = @import("opengl");
 
 pub const c = @cImport({
 	@cInclude("plutosvg.h");
+	//@cInclude("ft2build.h");
+	@cInclude("freetype/freetype.h");
 });
 
 pub const cffi = @import("c.zig");
@@ -38,13 +40,19 @@ pub var allocator: std.mem.Allocator = undefined;
 /// it will use the functions inside this
 pub var render_fi: renderer.ZRenderFI = undefined;
 
+pub var freetype: c.FT_Library = undefined;
+
 pub fn init(a: std.mem.Allocator, backend: renderer.ZRenderFI) anyerror!void {
 	allocator = a;
 	render_fi = backend;
+
+	_ = c.FT_Init_FreeType(&freetype);
 
 	try renderer.init();
 }
 
 pub fn deinit() void {
 	renderer.deinit();
+
+	_ = c.FT_Done_FreeType(freetype);
 }

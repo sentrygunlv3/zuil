@@ -13,5 +13,6 @@ pub const ZAsset = struct {
 	pub const Type = enum {
 		other,
 		svg,
+		ttf,
 	};
 };

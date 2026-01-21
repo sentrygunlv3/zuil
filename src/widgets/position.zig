@@ -22,7 +22,7 @@ pub const ZPositionFI = widget.ZWidgetFI{
 	.updateActualSize = updateActualSizeZPosition,
 };
 
-pub fn updateActualSizeZPosition(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) anyerror!void {
+pub fn updateActualSizeZPosition(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) callconv(.c) c_int {
 	const margin = self.margin.asPixel(.{.w = w, .h = h}, self.window.?);
 	const width = w - (margin.left + margin.right);
 	const height = h - (margin.top + margin.bottom);
@@ -54,7 +54,7 @@ pub fn updateActualSizeZPosition(self: *widget.ZWidget, dirty: bool, w: f32, h: 
 	}
 
 	const children = self.getChildren() catch {
-		return;
+		return 0;
 	};
 
 	var space: root.types.ZBounds = .zero();
@@ -67,22 +67,24 @@ pub fn updateActualSizeZPosition(self: *widget.ZWidget, dirty: bool, w: f32, h: 
 	}
 
 	for (children) |child| {
-		try child.updateActualSize(
+		child.updateActualSize(
 			dirty or child.flags.layout_dirty,
 			space.w,
 			space.h
-		);
+		) catch return @intFromEnum(root.ZErrorC.updateActualSizeFailed);
 	}
+	return 0;
 }
 
-fn initZPosition(self: *widget.ZWidget) anyerror!void {
-	const data = try root.allocator.create(ZPosition);
+fn initZPosition(self: *widget.ZWidget) callconv(.c) c_int {
+	const data = root.allocator.create(ZPosition) catch return @intFromEnum(root.ZErrorC.OutOfMemory);
 	data.* = .{};
 	self.type_name = @typeName(ZPosition);
 	self.data = data;
+	return 0;
 }
 
-fn deinitZPosition(self: *widget.ZWidget) void {
+fn deinitZPosition(self: *widget.ZWidget) callconv(.c) void {
 	if (self.getData(ZPosition)) |data| {
 		if (data.child) |c| {
 			c.exitTreeExceptParent();
@@ -93,22 +95,24 @@ fn deinitZPosition(self: *widget.ZWidget) void {
 	}
 }
 
-fn getChildrenZPosition(self: *widget.ZWidget) []*widget.ZWidget {
+fn getChildrenZPosition(self: *widget.ZWidget, return_len: *usize) callconv(.c) [*]*widget.ZWidget {
 	if (self.getData(ZPosition)) |data| {
 		if (data.child) |_| {
+			return_len.* = 1;
 			return @as([*]*widget.ZWidget, @ptrCast(&data.child.?))[0..1];
 		}
 	}
+	return_len.* = 0;
 	return &[0]*widget.ZWidget{};
 }
 
-fn removeChildZPosition(self: *widget.ZWidget, child: *widget.ZWidget) anyerror!void {
+fn removeChildZPosition(self: *widget.ZWidget, child: *widget.ZWidget) callconv(.c) c_int {
 	if (self.getData(ZPosition)) |data| {
 		if (data.child == child) {
 			data.child = null;
 		}
 	}
-	return;
+	return 0;
 }
 
 pub fn zPosition() *ZPositionBuilder {

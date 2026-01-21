@@ -20,14 +20,15 @@ pub const ZContainerFI = widget.ZWidgetFI{
 	.removeChild = removeChildZContainer,
 };
 
-fn initZContainer(self: *widget.ZWidget) anyerror!void {
-	const data = try root.allocator.create(ZContainer);
+fn initZContainer(self: *widget.ZWidget) callconv(.c) c_int {
+	const data = root.allocator.create(ZContainer) catch return @intFromEnum(root.ZErrorC.OutOfMemory);
 	data.* = .{};
 	self.type_name = @typeName(ZContainer);
 	self.data = data;
+	return 0;
 }
 
-fn deinitZContainer(self: *widget.ZWidget) void {
+fn deinitZContainer(self: *widget.ZWidget) callconv(.c) void {
 	if (self.getData(ZContainer)) |data| {
 		if (data.child) |c| {
 			c.exitTreeExceptParent();
@@ -38,7 +39,7 @@ fn deinitZContainer(self: *widget.ZWidget) void {
 	}
 }
 
-fn renderZContainer(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
+fn renderZContainer(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
 	block: {
 		if (area) |a| {
 			if (
@@ -64,7 +65,7 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: 
 		const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
 		const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
 
-		try commands.append(
+		commands.append(
 			"container",
 			&[_]renderer.context.ShaderParameter{
 				.{
@@ -91,32 +92,35 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: 
 					}}
 				},
 			},
-		);
+		) catch return @intFromEnum(root.ZErrorC.renderWidgetFailed);
 	}
 
 	if (self.getData(ZContainer)) |data| {
 		if (data.child) |child| {
-			try child.render(window, commands, area);
+			child.render(window, commands, if (area != null) area.?.* else null) catch return @intFromEnum(root.ZErrorC.renderWidgetFailed);
 		}
 	}
+	return 0;
 }
 
-fn getChildrenZContainer(self: *widget.ZWidget) []*widget.ZWidget {
+fn getChildrenZContainer(self: *widget.ZWidget, return_len: *usize) callconv(.c) [*]*widget.ZWidget {
 	if (self.getData(ZContainer)) |data| {
 		if (data.child) |_| {
+			return_len.* = 1;
 			return @as([*]*widget.ZWidget, @ptrCast(&data.child.?))[0..1];
 		}
 	}
+	return_len.* = 0;
 	return &[0]*widget.ZWidget{};
 }
 
-fn removeChildZContainer(self: *widget.ZWidget, child: *widget.ZWidget) anyerror!void {
+fn removeChildZContainer(self: *widget.ZWidget, child: *widget.ZWidget) callconv(.c) c_int {
 	if (self.getData(ZContainer)) |data| {
 		if (data.child == child) {
 			data.child = null;
 		}
 	}
-	return;
+	return 0;
 }
 
 pub fn zContainer() *ZContainerBuilder {

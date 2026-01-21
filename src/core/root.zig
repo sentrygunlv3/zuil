@@ -17,6 +17,8 @@ pub const svg = @import("assets/helpers/svg.zig");
 
 pub const ZWidgetTree = @import("tree.zig").ZWidgetTree;
 pub const ZError = @import("types/error.zig").ZError;
+pub const ZErrorC = @import("types/error.zig").ZErrorC;
+pub const errorFromC = @import("types/error.zig").errorFromC;
 pub const ZBitmap = @import("types/bitmap.zig").ZBitmap;
 pub const ZAsset = @import("types/asset.zig").ZAsset;
 

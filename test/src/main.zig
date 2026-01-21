@@ -142,13 +142,13 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 	return true;
 }
 
-fn containerClick(self: *zuil.zwidget.ZWidget, event: zuil.input.ZEvent) anyerror!void {
-	if (event != zuil.input.ZEvent.mouse) {
-		return;
-	} else if (event.mouse.action != .release) {
-		return;
+fn containerClick(self: *zuil.core.zwidget.ZWidget, event: *const zuil.core.input.ZEvent) callconv(.c) c_int {
+	if (event.* != zuil.input.ZEvent.mouse) {
+		return 0;
+	} else if (event.*.mouse.action != .release) {
+		return 0;
 	}
-	switch (event.mouse.key) {
+	switch (event.*.mouse.key) {
 		.left => {
 			if (self.getData(widgets.zcontainer.ZContainer)) |data| {
 				if (colors.compare(data.color, colors.BLUE)) {
@@ -161,5 +161,5 @@ fn containerClick(self: *zuil.zwidget.ZWidget, event: zuil.input.ZEvent) anyerro
 		},
 		else => {}
 	}
-	return;
+	return 0;
 }

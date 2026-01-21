@@ -17,7 +17,7 @@ pub fn getAsset(name: []const u8) !ZAsset {
 	if (asset) |a| {
 		return a;
 	}
-	return root.ZError.MissingAsset;
+	return root.errors.ZError.MissingAsset;
 }
 
 pub fn registerAsset(name: []const u8, asset: ZAsset) !void {

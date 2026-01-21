@@ -4,7 +4,7 @@ const root = @import("app.zig");
 const gl = root.gl;
 const glfw = root.glfw;
 const input = root.ZuilCore.input;
-const zwidget = root.ZuilCore.zwidget;
+const widget = root.ZuilCore.widget;
 const types = root.ZuilCore.types;
 
 /// glfw.Window.create is missing share
@@ -31,10 +31,10 @@ pub const ZWindow = struct {
 	window: *glfw.Window = undefined,
 	render_texture: u32 = 0,
 	render_frame: u32 = 0,
-	tree: *root.ZuilCore.ZWidgetTree = undefined,
+	tree: *root.ZuilCore.tree.ZWidgetTree = undefined,
 	input_handler: ?*const fn (self: *@This(), event: input.ZEvent) bool = null,
 
-	pub fn init(width: i32, height: i32, title: [:0]const u8, root_widget: ?*zwidget.ZWidget) !*@This() {
+	pub fn init(width: i32, height: i32, title: [:0]const u8, root_widget: ?*widget.ZWidget) !*@This() {
 		const self = try root.allocator.create(@This());
 		errdefer self.deinit();
 

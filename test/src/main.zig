@@ -142,7 +142,7 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 	return true;
 }
 
-fn containerClick(self: *zuil.core.zwidget.ZWidget, event: *const zuil.core.input.ZEvent) callconv(.c) c_int {
+fn containerClick(self: *zuil.core.widget.ZWidget, event: *const zuil.core.input.ZEvent) callconv(.c) c_int {
 	if (event.* != zuil.input.ZEvent.mouse) {
 		return 0;
 	} else if (event.*.mouse.action != .release) {

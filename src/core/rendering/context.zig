@@ -1,8 +1,8 @@
 const std = @import("std");
 const root = @import("../root.zig");
 
-const shader = root.shader;
 const gl = root.gl;
+const ZError = root.errors.ZError;
 
 pub const context = @import("context.zig");
 
@@ -27,7 +27,7 @@ pub const RenderContext = struct {
 		if (handle) |s| {
 			return s;
 		}
-		return root.ZError.MissingShader;
+		return ZError.MissingShader;
 	}
 
 	pub fn registerShader(self: *@This(), name: []const u8, v: []const u8, f: []const u8) !void {

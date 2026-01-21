@@ -1,6 +1,8 @@
 const std = @import("std");
 const root = @import("../root.zig");
 
+const errors = root.errors;
+
 const types = root.types;
 const ZBounds = root.types.ZBounds;
 const ZPosition = root.types.ZPosition;
@@ -26,7 +28,7 @@ pub const ZWidget = struct {
 	data: ?*anyopaque = null,
 	// tree
 	parent: ?*ZWidget = null,
-	window: ?*root.ZWidgetTree = null,
+	window: ?*root.tree.ZWidgetTree = null,
 	// calculated
 	clamped_bounds: ZBounds = .zero(),
 	size_ratio: f32 = 0,
@@ -42,7 +44,7 @@ pub const ZWidget = struct {
 			.fi = fi,
 		};
 		if (self.fi.init) |func| {
-			const r = root.errorFromC(func(self));
+			const r = errors.errorFromC(func(self));
 			if (r) |ret| {
 				return ret;
 			}
@@ -129,7 +131,7 @@ pub const ZWidget = struct {
 
 	// ---
 
-	pub fn setWindow(self: *@This(), window: ?*root.ZWidgetTree) void {
+	pub fn setWindow(self: *@This(), window: ?*root.tree.ZWidgetTree) void {
 		self.window = window;
 		if (window != null) {
 			self.enterTree();
@@ -142,13 +144,13 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn render(self: *@This(), window: *root.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
+	pub fn render(self: *@This(), window: *root.tree.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
 		if (@import("build_options").debug) {
 			std.debug.print("\n{*} - {s}\n", .{self, self.type_name});
 			std.debug.print("bounds: {}\n", .{self.clamped_bounds});
 		}
 		if (self.fi.render) |func| {
-			const r = root.errorFromC(func(self, window, commands, if (area != null) &area.? else null));
+			const r = errors.errorFromC(func(self, window, commands, if (area != null) &area.? else null));
 			if (r) |ret| {
 				return ret;
 			}
@@ -157,7 +159,7 @@ pub const ZWidget = struct {
 
 	pub fn updatePreferredSize(self: *@This(), dirty: bool, x: f32, y: f32) anyerror!void {
 		if (self.fi.updatePreferredSize) |func| {
-			const r = root.errorFromC(func(self, dirty, x, y));
+			const r = errors.errorFromC(func(self, dirty, x, y));
 			if (r) |ret| {
 				return ret;
 			}
@@ -166,7 +168,7 @@ pub const ZWidget = struct {
 
 	pub fn updateActualSize(self: *@This(), dirty: bool, x: f32, y: f32) anyerror!void {
 		if (self.fi.updateActualSize) |func| {
-			const r = root.errorFromC(func(self, dirty, x, y));
+			const r = errors.errorFromC(func(self, dirty, x, y));
 			if (r) |ret| {
 				return ret;
 			}
@@ -175,7 +177,7 @@ pub const ZWidget = struct {
 
 	pub fn updatePosition(self: *@This(), dirty: bool, w: f32, h: f32) anyerror!void {
 		if (self.fi.updatePosition) |func| {
-			const r = root.errorFromC(func(self, dirty, w, h));
+			const r = errors.errorFromC(func(self, dirty, w, h));
 			if (r) |ret| {
 				return ret;
 			}
@@ -193,7 +195,7 @@ pub const ZWidget = struct {
 
 	pub fn event(self: *@This(), e: root.input.ZEvent) anyerror!void {
 		if (self.mutable_fi.event) |func| {
-			const r = root.errorFromC(func(self, &e));
+			const r = errors.errorFromC(func(self, &e));
 			if (r) |ret| {
 				return ret;
 			}
@@ -206,7 +208,7 @@ pub const ZWidget = struct {
 			const ptr = func(self, &size);
 			return ptr[0..size];
 		}
-		return root.ZError.MissingWidgetFunction;
+		return errors.ZError.MissingWidgetFunction;
 	}
 
 	/// this only removes the child from the parent
@@ -216,12 +218,12 @@ pub const ZWidget = struct {
 	/// to destroy the child call `destroy` on the child
 	pub fn removeChild(self: *@This(), child: *@This()) anyerror!void {
 		if (self.fi.removeChild) |func| {
-			const r = root.errorFromC(func(self, child));
+			const r = errors.errorFromC(func(self, child));
 			if (r) |ret| {
 				return ret;
 			}
 		}
-		return root.ZError.MissingWidgetFunction;
+		return errors.ZError.MissingWidgetFunction;
 	}
 };
 
@@ -240,7 +242,7 @@ pub const ZWidgetFI = struct {
 	/// top to bottom
 	updatePosition: ?*const fn (self: *ZWidget, dirty: bool, w: f32, h: f32) callconv(.c) c_int = updatePosition,
 
-	render: ?*const fn (self: *ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int = renderWidget,
+	render: ?*const fn (self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int = renderWidget,
 
 	isOverPoint: ?*const fn (self: *ZWidget, x: f32, y: f32, parent_outside: bool) callconv(.c) ?*ZWidget = isOverPointWidget,
 
@@ -253,12 +255,12 @@ pub const ZWidgetMutableFI = struct {
 	event: ?*const fn (self: *ZWidget, event: *const root.input.ZEvent) callconv(.c) c_int = null,
 };
 
-pub fn renderWidget(self: *ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
+pub fn renderWidget(self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
 	const children = self.getChildren() catch {
 		return 0;
 	};
 	for (children) |child| {
-		child.render(window, commands, if (area != null) area.?.* else null) catch return @intFromEnum(root.ZErrorC.renderWidgetFailed);
+		child.render(window, commands, if (area != null) area.?.* else null) catch return @intFromEnum(errors.ZErrorC.renderWidgetFailed);
 	}
 	return 0;
 }
@@ -312,7 +314,7 @@ pub fn updatePreferredSize(self: *ZWidget, dirty: bool, w: f32, h: f32) callconv
 				dirty or child.flags.layout_dirty,
 				w,
 				h
-			) catch return @intFromEnum(root.ZErrorC.updatePreferredSizeFailed);
+			) catch return @intFromEnum(errors.ZErrorC.updatePreferredSizeFailed);
 		}
 		return 0;
 	}
@@ -329,7 +331,7 @@ pub fn updatePreferredSize(self: *ZWidget, dirty: bool, w: f32, h: f32) callconv
 			dirty or child.flags.layout_dirty,
 			w,
 			h
-		) catch return @intFromEnum(root.ZErrorC.updatePreferredSizeFailed);
+		) catch return @intFromEnum(errors.ZErrorC.updatePreferredSizeFailed);
 		if (self.clamped_bounds.w < child.clamped_bounds.w) {
 			if (child.clamped_bounds.w > size_max_w) {
 				self.clamped_bounds.w = size_max_w;
@@ -389,7 +391,7 @@ pub fn updateActualSize(self: *ZWidget, dirty: bool, w: f32, h: f32) callconv(.c
 			dirty or child.flags.layout_dirty,
 			self.clamped_bounds.w,
 			self.clamped_bounds.h
-		) catch return @intFromEnum(root.ZErrorC.updateActualSizeFailed);
+		) catch return @intFromEnum(errors.ZErrorC.updateActualSizeFailed);
 	}
 	return 0;
 }
@@ -407,7 +409,7 @@ pub fn updatePosition(self: *ZWidget, dirty: bool, w: f32, h: f32) callconv(.c) 
 	for (children) |child| {
 		child.clamped_bounds.x = self.clamped_bounds.x;
 		child.clamped_bounds.y = self.clamped_bounds.y;
-		child.updatePosition(dirty or child.flags.layout_dirty, self.clamped_bounds.w, self.clamped_bounds.h) catch return @intFromEnum(root.ZErrorC.updatePositionFailed);
+		child.updatePosition(dirty or child.flags.layout_dirty, self.clamped_bounds.w, self.clamped_bounds.h) catch return @intFromEnum(errors.ZErrorC.updatePositionFailed);
 	}
 	return 0;
 }

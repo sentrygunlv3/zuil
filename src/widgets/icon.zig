@@ -2,7 +2,7 @@ const std = @import("std");
 const root = @import("../root.zig").core;
 const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
 
-const widget = root.zwidget;
+const widget = root.widget;
 const ZColor = root.color.ZColor;
 const renderer = root.renderer;
 const types = root.types;
@@ -26,7 +26,7 @@ pub const ZIconFI = widget.ZWidgetFI{
 };
 
 fn initZIcon(self: *widget.ZWidget) callconv(.c) c_int {
-	const data = root.allocator.create(ZIcon) catch return @intFromEnum(root.ZErrorC.OutOfMemory);
+	const data = root.allocator.create(ZIcon) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
 	data.* = .{};
 	self.type_name = @typeName(ZIcon);
 	self.data = data;
@@ -61,7 +61,7 @@ fn exitTreeZIcon(self: *widget.ZWidget) callconv(.c) void {
 	}
 }
 
-fn renderZIcon(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
+fn renderZIcon(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
 	_ = area;
 	if (self.getData(ZIcon)) |data| {
 		const window_size = window.getBounds();
@@ -94,7 +94,7 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root
 					.value = .{.texture = &data.resource}
 				},
 			},
-		) catch return @intFromEnum(root.ZErrorC.renderWidgetFailed);
+		) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
 	}
 	return 0;
 }

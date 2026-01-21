@@ -65,7 +65,7 @@ widgets.container()
 		.build(),
 		widgets.container()
 		.c.size(.{.dp = 50}, .{.dp = 30})
-		.c.eventCallback(containerClick) // fn (*ZWidget, ZEvent) anyerror!void
+		.c.eventCallback(containerClick) // fn (*ZWidget, *const ZEvent) callconv(.c) c_int
 		.color(colors.rgb(0, 1.0, 0.5))
 		.build(),
 		widgets.container()

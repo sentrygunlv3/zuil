@@ -3,7 +3,7 @@ const root = @import("root.zig");
 
 const gl = root.gl;
 const input = root.input;
-const zwidget = root.zwidget;
+const widget = root.widget;
 const types = root.types;
 
 pub const ZWidgetTree = struct {
@@ -20,13 +20,13 @@ pub const ZWidgetTree = struct {
 	dirty: ?types.ZBounds = .zero(),
 	// --- input
 	key_events: std.ArrayList(input.ZEvent) = undefined,
-	focused_widget: ?*zwidget.ZWidget = null,
+	focused_widget: ?*widget.ZWidget = null,
 	// ---
-	root: ?*zwidget.ZWidget = undefined,
+	root: ?*widget.ZWidget = undefined,
 	content_alignment: types.ZAlign = .default(),
 	display_size: struct {x: f32 = 0, y: f32 = 0} = .{},
 
-	pub fn init(physical_w: f32, physical_h: f32, root_widget: ?*zwidget.ZWidget, context: ?*root.renderer.context.RenderContext) !*@This() {
+	pub fn init(physical_w: f32, physical_h: f32, root_widget: ?*widget.ZWidget, context: ?*root.renderer.context.RenderContext) !*@This() {
 		const self = try root.allocator.create(@This());
 		errdefer self.deinit();
 
@@ -71,7 +71,7 @@ pub const ZWidgetTree = struct {
 		root.allocator.destroy(self);
 	}
 
-	pub fn setRoot(self: *@This(), root_widget: ?*zwidget.ZWidget) void {
+	pub fn setRoot(self: *@This(), root_widget: ?*widget.ZWidget) void {
 		if (self.root) |r| {
 			r.destroy();
 		}

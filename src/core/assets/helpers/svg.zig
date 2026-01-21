@@ -1,10 +1,12 @@
 const std = @import("std");
 const root = @import("../../root.zig");
+
 const ZBitmap = root.ZBitmap;
+const ZError = root.errors.ZError;
 
 pub fn svgToBitmap(svg: root.ZAsset, width: u32, height: u32) anyerror!ZBitmap {
 	if (svg.type != .svg) {
-		return root.ZError.WrongAssetType;
+		return ZError.WrongAssetType;
 	}
 
 	var document: ?*root.c.struct_plutosvg_document = null;
@@ -32,13 +34,13 @@ pub fn svgToBitmap(svg: root.ZAsset, width: u32, height: u32) anyerror!ZBitmap {
 	}
 
 	if (document == null) {
-		return root.ZError.FailedToCreateSvg;
+		return ZError.FailedToCreateSvg;
 	}
 	defer root.c.plutosvg_document_destroy(document);
 
 	const surface = root.c.plutosvg_document_render_to_surface(document, null, @intCast(width), @intCast(height), null, null, null);
 	if (surface == null) {
-		return root.ZError.FailedToCreateSvg;
+		return ZError.FailedToCreateSvg;
 	}
 	defer root.c.plutovg_surface_destroy(surface);
 

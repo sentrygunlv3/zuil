@@ -2,7 +2,7 @@ const std = @import("std");
 const root = @import("../root.zig").core;
 const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
 
-const widget = root.zwidget;
+const widget = root.widget;
 const ZColor = root.color.ZColor;
 const renderer = root.renderer;
 const types = root.types;
@@ -71,13 +71,13 @@ pub fn updateActualSizeZPosition(self: *widget.ZWidget, dirty: bool, w: f32, h: 
 			dirty or child.flags.layout_dirty,
 			space.w,
 			space.h
-		) catch return @intFromEnum(root.ZErrorC.updateActualSizeFailed);
+		) catch return @intFromEnum(root.errors.ZErrorC.updateActualSizeFailed);
 	}
 	return 0;
 }
 
 fn initZPosition(self: *widget.ZWidget) callconv(.c) c_int {
-	const data = root.allocator.create(ZPosition) catch return @intFromEnum(root.ZErrorC.OutOfMemory);
+	const data = root.allocator.create(ZPosition) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
 	data.* = .{};
 	self.type_name = @typeName(ZPosition);
 	self.data = data;

@@ -2,7 +2,7 @@ const std = @import("std");
 const root = @import("../root.zig").core;
 const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
 
-const widget = root.zwidget;
+const widget = root.widget;
 const ZColor = root.color.ZColor;
 const types = root.types;
 
@@ -64,7 +64,7 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 				false,
 				self.clamped_bounds.w,
 				self.clamped_bounds.h
-			) catch return @intFromEnum(root.ZErrorC.updateActualSizeFailed);
+			) catch return @intFromEnum(root.errors.ZErrorC.updateActualSizeFailed);
 		}
 		return 0;
 	}
@@ -77,7 +77,7 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 						dirty or child.flags.layout_dirty,
 						if (child.clamped_bounds.w > new_space.w or child.size.w == .percentage) new_space.w else child.clamped_bounds.w,
 						new_space.h
-					) catch return @intFromEnum(root.ZErrorC.updateActualSizeFailed);
+					) catch return @intFromEnum(root.errors.ZErrorC.updateActualSizeFailed);
 					new_space.w -= child.clamped_bounds.w;
 				}
 			},
@@ -87,7 +87,7 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 						dirty or child.flags.layout_dirty,
 						new_space.w,
 						if (child.clamped_bounds.h > new_space.h or child.size.h == .percentage) new_space.h else child.clamped_bounds.h
-					) catch return @intFromEnum(root.ZErrorC.updateActualSizeFailed);
+					) catch return @intFromEnum(root.errors.ZErrorC.updateActualSizeFailed);
 					new_space.h -= child.clamped_bounds.h;
 				}
 			},
@@ -97,7 +97,7 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 }
 
 pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) callconv(.c) c_int {
-	const children = self.getChildren() catch return @intFromEnum(root.ZErrorC.updatePositionFailed);
+	const children = self.getChildren() catch return @intFromEnum(root.errors.ZErrorC.updatePositionFailed);
 
 	const margin = self.margin.asPixel(.{.w = w, .h = h}, self.window.?);
 	self.clamped_bounds.x += margin.left;
@@ -118,7 +118,7 @@ pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) c
 
 	if (!child_layout_dirty) {
 		for (children) |child| {
-			child.updatePosition(false, self.clamped_bounds.w, self.clamped_bounds.h) catch return @intFromEnum(root.ZErrorC.updatePositionFailed);
+			child.updatePosition(false, self.clamped_bounds.w, self.clamped_bounds.h) catch return @intFromEnum(root.errors.ZErrorC.updatePositionFailed);
 		}
 		return 0;
 	}
@@ -130,7 +130,7 @@ pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) c
 					const width = child.clamped_bounds.w;
 					child.clamped_bounds.x += new_space.x;
 					child.clamped_bounds.y += new_space.y;
-					child.updatePosition(true, self.clamped_bounds.w, self.clamped_bounds.h) catch return @intFromEnum(root.ZErrorC.updatePositionFailed);
+					child.updatePosition(true, self.clamped_bounds.w, self.clamped_bounds.h) catch return @intFromEnum(root.errors.ZErrorC.updatePositionFailed);
 
 					new_space.x += width + data.spacing;
 				}
@@ -140,7 +140,7 @@ pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) c
 					const height = child.clamped_bounds.h;
 					child.clamped_bounds.x += new_space.x;
 					child.clamped_bounds.y += new_space.y;
-					child.updatePosition(true, self.clamped_bounds.w, self.clamped_bounds.h) catch return @intFromEnum(root.ZErrorC.updatePositionFailed);
+					child.updatePosition(true, self.clamped_bounds.w, self.clamped_bounds.h) catch return @intFromEnum(root.errors.ZErrorC.updatePositionFailed);
 
 					new_space.y += height + data.spacing;
 				}
@@ -151,9 +151,9 @@ pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) c
 }
 
 fn initZList(self: *widget.ZWidget) callconv(.c) c_int {
-	const data = root.allocator.create(ZList) catch return @intFromEnum(root.ZErrorC.OutOfMemory);
+	const data = root.allocator.create(ZList) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
 	data.* = .{
-		.children = std.ArrayList(*widget.ZWidget).initCapacity(root.allocator, 0) catch return @intFromEnum(root.ZErrorC.OutOfMemory),
+		.children = std.ArrayList(*widget.ZWidget).initCapacity(root.allocator, 0) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory),
 	};
 	self.type_name = @typeName(ZList);
 	self.data = data;

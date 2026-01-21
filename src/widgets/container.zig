@@ -2,7 +2,7 @@ const std = @import("std");
 const root = @import("../root.zig").core;
 const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
 
-const widget = root.zwidget;
+const widget = root.widget;
 const ZColor = root.color.ZColor;
 const renderer = root.renderer;
 const types = root.types;
@@ -21,7 +21,7 @@ pub const ZContainerFI = widget.ZWidgetFI{
 };
 
 fn initZContainer(self: *widget.ZWidget) callconv(.c) c_int {
-	const data = root.allocator.create(ZContainer) catch return @intFromEnum(root.ZErrorC.OutOfMemory);
+	const data = root.allocator.create(ZContainer) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
 	data.* = .{};
 	self.type_name = @typeName(ZContainer);
 	self.data = data;
@@ -39,7 +39,7 @@ fn deinitZContainer(self: *widget.ZWidget) callconv(.c) void {
 	}
 }
 
-fn renderZContainer(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
+fn renderZContainer(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
 	block: {
 		if (area) |a| {
 			if (
@@ -92,12 +92,12 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.ZWidgetTree, commands: 
 					}}
 				},
 			},
-		) catch return @intFromEnum(root.ZErrorC.renderWidgetFailed);
+		) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
 	}
 
 	if (self.getData(ZContainer)) |data| {
 		if (data.child) |child| {
-			child.render(window, commands, if (area != null) area.?.* else null) catch return @intFromEnum(root.ZErrorC.renderWidgetFailed);
+			child.render(window, commands, if (area != null) area.?.* else null) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
 		}
 	}
 	return 0;

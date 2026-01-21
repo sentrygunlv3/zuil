@@ -5,6 +5,8 @@ pub const renderer = @import("../renderer.zig");
 
 const gl = root.gl;
 
+const ZError = root.errors.ZError;
+
 /// global resource array
 var resources: std.ArrayList(*Resource) = undefined;
 var resources_to_remove: std.ArrayList(*Resource) = undefined;
@@ -159,7 +161,7 @@ pub fn createShader(v: []const u8, f: []const u8) !renderer.context.ResourceHand
 	var status: i32 = 0;
 	gl.getProgramiv(program, gl.LINK_STATUS, &status);
 	if (status == 0) {
-		return root.ZError.FailedToLinkShader;
+		return ZError.FailedToLinkShader;
 	}
 
 	gl.deleteShader(vertex);
@@ -183,7 +185,7 @@ fn compileShader(shader_type: u32, source: []const u8) !u32 {
 	var status: i32 = 0;
 	gl.getShaderiv(s, gl.COMPILE_STATUS, &status);
 	if (status == 0) {
-		return root.ZError.FailedToCompileShader;
+		return ZError.FailedToCompileShader;
 	}
 	return s;
 }

@@ -1,11 +1,11 @@
 const std = @import("std");
 const root = @import("../root.zig");
-
 pub const context = @import("context.zig");
+pub const ZRenderFIOpengl = @import("backend/opengl.zig");
 
 const gl = root.gl;
 
-pub const ZRenderFIOpengl = @import("backend/opengl.zig");
+const ZError = root.errors.ZError;
 
 pub const ZRenderFI = struct {
 	init: *const fn () anyerror!void = undefined,
@@ -32,7 +32,7 @@ pub fn resourceRemoveUser(resource: *context.ResourceHandle) anyerror!void {
 		try func(resource);
 		return;
 	}
-	return root.ZError.NotSupportedByBackend;
+	return ZError.NotSupportedByBackend;
 }
 
 pub fn resourcesUpdate() anyerror!void {
@@ -40,7 +40,7 @@ pub fn resourcesUpdate() anyerror!void {
 		func();
 		return;
 	}
-	return root.ZError.NotSupportedByBackend;
+	return ZError.NotSupportedByBackend;
 }
 
 pub fn clip(area: ?root.types.ZBounds) !void {
@@ -48,7 +48,7 @@ pub fn clip(area: ?root.types.ZBounds) !void {
 		func(area);
 		return;
 	}
-	return root.ZError.NotSupportedByBackend;
+	return ZError.NotSupportedByBackend;
 }
 
 pub fn clear(color: root.color.ZColor) !void {
@@ -56,7 +56,7 @@ pub fn clear(color: root.color.ZColor) !void {
 		func(color);
 		return;
 	}
-	return root.ZError.NotSupportedByBackend;
+	return ZError.NotSupportedByBackend;
 }
 
 pub fn renderCommands(c: *context.RenderContext, commands: *context.RenderCommandList) anyerror!void {
@@ -64,19 +64,19 @@ pub fn renderCommands(c: *context.RenderContext, commands: *context.RenderComman
 		try func(c, commands);
 		return;
 	}
-	return root.ZError.NotSupportedByBackend;
+	return ZError.NotSupportedByBackend;
 }
 
 pub fn createTexture(image: root.ZAsset, width: u32, height: u32) anyerror!context.ResourceHandle {
 	if (root.render_fi.createTexture) |func| {
 		return try func(image, width, height);
 	}
-	return root.ZError.NotSupportedByBackend;
+	return ZError.NotSupportedByBackend;
 }
 
 pub fn createShader(v: []const u8, f: []const u8) !context.ResourceHandle {
 	if (root.render_fi.createShader) |func| {
 		return try func(v, f);
 	}
-	return root.ZError.NotSupportedByBackend;
+	return ZError.NotSupportedByBackend;
 }

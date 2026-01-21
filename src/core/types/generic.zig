@@ -66,7 +66,7 @@ pub const ZUnit = union(enum) {
 		};
 	}
 
-	pub fn asPixel(self: *@This(), vertical: bool, space: ZBounds, window: *root.ZWidgetTree) f32 {
+	pub fn asPixel(self: *@This(), vertical: bool, space: ZBounds, window: *root.tree.ZWidgetTree) f32 {
 		const dp_size = 0.16;
 
 		var physical_size: f32 = 0;
@@ -158,7 +158,7 @@ pub const ZMargin = struct {
 		};
 	}
 
-	pub fn asPixel(self: *@This(), space: ZBounds, window: *root.ZWidgetTree) struct {
+	pub fn asPixel(self: *@This(), space: ZBounds, window: *root.tree.ZWidgetTree) struct {
 		top: f32,
 		bottom: f32,
 		left: f32,

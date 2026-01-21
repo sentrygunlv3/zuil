@@ -10,6 +10,12 @@ pub fn build(b: *std.Build) void {
 	const glfw = b.dependency("zglfw", .{});
 	const opengl = b.dependency("zopengl", .{});
 
+	const build_zig_zon = b.createModule(.{
+		.root_source_file = b.path("build.zig.zon"),
+		.target = target,
+		.optimize = optimize,
+	});
+
 	var lib = b.addLibrary(.{
 		.name = "zuil",
 		.linkage = .static,
@@ -19,6 +25,8 @@ pub fn build(b: *std.Build) void {
 			.optimize = optimize,
 		}),
 	});
+	lib.root_module.addImport("build.zig.zon", build_zig_zon);
+
 	lib.root_module.addOptions("build_options", build_options);
 	lib.root_module.addSystemIncludePath(b.path("include"));
 

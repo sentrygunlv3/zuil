@@ -7,6 +7,8 @@ pub const c = @cImport({
 	@cInclude("plutosvg.h");
 });
 
+pub const cffi = @import("c.zig");
+
 pub const gl = opengl.bindings;
 
 pub const color = @import("types/color.zig");

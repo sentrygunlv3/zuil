@@ -6,8 +6,7 @@ pub const widgets = @import("widgets.zig");
 pub const shaders = @import("shaders.zig");
 
 pub const assets = core.assets;
-pub const shader = core.shader;
-pub const zwidget = core.zwidget;
+pub const widget = core.widget;
 pub const input = core.input;
 pub const types = core.types;
 
@@ -26,3 +25,7 @@ pub fn deinit() void {
 }
 
 pub const run = app.run;
+
+comptime {
+	_ = core.cffi;
+}

@@ -119,9 +119,26 @@ fn resourcesUpdate() void {
 	}
 }
 
-pub fn createTexture(image: root.ZAsset, width: u32, height: u32) !renderer.context.ResourceHandle {
-	var bitmap = try root.svg.svgToBitmap(image, width, height);
-	defer bitmap.deinit();
+fn getFormatInternal(format: root.ZBitmap.Format) c_uint {
+	return switch (format) {
+		.R => gl.R8,
+		.RG => gl.RG8,
+		.RGB => gl.RGB8,
+		.RGBA, .BGRA => gl.RGBA8,
+	};
+}
+
+fn getFormat(format: root.ZBitmap.Format) c_uint {
+	return switch (format) {
+		.R => gl.RED,
+		.RG => gl.RG,
+		.RGB => gl.RGB,
+		.RGBA => gl.RGBA,
+		.BGRA => gl.BGRA,
+	};
+}
+
+fn createTexture(bitmap: *root.ZBitmap) !renderer.context.ResourceHandle {
 	var texture: u32 = 0;
 	gl.genTextures(1, &texture);
 	errdefer gl.deleteTextures(1, texture);
@@ -132,11 +149,11 @@ pub fn createTexture(image: root.ZAsset, width: u32, height: u32) !renderer.cont
 	gl.texImage2D(
 		gl.TEXTURE_2D,
 		0,
-		gl.RGBA,
+		getFormatInternal(bitmap.format),
 		@intCast(bitmap.w),
 		@intCast(bitmap.h),
 		0,
-		gl.BGRA,
+		getFormat(bitmap.format),
 		gl.UNSIGNED_BYTE,
 		bitmap.data.ptr
 	);
@@ -149,7 +166,7 @@ pub fn createTexture(image: root.ZAsset, width: u32, height: u32) !renderer.cont
 	};
 }
 
-pub fn createShader(v: []const u8, f: []const u8) !renderer.context.ResourceHandle  {
+fn createShader(v: []const u8, f: []const u8) !renderer.context.ResourceHandle  {
 	const vertex = try compileShader(gl.VERTEX_SHADER, v);
 	const fragment = try compileShader(gl.FRAGMENT_SHADER, f);
 	
@@ -190,7 +207,7 @@ fn compileShader(shader_type: u32, source: []const u8) !u32 {
 	return s;
 }
 
-pub fn clip(area: ?root.types.ZBounds) void {
+fn clip(area: ?root.types.ZBounds) void {
 	if (area) |a| {
 		gl.enable(gl.SCISSOR_TEST);
 		gl.scissor(
@@ -204,7 +221,7 @@ pub fn clip(area: ?root.types.ZBounds) void {
 	}
 }
 
-pub fn clear(color: root.color.ZColor) void {
+fn clear(color: root.color.ZColor) void {
 	const clear_color = [_]f32{color.r, color.g, color.b, color.a};
 	root.gl.clearBufferfv(root.gl.COLOR, 0, &clear_color);
 }
@@ -220,12 +237,12 @@ const vertices = [_]f32{
 	0, 0, 0, 0,
 };
 
-pub const indices = [_]u32{
+const indices = [_]u32{
 	0, 1, 2,
 	0, 2, 3,
 };
 
-pub fn renderCommands(c: *renderer.context.RenderContext, commands: *renderer.context.RenderCommandList) anyerror!void {
+fn renderCommands(c: *renderer.context.RenderContext, commands: *renderer.context.RenderCommandList) anyerror!void {
 	gl.genVertexArrays(1, &vertex_arrays);
 	gl.genBuffers(1, &buffers);
 	gl.genBuffers(1, &element_buffer);

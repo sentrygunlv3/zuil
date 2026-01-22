@@ -15,7 +15,7 @@ pub const ZRenderFI = struct {
 	clip: ?*const fn (area: ?root.types.ZBounds) void = null,
 	clear: ?*const fn (color: root.color.ZColor) void = null,
 	renderCommands: ?*const fn (c: *context.RenderContext, commands: *context.RenderCommandList) anyerror!void = null,
-	createTexture: ?*const fn (image: root.ZAsset, width: u32, height: u32) anyerror!context.ResourceHandle = null,
+	createTexture: ?*const fn (bitmap: *root.ZBitmap) anyerror!context.ResourceHandle = null,
 	createShader: ?*const fn (v: []const u8, f: []const u8) anyerror!context.ResourceHandle = null,
 };
 
@@ -67,9 +67,9 @@ pub fn renderCommands(c: *context.RenderContext, commands: *context.RenderComman
 	return ZError.NotSupportedByBackend;
 }
 
-pub fn createTexture(image: root.ZAsset, width: u32, height: u32) anyerror!context.ResourceHandle {
+pub fn createTexture(bitmap: *root.ZBitmap) anyerror!context.ResourceHandle {
 	if (root.render_fi.createTexture) |func| {
-		return try func(image, width, height);
+		return try func(bitmap);
 	}
 	return ZError.NotSupportedByBackend;
 }

@@ -18,7 +18,7 @@ ZUIL
 ZUIL (Zig UI Library)
 
 basic ui framework made with zig\
-using `zglfw`, `zopengl`, `plutosvg`/`plutovg` and `freetype` (no text rendering yet)
+using `zglfw`, `zopengl`, `plutosvg`/`plutovg`, `harfbuzz` and `freetype` (no text rendering yet)
 
 the core widget system uses a rendering abstraction\
 currently only has an opengl backend (the default shaders are also written for opengl only)

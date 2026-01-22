@@ -78,7 +78,7 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 						if (child.clamped_bounds.w > new_space.w or child.size.w == .percentage) new_space.w else child.clamped_bounds.w,
 						new_space.h
 					) catch return @intFromEnum(root.errors.ZErrorC.updateActualSizeFailed);
-					new_space.w -= child.clamped_bounds.w;
+					new_space.w -= child.clamped_bounds.w + data.spacing;
 				}
 			},
 			.vertical => {
@@ -88,7 +88,7 @@ pub fn updateActualSizeZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32)
 						new_space.w,
 						if (child.clamped_bounds.h > new_space.h or child.size.h == .percentage) new_space.h else child.clamped_bounds.h
 					) catch return @intFromEnum(root.errors.ZErrorC.updateActualSizeFailed);
-					new_space.h -= child.clamped_bounds.h;
+					new_space.h -= child.clamped_bounds.h + data.spacing;
 				}
 			},
 		}

@@ -14,6 +14,10 @@ pub fn main() anyerror!void {
 	defer zuil.deinit();
 
 	try zuil.assets.registerAssetComptime("icon.svg", @embedFile("icon.svg"), .svg);
+	try zuil.assets.registerAssetComptime("firesans.ttf", @embedFile("font/FiraSans-Regular.ttf"), .ttf);
+
+	const font = try zuil.core.font.ttfToFont(try zuil.assets.getAsset("firesans.ttf"), 0, 0);
+	try zuil.core.fonts.put("firesans", font);
 
 	const list =
 	widgets.list()
@@ -40,6 +44,9 @@ pub fn main() anyerror!void {
 			.c.size(.{.dp = 200}, .{.dp = 200})
 			.c.keepSizeRatio(true)
 			.icon("icon.svg")
+			.build(),
+			widgets.text()
+			.c.size(.fill(), .{.dp = 60})
 			.build(),
 			widgets.container()
 			.c.size(.{.dp = 50}, .{.dp = 30})

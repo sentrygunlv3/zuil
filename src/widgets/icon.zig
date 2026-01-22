@@ -45,11 +45,11 @@ fn enterTreeZIcon(self: *widget.ZWidget) callconv(.c) void {
 		const icon = root.assets.getAsset(data.icon) catch {
 			return;
 		};
-		data.resource = root.renderer.createTexture(
-			icon,
-			256,
-			256
-		) catch {
+		var bitmap = root.svg.svgToBitmap(icon, 256, 256) catch {
+			return;
+		};
+		defer bitmap.deinit();
+		data.resource = root.renderer.createTexture(&bitmap) catch {
 			return;
 		};
 	}
@@ -91,7 +91,7 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, commands: 
 				},
 				.{
 					.name = "color",
-					.value = .{.texture = &data.resource}
+					.value = .{.texture = data.resource}
 				},
 			},
 		) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);

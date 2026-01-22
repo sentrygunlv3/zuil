@@ -58,5 +58,6 @@ pub fn svgToBitmap(svg: root.ZAsset, width: u32, height: u32) anyerror!ZBitmap {
 		.data = bitmap,
 		.w = width,
 		.h = height,
+		.format = .BGRA,
 	};
 }

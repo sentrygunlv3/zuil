@@ -5,8 +5,14 @@ pub const opengl = @import("opengl");
 
 pub const c = @cImport({
 	@cInclude("plutosvg.h");
-	//@cInclude("ft2build.h");
+});
+
+pub const ft = @cImport({
 	@cInclude("freetype/freetype.h");
+});
+
+pub const hb = @cImport({
+	@cInclude("harfbuzz/hb-ft.h");
 });
 
 pub const cffi = @import("c.zig");
@@ -20,6 +26,7 @@ pub const widget = @import("widget/base.zig");
 pub const assets = @import("assets/asset_registry.zig");
 pub const renderer = @import("rendering/renderer.zig");
 pub const svg = @import("assets/helpers/svg.zig");
+pub const font = @import("assets/helpers/font.zig");
 pub const tree = @import("tree.zig");
 pub const errors = @import("types/error.zig");
 
@@ -40,13 +47,15 @@ pub var allocator: std.mem.Allocator = undefined;
 /// it will use the functions inside this
 pub var render_fi: renderer.ZRenderFI = undefined;
 
-pub var freetype: c.FT_Library = undefined;
+pub var freetype: ft.FT_Library = undefined;
+pub var fonts: std.StringHashMap(*font.ZFont) = undefined;
 
 pub fn init(a: std.mem.Allocator, backend: renderer.ZRenderFI) anyerror!void {
 	allocator = a;
 	render_fi = backend;
 
-	_ = c.FT_Init_FreeType(&freetype);
+	_ = ft.FT_Init_FreeType(&freetype);
+	fonts = .init(allocator);
 
 	try renderer.init();
 }
@@ -54,5 +63,7 @@ pub fn init(a: std.mem.Allocator, backend: renderer.ZRenderFI) anyerror!void {
 pub fn deinit() void {
 	renderer.deinit();
 
-	_ = c.FT_Done_FreeType(freetype);
+	_ = ft.FT_Done_FreeType(freetype);
+
+	fonts.deinit();
 }

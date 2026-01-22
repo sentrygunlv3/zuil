@@ -35,6 +35,7 @@ pub fn build(b: *std.Build) void {
 	lib.root_module.addImport("opengl", opengl.module("root"));
 
 	lib.root_module.linkSystemLibrary("freetype", .{});
+	lib.root_module.linkSystemLibrary("harfbuzz", .{});
 	lib.root_module.linkSystemLibrary("plutosvg", .{});
 
 	b.installArtifact(lib);

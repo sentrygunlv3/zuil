@@ -4,25 +4,39 @@ const root = @import("../root.zig");
 const gl = root.gl;
 const ZError = root.errors.ZError;
 
-pub const context = @import("context.zig");
+pub const renderer = @import("renderer.zig");
 
 pub const RenderContext = struct {
 	shaders: std.StringHashMap(ResourceHandle),
+	font_textures: std.AutoHashMap(*root.font.ZFont, ResourceHandle),
 
 	pub fn init() !*@This() {
 		const self = try root.allocator.create(@This());
 		self.* = @This(){
 			.shaders = std.StringHashMap(ResourceHandle).init(root.allocator),
+			.font_textures = std.AutoHashMap(*root.font.ZFont, ResourceHandle).init(root.allocator),
 		};
 		return self;
 	}
 
 	pub fn deinit(self: *@This()) void {
 		self.shaders.deinit();
+		self.font_textures.deinit();
 		root.allocator.destroy(self);
 	}
 
-	pub fn getShader(self: *@This(), name: []const u8) !context.ResourceHandle {
+	pub fn getFontTexture(self: *@This(), font: *root.font.ZFont) !ResourceHandle {
+		var handle = self.font_textures.get(font);
+		if (handle) |s| {
+			return s;
+		}
+		handle = try renderer.createTexture(&font.texture);
+		errdefer renderer.resourceRemoveUser(&handle.?) catch {};
+		try self.font_textures.put(font, handle.?);
+		return handle.?;
+	}
+
+	pub fn getShader(self: *@This(), name: []const u8) !ResourceHandle {
 		const handle = self.shaders.get(name);
 		if (handle) |s| {
 			return s;
@@ -97,6 +111,6 @@ pub const ShaderParameter = struct {
 			d: f32,
 		},
 		uniform1i: i32,
-		texture: *ResourceHandle,
+		texture: ResourceHandle,
 	},
 };

@@ -4,7 +4,8 @@ pub fn build(b: *std.Build) void {
 	const target = b.standardTargetOptions(.{});
 	const optimize = b.standardOptimizeOption(.{});
 
-	const zuil = b.dependency("zuil", .{.debug = b.option(bool, "debug", "enable debug") orelse false});
+	const debug = b.option(bool, "debug", "enable debug") orelse false;
+	const zuil = b.dependency("zuil", .{.debug = debug});
 
 	const exe = b.addExecutable(.{
 		.name = "test",
@@ -12,6 +13,7 @@ pub fn build(b: *std.Build) void {
 			.root_source_file = b.path("src/main.zig"),
 			.target = target,
 			.optimize = optimize,
+			.strip = !debug,
 		}),
 	});
 	exe.root_module.addImport("zuil", zuil.module("root"));

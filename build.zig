@@ -5,10 +5,16 @@ pub fn build(b: *std.Build) void {
 	const optimize = b.standardOptimizeOption(.{});
 
 	const build_options = b.addOptions();
-	build_options.addOption(bool, "debug", b.option(bool, "debug", "enable debug") orelse false);
+	const debug = b.option(bool, "debug", "enable debug") orelse false;
+	build_options.addOption(bool, "debug",debug);
 
-	const glfw = b.dependency("zglfw", .{});
+	const glfw = b.dependency("zglfw", .{.shared = true});
 	const opengl = b.dependency("zopengl", .{});
+
+	if (!debug) {
+		glfw.module("root").strip = true;
+		opengl.module("root").strip = true;
+	}
 
 	const build_zig_zon = b.createModule(.{
 		.root_source_file = b.path("build.zig.zon"),
@@ -23,6 +29,7 @@ pub fn build(b: *std.Build) void {
 			.root_source_file = b.path("src/root.zig"),
 			.target = target,
 			.optimize = optimize,
+			.strip = !debug,
 		}),
 	});
 	lib.root_module.addImport("build.zig.zon", build_zig_zon);

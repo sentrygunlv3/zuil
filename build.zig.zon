@@ -5,12 +5,12 @@
 	.minimum_zig_version = "0.15.2",
 	.dependencies = .{
 		.zglfw = .{
-			.url = "https://github.com/zig-gamedev/zglfw/archive/refs/heads/main.zip",
-			.hash = "zglfw-0.10.0-dev-zgVDNHO2IQDy_fSdwY5U4z42rHUuKgt7T9f-qmQ3FnuL",
+			.url = "https://github.com/sentrygunlv3/zglfw/archive/refs/heads/main.zip",
+			.hash = "zglfw-0.10.0-dev-zgVDNES4IQAAXAcsFiHfmadlpDCHhF2cUqWxBGIViyU6",
 		},
 		.zopengl = .{
 			.url = "https://github.com/zig-gamedev/zopengl/archive/refs/heads/main.zip",
-			.hash = "zopengl-0.6.0-dev-5-tnz6-mCgD65lY7NrNAU4haXCpVHUpTUEznTwfmBB96",
+			.hash = "zopengl-0.6.0-dev-5-tnz-G3CwB-4D72AAxsMmXZR_k8nwASrWcdo8CBVnoc",
 		},
 	},
 	.paths = .{

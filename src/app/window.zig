@@ -7,26 +7,6 @@ const input = root.ZuilCore.input;
 const widget = root.ZuilCore.widget;
 const types = root.ZuilCore.types;
 
-/// glfw.Window.create is missing share
-pub fn createWindow(
-    width: c_int,
-    height: c_int,
-    title: [:0]const u8,
-    monitor: ?*glfw.Monitor,
-	share: ?*glfw.Window,
-) glfw.Error!*glfw.Window {
-    if (glfwCreateWindow(width, height, title, monitor, share)) |window| return window;
-    try glfw.maybeError();
-    unreachable;
-}
-extern fn glfwCreateWindow(
-    width: c_int,
-    height: c_int,
-    title: [*:0]const u8,
-    monitor: ?*glfw.Monitor,
-    share: ?*glfw.Window,
-) ?*glfw.Window;
-
 pub const ZWindow = struct {
 	window: *glfw.Window = undefined,
 	render_texture: u32 = 0,
@@ -40,13 +20,13 @@ pub const ZWindow = struct {
 
 		if (root.main_window) |main| {
 			self.* = .{
-				.window = try createWindow(width, height, title, null, main.window),
+				.window = try glfw.createWindow(width, height, title, null, main.window),
 			};
 
 			glfw.makeContextCurrent(self.window);
 		} else {
 			self.* = .{
-				.window = try glfw.Window.create(width, height, title, null),
+				.window = try glfw.Window.create(width, height, title, null, null),
 			};
 			root.main_window = self;
 

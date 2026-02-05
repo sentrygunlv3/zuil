@@ -11,16 +11,18 @@ pub const ZFont = struct {
 	texture: ZBitmap = undefined,
 	face: ft.FT_Face = undefined,
 	hb_font: *root.hb.struct_hb_font_t = undefined,
-	glyphs: std.ArrayList(glyph) = undefined,
+	glyphs: std.AutoHashMap(u32, Glyph) = undefined,
 
-	pub const glyph = struct {
-		x: i32,
-		y: i32,
-		w: i32,
-		h: i32,
-		bearing_x: i32,
-		bearing_y: i32,
-		advance: i32,
+	pub const Glyph = struct {
+		x: u32,
+		y: u32,
+		w: u32,
+		h: u32,
+
+		font_width: i32,
+		font_height: i32,
+		font_bearing_x: i32,
+		font_bearing_y: i32,
 	};
 
 	pub fn init() !*@This() {
@@ -28,8 +30,9 @@ pub const ZFont = struct {
 	}
 
 	pub fn deinit(self: *@This()) void {
-		hb.hb_font_create(&self.hb_font);
+		hb.hb_font_destroy(&self.hb_font);
 		self.texture.deinit();
+		self.glyphs.deinit();
 		root.allocator.destroy(self);
 	}
 };
@@ -50,7 +53,7 @@ pub fn ttfToFont(svg: root.ZAsset, width: u32, height: u32) anyerror!*ZFont {
 			_ = ft.FT_New_Memory_Face(root.freetype, data.ptr, @intCast(data.len), 0, &self.face);
 		}
 	}
-	_ = ft.FT_Set_Char_Size(self.face, 0, 1000, 96, 96);
+	_ = ft.FT_Set_Pixel_Sizes(self.face, 0, 96);
 
 	// based on:
 	// https://gist.github.com/baines/b0f9e4be04ba4e6f56cab82eef5008ff
@@ -69,8 +72,7 @@ pub fn ttfToFont(svg: root.ZAsset, width: u32, height: u32) anyerror!*ZFont {
 	var pen_x: usize = 0;
 	var pen_y: usize = 0;
 
-	self.glyphs = try .initCapacity(root.allocator, glyph_amount);
-	self.glyphs.appendNTimesAssumeCapacity(undefined, glyph_amount);
+	self.glyphs = .init(root.allocator);
 
 	var i: usize = 0;
 	while (i < glyph_amount) : (i += 1) {
@@ -90,20 +92,23 @@ pub fn ttfToFont(svg: root.ZAsset, width: u32, height: u32) anyerror!*ZFont {
 			}
 		}
 
-		self.glyphs.items[i].x = @intCast(pen_x);
-		self.glyphs.items[i].y = @intCast(pen_y);
-		self.glyphs.items[i].w = @intCast(pen_x + @as(usize, @intCast(bitmap.width)));
-		self.glyphs.items[i].h = @intCast(pen_y + @as(usize, @intCast(bitmap.pitch)));
+		try self.glyphs.put(self.face.*.glyph.*.glyph_index, .{
+			.x = @intCast(pen_x),
+			.y = @intCast(pen_y),
+			.w = @intCast(pen_x + @as(usize, @intCast(bitmap.width))),
+			.h = @intCast(pen_y + @as(usize, @intCast(bitmap.rows))),
 
-		self.glyphs.items[i].bearing_x = @intCast(self.face.*.glyph.*.bitmap_left);
-		self.glyphs.items[i].bearing_y = @intCast(self.face.*.glyph.*.bitmap_top);
-		self.glyphs.items[i].advance = @intCast(self.face.*.glyph.*.advance.x >> 6);
+			.font_width = @intCast(self.face.*.glyph.*.metrics.width >> 6),
+			.font_height = @intCast(self.face.*.glyph.*.metrics.height >> 6),
+			.font_bearing_x = @intCast(self.face.*.glyph.*.metrics.horiBearingX >> 6),
+			.font_bearing_y = @intCast(self.face.*.glyph.*.metrics.horiBearingY >> 6),
+		});
 
 		pen_x += @as(usize, @intCast(bitmap.width)) + 1;
 	}
 
-	const font = hb.hb_ft_font_create_referenced(@ptrCast(self.face));
-	hb.hb_ft_font_set_funcs(font);
+	self.hb_font = hb.hb_ft_font_create_referenced(@ptrCast(self.face)) orelse return error.null;
+	hb.hb_ft_font_set_funcs(self.hb_font);
 
 	return self;
 }

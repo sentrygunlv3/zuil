@@ -29,6 +29,7 @@ pub const svg = @import("assets/helpers/svg.zig");
 pub const font = @import("assets/helpers/font.zig");
 pub const tree = @import("tree.zig");
 pub const errors = @import("types/error.zig");
+pub const mesh = @import("types/mesh.zig");
 
 pub const ZBitmap = @import("types/bitmap.zig").ZBitmap;
 pub const ZAsset = @import("types/asset.zig").ZAsset;

@@ -74,6 +74,13 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, commands: 
 
 		commands.append(
 			"bitmap",
+			null,
+			&[_]renderer.context.TextureParameter{
+				.{
+					.slot = 0,
+					.texture = data.resource
+				},
+			},
 			&[_]renderer.context.ShaderParameter{
 				.{
 					.name = "pos",
@@ -88,10 +95,6 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, commands: 
 						.a = sizew,
 						.b = sizeh,
 					}}
-				},
-				.{
-					.name = "color",
-					.value = .{.texture = data.resource}
 				},
 			},
 		) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);

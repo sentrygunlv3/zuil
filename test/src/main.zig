@@ -47,6 +47,7 @@ pub fn main() anyerror!void {
 			.build(),
 			widgets.text()
 			.c.size(.fill(), .{.dp = 60})
+			.text("Hello! 1+2 _-=@")
 			.build(),
 			widgets.container()
 			.c.size(.{.dp = 50}, .{.dp = 30})

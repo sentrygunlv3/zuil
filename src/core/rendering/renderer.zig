@@ -17,6 +17,7 @@ pub const ZRenderFI = struct {
 	renderCommands: ?*const fn (c: *context.RenderContext, commands: *context.RenderCommandList) anyerror!void = null,
 	createTexture: ?*const fn (bitmap: *root.ZBitmap) anyerror!context.ResourceHandle = null,
 	createShader: ?*const fn (v: []const u8, f: []const u8) anyerror!context.ResourceHandle = null,
+	createMesh: ?*const fn (mesh: *const root.mesh.ZMesh) anyerror!context.ResourceHandle = null
 };
 
 pub fn init() anyerror!void {
@@ -77,6 +78,13 @@ pub fn createTexture(bitmap: *root.ZBitmap) anyerror!context.ResourceHandle {
 pub fn createShader(v: []const u8, f: []const u8) !context.ResourceHandle {
 	if (root.render_fi.createShader) |func| {
 		return try func(v, f);
+	}
+	return ZError.NotSupportedByBackend;
+}
+
+pub fn createMesh(mesh: *const root.mesh.ZMesh) anyerror!context.ResourceHandle {
+	if (root.render_fi.createMesh) |func| {
+		return try func(mesh);
 	}
 	return ZError.NotSupportedByBackend;
 }

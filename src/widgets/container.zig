@@ -67,6 +67,8 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, comma
 
 		commands.append(
 			"container",
+			null,
+			&[0]renderer.context.TextureParameter{},
 			&[_]renderer.context.ShaderParameter{
 				.{
 					.name = "pos",

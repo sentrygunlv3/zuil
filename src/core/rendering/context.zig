@@ -9,12 +9,14 @@ pub const renderer = @import("renderer.zig");
 pub const RenderContext = struct {
 	shaders: std.StringHashMap(ResourceHandle),
 	font_textures: std.AutoHashMap(*root.font.ZFont, ResourceHandle),
+	default_mesh: renderer.context.ResourceHandle,
 
 	pub fn init() !*@This() {
 		const self = try root.allocator.create(@This());
 		self.* = @This(){
 			.shaders = std.StringHashMap(ResourceHandle).init(root.allocator),
 			.font_textures = std.AutoHashMap(*root.font.ZFont, ResourceHandle).init(root.allocator),
+			.default_mesh = try renderer.createMesh(&root.mesh.DefaultMesh),
 		};
 		return self;
 	}
@@ -26,14 +28,13 @@ pub const RenderContext = struct {
 	}
 
 	pub fn getFontTexture(self: *@This(), font: *root.font.ZFont) !ResourceHandle {
-		var handle = self.font_textures.get(font);
-		if (handle) |s| {
+		if (self.font_textures.get(font)) |s| {
 			return s;
 		}
-		handle = try renderer.createTexture(&font.texture);
-		errdefer renderer.resourceRemoveUser(&handle.?) catch {};
-		try self.font_textures.put(font, handle.?);
-		return handle.?;
+		var handle = try renderer.createTexture(&font.texture);
+		errdefer renderer.resourceRemoveUser(&handle) catch {};
+		try self.font_textures.put(font, handle);
+		return handle;
 	}
 
 	pub fn getShader(self: *@This(), name: []const u8) !ResourceHandle {
@@ -79,13 +80,23 @@ pub const RenderCommandList = struct {
 		};
 	}
 
-	pub fn append(self: *@This(), s: []const u8, p: []const ShaderParameter) !void {
-		const parameters = try self.allocator.alloc(ShaderParameter, p.len);
-		@memcpy(parameters, p);
+	pub fn append(
+		self: *@This(),
+		shader: []const u8,
+		mesh: ?ResourceHandle,
+		texturers: []const TextureParameter,
+		parameters: []const ShaderParameter
+	) !void {
+		const p = try self.allocator.alloc(ShaderParameter, parameters.len);
+		@memcpy(p, parameters);
+		const t = try self.allocator.alloc(TextureParameter, texturers.len);
+		@memcpy(t, texturers);
 
 		const item = RenderCommand{
-			.shader = s,
-			.parameters = parameters,
+			.shader = shader,
+			.parameters = p,
+			.textures = t,
+			.mesh = mesh,
 		};
 
 		try self.commands.append(self.allocator, item);
@@ -95,6 +106,8 @@ pub const RenderCommandList = struct {
 pub const RenderCommand = struct {
 	shader: []const u8,
 	parameters: []ShaderParameter,
+	mesh: ?ResourceHandle = null,
+	textures: []TextureParameter,
 };
 
 pub const ShaderParameter = struct {
@@ -111,6 +124,10 @@ pub const ShaderParameter = struct {
 			d: f32,
 		},
 		uniform1i: i32,
-		texture: ResourceHandle,
 	},
+};
+
+pub const TextureParameter = struct {
+	slot: u32,
+	texture: ResourceHandle,
 };

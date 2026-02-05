@@ -5,9 +5,11 @@ pub const core = @import("core/root.zig");
 
 pub const container = @import("shaders/container.zig");
 pub const bitmap = @import("shaders/bitmap.zig");
+pub const font = @import("shaders/font.zig");
 
 /// registers all builtin shaders
 pub fn registerAllFunc(context: *core.renderer.context.RenderContext) anyerror!void {
 	container.register(context);
 	bitmap.register(context);
+	font.register(context);
 }

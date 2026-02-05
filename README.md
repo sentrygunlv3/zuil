@@ -18,10 +18,7 @@ ZUIL
 ZUIL (Zig UI Library)
 
 basic ui framework made with zig\
-using `zglfw`, `zopengl`, `plutosvg`/`plutovg`, `harfbuzz` and `freetype` (no text rendering yet)
-
-the core widget system uses a rendering abstraction\
-currently only has an opengl backend (the default shaders are also written for opengl only)
+using `zglfw`, `zopengl`, `plutosvg`/`plutovg`, `harfbuzz` and `freetype`
 
 ---
 
@@ -34,10 +31,10 @@ currently only has an opengl backend (the default shaders are also written for o
 - icon/texture rendering with a resource system
 - input system (keyboard and mouse only)
 - rendering abstraction (only core and shaders are written for opengl)
+- text rendering (WIP)
 
 ### missing features/todo
 
-- text rendering
 - more optimized rendering
 - and more
 
@@ -100,15 +97,12 @@ keybinds:
 
 the `include` directory has headers for `plutosvg`/`plutovg` instead of using the system installed headers mainly to stop zls from giving false errors
 
-inside `src`:
+files/modules in `src` dir:
 
 - `core` directory has the base widget system
 - `app` directory has glfw specific things and can be used to create windows that use the core widget system
 - `shaders`/`shaders.zig` and `widgets`/`widgets.zig` directories/files have the default widgets/shaders
 - `root.zig` is basically the lib root for the `app` module
-
-its designed like this so at some point the `app`, `core` and the default widgets can be separated to different repos/libraries\
-but for now it will be a mono repo because its WIP and a lot of things are changing
 
 ## technical info
 

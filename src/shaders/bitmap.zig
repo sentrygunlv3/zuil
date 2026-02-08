@@ -20,7 +20,7 @@ const vertex =
 	\\        (1 - posIn.y * size.y) - pos.y,
 	\\        0.0, 1.0
 	\\    );
-	\\    texCoord = vec2(aTex.x, 1.0 - aTex.y);
+	\\    texCoord = vec2(aTex.x, aTex.y);
 	\\}
 ;
 

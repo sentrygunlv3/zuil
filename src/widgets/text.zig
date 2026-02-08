@@ -11,6 +11,7 @@ const colors = root.color;
 pub const ZText = struct {
 	color: ZColor = ZColor.default(),
 	text: []const u8 = "",
+	font_size: u32 = 14,
 };
 
 pub const ZTextFI = widget.ZWidgetFI{
@@ -34,6 +35,8 @@ fn deinit(self: *widget.ZWidget) callconv(.c) void {
 	}
 }
 
+// very basic text thing
+// probably needs a complety rewrite to work with more advanced stuff
 fn render(
 	self: *widget.ZWidget,
 	tree: *root.tree.ZWidgetTree,
@@ -53,9 +56,11 @@ fn render(
 
 	var color = ZColor.default();
 	var text: []const u8 = "";
+	var font_size: u32 = 14;
 	if (self.getData(ZText)) |data| {
 		color = data.color;
 		text = data.text;
+		font_size = data.font_size;
 	}
 
 	const window_size = tree.getBounds();
@@ -63,11 +68,18 @@ fn render(
 	const sizew = 2 / window_size.w;
 	const sizeh = 2 / window_size.h;
 
-	const posx = (self.clamped_bounds.x / window_size.w) * 2 - 1;
-	const posy = 1 - (self.clamped_bounds.y / window_size.h) * 2;
+	const widgetx = (self.clamped_bounds.x / window_size.w) * 2 - 1;
+	const widgety = 1 - (self.clamped_bounds.y / window_size.h) * 2;
+	//const widgetw = (self.clamped_bounds.w / window_size.w) * 2 - 1;
+	const widgeth = 1 - (self.clamped_bounds.h / window_size.h) * 2;
+	std.debug.print("{}\n", .{widgeth});
 
 	const font = root.fonts.get("firesans") orelse return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
 	const texture = tree.context.getFontTexture(font) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
+
+	const sub_font = root.hb.hb_font_create_sub_font(font.hb_font) orelse return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
+	defer root.hb.hb_font_destroy(sub_font);
+	root.hb.hb_font_set_scale(sub_font, @intCast(font_size * 64), @intCast(font_size * 64));
 
 	const buffer = root.hb.hb_buffer_create() orelse return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
 	defer root.hb.hb_buffer_destroy(buffer);
@@ -80,7 +92,7 @@ fn render(
 	root.hb.hb_buffer_add_utf8(buffer, text.ptr, @intCast(text.len), 0, @intCast(text.len));
 
 	root.hb.hb_shape(
-		font.hb_font,
+		sub_font,
 		buffer,
 		null,
 		0
@@ -94,8 +106,16 @@ fn render(
 	var mesh = root.mesh.ZMeshBuilder.init(root.allocator) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
 	defer mesh.deinit();
 
+	const scale = @as(f32, @floatFromInt(font_size)) / 96;
+
 	const tex_w = @as(f32, @floatFromInt(font.texture.w));
 	const tex_h = @as(f32, @floatFromInt(font.texture.h));
+
+	const line_height = (@as(f32, @floatFromInt(font.face.*.size.*.metrics.height)) / 64) * sizeh * scale;
+	std.debug.print("{}\n", .{line_height});
+
+	const posx = widgetx;
+	const posy = widgety - line_height / 2;
 
 	var index: u32 = 0;
 	var advance: f32 = 0;
@@ -106,11 +126,11 @@ fn render(
 		const x_offset = (@as(f32, @floatFromInt(glyph_pos[i].x_offset)) / 64) * sizew;
 		const y_offset = (@as(f32, @floatFromInt(glyph_pos[i].y_offset)) / 64) * sizeh;
 
-		const char_w = @as(f32, @floatFromInt(glyph.font_width)) * sizew;
-		const char_h = @as(f32, @floatFromInt(glyph.font_height)) * sizeh;
+		const char_w = @as(f32, @floatFromInt(glyph.font_width)) * sizew * scale;
+		const char_h = @as(f32, @floatFromInt(glyph.font_height)) * sizeh * scale;
 
-		const pos0 = (advance + posx + x_offset) + @as(f32, @floatFromInt(glyph.font_bearing_x)) * sizew;
-		const pos1 = (posy - char_h + y_offset) + @as(f32, @floatFromInt(glyph.font_bearing_y)) * sizeh;
+		const pos0 = (advance + posx + x_offset) + @as(f32, @floatFromInt(glyph.font_bearing_x)) * sizew * scale;
+		const pos1 = (posy - char_h + y_offset) + @as(f32, @floatFromInt(glyph.font_bearing_y)) * sizeh * scale;
 		const pos2 = pos0 + char_w;
 		const pos3 = pos1 + char_h;
 
@@ -197,6 +217,13 @@ pub const zTextBuilder = struct {
 	pub fn text(self: *@This(), t: []const u8) *@This() {
 		if (self.widget.getData(ZText)) |data| {
 			data.*.text = t;
+		}
+		return self;
+	}
+
+	pub fn fontSize(self: *@This(), s: u32) *@This() {
+		if (self.widget.getData(ZText)) |data| {
+			data.*.font_size = s;
 		}
 		return self;
 	}

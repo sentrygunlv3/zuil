@@ -11,24 +11,45 @@ const vertex =
 	\\uniform vec2 pos;
 	\\uniform vec2 size;
 	\\
+	\\out vec2 position;
+	\\
 	\\void main() {
+	\\    position = posIn;
 	\\    gl_Position = vec4(
 	\\        (posIn.x * size.x - 1) + pos.x,
-	\\        (posIn.y * size.y + 1) - pos.y,
+	\\        (1 - posIn.y * size.y) - pos.y,
 	\\        0.0, 1.0
 	\\    );
 	\\}
 ;
 
+// TODO: probably not the best shader
+// a better one could have different radius per corner and a border
 const fragment =
 	\\#version 400 core
 	\\
+	\\uniform vec2 size;
+	\\uniform vec2 screenSize;
 	\\uniform vec4 color;
+	\\uniform float radius;
 	\\
+	\\in vec2 position;
 	\\out vec4 FragColor;
 	\\
 	\\void main() {
-	\\    FragColor = color;
+	\\    vec2 d = abs((position - 0.5) * size * screenSize) - (size * screenSize) * 0.5 + radius;
+	\\    float distance = min(max(d.x, d.y), 0.0) + length(max(d, 0.0)) - radius;
+	\\    float nDistance = distance / min(screenSize.x, screenSize.y);
+	\\
+	\\    float alpha = smoothstep(0.5, -0.5, nDistance / fwidth(nDistance));
+	\\
+	\\    if (alpha <= 0.0) {
+	\\        discard;
+	\\    }
+	\\    FragColor = vec4(
+	\\        color.rgb,
+	\\        color.a * alpha
+	\\    );
 	\\}
 ;
 

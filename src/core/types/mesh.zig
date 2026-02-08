@@ -46,9 +46,9 @@ pub const ZMesh = struct {
 pub const DefaultMesh = ZMesh{
 	.vertices = &[_]f32{
 		// bottom left
-		0, -1, 0, 1,
+		0, 1, 0, 1,
 		// bottom right
-		1, -1, 1, 1,
+		1, 1, 1, 1,
 		// top right
 		1, 0, 1, 0,
 		// top left

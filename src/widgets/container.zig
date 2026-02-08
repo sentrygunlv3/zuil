@@ -85,6 +85,17 @@ fn renderZContainer(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, comma
 					}}
 				},
 				.{
+					.name = "screenSize",
+					.value = .{.uniform2f = .{
+						.a = window_size.w,
+						.b = window_size.h,
+					}}
+				},
+				.{
+					.name = "radius",
+					.value = .{.uniform1f = 10}
+				},
+				.{
 					.name = "color",
 					.value = .{.uniform4f = .{
 						.a = color.r,

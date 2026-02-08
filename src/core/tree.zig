@@ -101,27 +101,6 @@ pub const ZWidgetTree = struct {
 		self.markDirty();
 	}
 
-	fn resize(self: *@This(), w: i32, h: i32) void {
-		if (self.root) |r| {
-			r.markDirty();
-		}
-		self.flags.render_dirty_full = true;
-
-		gl.bindTexture(gl.TEXTURE_2D, self.render_texture);
-		gl.texImage2D(
-			gl.TEXTURE_2D,
-			0,
-			gl.RGBA,
-			w,
-			h,
-			0,
-			gl.RGBA,
-			gl.UNSIGNED_BYTE,
-			null
-		);
-		gl.bindTexture(gl.TEXTURE_2D, 0);
-	}
-
 	pub fn getBounds(self: *@This()) types.ZBounds {
 		return self.current_bounds;
 	}

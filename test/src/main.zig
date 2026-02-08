@@ -47,12 +47,20 @@ pub fn main() anyerror!void {
 			.build(),
 			widgets.text()
 			.c.size(.fill(), .{.dp = 60})
-			.text("Hello! 1+2 _-=@")
+			.text("Hello ZUIL!")
+			.fontSize(48)
 			.build(),
 			widgets.container()
 			.c.size(.{.dp = 50}, .{.dp = 30})
 			.c.eventCallback(containerClick)
 			.color(colors.BLUE)
+			.child(
+				widgets.text()
+				.c.size(.fill(), .fill())
+				.text("button")
+				.color(colors.BLACK)
+				.build(),
+			)
 			.build(),
 			widgets.container()
 			.c.size(.{.pixel = 50}, .{.dp = 30})

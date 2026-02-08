@@ -113,6 +113,7 @@ pub const RenderCommand = struct {
 pub const ShaderParameter = struct {
 	name: []const u8,
 	value: union(enum) {
+		uniform1f: f32,
 		uniform2f: struct {
 			a: f32,
 			b: f32,

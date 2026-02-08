@@ -304,6 +304,12 @@ fn renderCommands(c: *renderer.context.RenderContext, commands: *renderer.contex
 
 		for (command.parameters) |value| {
 			switch (value.value) {
+				.uniform1f => {
+					gl.uniform1f(
+						try resource.type.shader.getLocation(value.name),
+						value.value.uniform1f
+					);
+				},
 				.uniform2f => {
 					gl.uniform2f(
 						try resource.type.shader.getLocation(value.name),

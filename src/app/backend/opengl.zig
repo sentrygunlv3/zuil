@@ -1,15 +1,18 @@
 const std = @import("std");
-const root = @import("../../root.zig");
-
-pub const renderer = @import("../renderer.zig");
+const root = @import("../app.zig");
 
 const gl = root.gl;
 
-const ZError = root.errors.ZError;
+const ZError = root.ZuilCore.errors.ZError;
+
+var gpa: std.heap.GeneralPurposeAllocator(.{}) = undefined;
+var allocator: std.mem.Allocator = undefined;
 
 /// global resource array
 var resources: std.ArrayList(*Resource) = undefined;
 var resources_to_remove: std.ArrayList(*Resource) = undefined;
+
+var default_mesh: *Resource = undefined;
 
 pub const Resource = struct {
 	users: u32 = 0,
@@ -40,13 +43,13 @@ pub const Resource = struct {
 	};
 
 	pub fn init(t: Type, fake_user: bool) anyerror!*@This() {
-		const self = try root.allocator.create(@This());
+		const self = try allocator.create(@This());
 		self.* = @This(){
 			.type = t,
 		};
 		switch (self.type) {
 			.shader => {
-				self.type.shader.locations = .init(root.allocator);
+				self.type.shader.locations = .init(allocator);
 			},
 			else => {}
 		}
@@ -70,11 +73,11 @@ pub const Resource = struct {
 				gl.deleteBuffers(1, &self.type.mesh.element_buffer);
 			}
 		}
-		root.allocator.destroy(self);
+		allocator.destroy(self);
 	}
 };
 
-fn getResource(self: *const renderer.context.ResourceHandle) *Resource {
+fn getResource(self: *const root.ZuilCore.context.ResourceHandle) *Resource {
 	return @ptrCast(@alignCast(self.resource));
 }
 
@@ -82,7 +85,7 @@ fn getResourceFromAny(self: *anyopaque) *Resource {
 	return @ptrCast(@alignCast(self));
 }
 
-pub const ZRenderFIOpengl = renderer.ZRenderFI{
+pub const ZRenderFIOpengl = root.ZuilCore.context.ZRenderer{
 	.init = init,
 	.deinit = deinit,
 	.resourceRemoveUser = resourceRemoveUser,
@@ -96,22 +99,27 @@ pub const ZRenderFIOpengl = renderer.ZRenderFI{
 };
 
 pub fn init() anyerror!void {
-	resources = try .initCapacity(root.allocator, 16);
-	resources_to_remove = try .initCapacity(root.allocator, 16);
+	gpa = .init;
+	allocator = gpa.allocator();
+
+	resources = try .initCapacity(allocator, 16);
+	resources_to_remove = try .initCapacity(allocator, 16);
+
+	default_mesh = getResource(&try createMesh(&root.ZuilCore.mesh.DefaultMesh));
 
 	if (@import("build_options").debug) std.debug.print("using opengl backend\n", .{});
 }
 
 pub fn deinit() void {
-	resources.deinit(root.allocator);
-	resources_to_remove.deinit(root.allocator);
+	resources.deinit(allocator);
+	resources_to_remove.deinit(allocator);
 }
 
-fn resourceRemoveUser(resource: *renderer.context.ResourceHandle) anyerror!void {
+fn resourceRemoveUser(resource: *root.ZuilCore.context.ResourceHandle) anyerror!void {
 	const r = getResource(resource);
 	r.users -= 1;
 	if (r.users <= 0) {
-		try resources_to_remove.append(root.allocator, r);
+		try resources_to_remove.append(allocator, r);
 	}
 }
 
@@ -127,7 +135,7 @@ fn resourcesUpdate() void {
 	}
 }
 
-fn getFormatInternal(format: root.ZBitmap.Format) c_uint {
+fn getFormatInternal(format: root.ZuilCore.ZBitmap.Format) c_uint {
 	return switch (format) {
 		.R => gl.R8,
 		.RG => gl.RG8,
@@ -136,7 +144,7 @@ fn getFormatInternal(format: root.ZBitmap.Format) c_uint {
 	};
 }
 
-fn getFormat(format: root.ZBitmap.Format) c_uint {
+fn getFormat(format: root.ZuilCore.ZBitmap.Format) c_uint {
 	return switch (format) {
 		.R => gl.RED,
 		.RG => gl.RG,
@@ -146,7 +154,7 @@ fn getFormat(format: root.ZBitmap.Format) c_uint {
 	};
 }
 
-fn createTexture(bitmap: *root.ZBitmap) !renderer.context.ResourceHandle {
+fn createTexture(bitmap: *root.ZuilCore.ZBitmap) !root.ZuilCore.context.ResourceHandle {
 	var texture: u32 = 0;
 	gl.genTextures(1, &texture);
 	errdefer gl.deleteTextures(1, texture);
@@ -167,14 +175,14 @@ fn createTexture(bitmap: *root.ZBitmap) !renderer.context.ResourceHandle {
 	);
 	const resource = try Resource.init(.{.texture = texture}, false);
 	errdefer resource.deinit();
-	try resources.append(root.allocator, resource);
+	try resources.append(allocator, resource);
 	resource.users += 1;
 	return .{
 		.resource = resource
 	};
 }
 
-fn createShader(v: []const u8, f: []const u8) !renderer.context.ResourceHandle {
+fn createShader(v: []const u8, f: []const u8) !root.ZuilCore.context.ResourceHandle {
 	const vertex = try compileShader(gl.VERTEX_SHADER, v);
 	const fragment = try compileShader(gl.FRAGMENT_SHADER, f);
 	
@@ -196,7 +204,7 @@ fn createShader(v: []const u8, f: []const u8) !renderer.context.ResourceHandle {
 		.shader = program,
 	}}, false);
 	errdefer resource.deinit();
-	try resources.append(root.allocator, resource);
+	try resources.append(allocator, resource);
 
 	return .{
 		.resource = resource
@@ -215,7 +223,7 @@ fn compileShader(shader_type: u32, source: []const u8) !u32 {
 	return s;
 }
 
-fn createMesh(mesh: *const root.mesh.ZMesh) !renderer.context.ResourceHandle {
+fn createMesh(mesh: *const root.ZuilCore.mesh.ZMesh) !root.ZuilCore.context.ResourceHandle {
 	var vertex_arrays: u32 = 0;
 	var buffers: u32 = 0;
 	var element_buffer: u32 = 0;
@@ -253,14 +261,14 @@ fn createMesh(mesh: *const root.mesh.ZMesh) !renderer.context.ResourceHandle {
 		false
 	);
 	errdefer resource.deinit();
-	try resources.append(root.allocator, resource);
+	try resources.append(allocator, resource);
 	resource.users += 1;
 	return .{
 		.resource = resource
 	};
 }
 
-fn clip(area: ?root.types.ZBounds) void {
+fn clip(area: ?root.ZuilCore.types.ZBounds) void {
 	if (area) |a| {
 		gl.enable(gl.SCISSOR_TEST);
 		gl.scissor(
@@ -274,29 +282,27 @@ fn clip(area: ?root.types.ZBounds) void {
 	}
 }
 
-fn clear(color: root.color.ZColor) void {
+fn clear(color: root.ZuilCore.color.ZColor) void {
 	const clear_color = [_]f32{color.r, color.g, color.b, color.a};
 	root.gl.clearBufferfv(root.gl.COLOR, 0, &clear_color);
 }
 
-fn renderCommands(c: *renderer.context.RenderContext, commands: *renderer.context.RenderCommandList) anyerror!void {
+fn renderCommands(commands: *root.ZuilCore.context.RenderCommandList) anyerror!void {
 	//gl.polygonMode(gl.FRONT_AND_BACK, gl.LINE);
 	var current: u32 = 0;
 	const Timer = std.time.Timer;
 	for (commands.commands.items) |command| {
 		var timer = try Timer.start();
 
-		var mesh_resource: *Resource = undefined;
+		var mesh_resource: *Resource = default_mesh;
 		if (command.mesh) |mesh| {
 			mesh_resource = getResource(&mesh);
-		} else {
-			mesh_resource = getResource(&c.default_mesh);
 		}
 
 		gl.bindVertexArray(mesh_resource.type.mesh.vertex_arrays);
 		const index_count = mesh_resource.type.mesh.index_count;
 
-		const resource = getResource(&try c.getShader(command.shader));
+		const resource = getResource(&command.shader);
 		if (resource.type.shader.shader != current) {
 			gl.useProgram(resource.type.shader.shader);
 			current = resource.type.shader.shader;
@@ -317,6 +323,14 @@ fn renderCommands(c: *renderer.context.RenderContext, commands: *renderer.contex
 						value.value.uniform2f.b
 					);
 				},
+				.uniform3f => {
+					gl.uniform3f(
+						try resource.type.shader.getLocation(value.name),
+						value.value.uniform3f.a,
+						value.value.uniform3f.b,
+						value.value.uniform3f.c
+					);
+				},
 				.uniform4f => {
 					gl.uniform4f(
 						try resource.type.shader.getLocation(value.name),
@@ -330,6 +344,30 @@ fn renderCommands(c: *renderer.context.RenderContext, commands: *renderer.contex
 					gl.uniform1i(
 						try resource.type.shader.getLocation(value.name),
 						value.value.uniform1i
+					);
+				},
+				.uniform2i => {
+					gl.uniform2i(
+						try resource.type.shader.getLocation(value.name),
+						value.value.uniform2i.a,
+						value.value.uniform2i.b
+					);
+				},
+				.uniform3i => {
+					gl.uniform3i(
+						try resource.type.shader.getLocation(value.name),
+						value.value.uniform3i.a,
+						value.value.uniform3i.b,
+						value.value.uniform3i.c,
+					);
+				},
+				.uniform4i => {
+					gl.uniform4i(
+						try resource.type.shader.getLocation(value.name),
+						value.value.uniform4i.a,
+						value.value.uniform4i.b,
+						value.value.uniform4i.c,
+						value.value.uniform4i.d
 					);
 				},
 			}
@@ -352,6 +390,6 @@ fn renderCommands(c: *renderer.context.RenderContext, commands: *renderer.contex
 		}
 
 		gl.drawElements(gl.TRIANGLES, @intCast(index_count), gl.UNSIGNED_INT, null);
-		if (@import("build_options").debug) std.debug.print("{s} {d:.3}ms\n", .{command.shader, @as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
+		if (@import("build_options").debug) std.debug.print("{s} {d:.3}ms\n", .{"command.shader", @as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 	}
 }

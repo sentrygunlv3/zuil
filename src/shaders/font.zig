@@ -1,5 +1,5 @@
 const std = @import("std");
-const renderer = @import("../shaders.zig").renderer;
+const root = @import("../root.zig");
 
 const name = "font";
 
@@ -45,8 +45,9 @@ const fragment =
 	\\}
 ;
 
-pub fn register(c: *renderer.context.RenderContext) void {
+pub fn register(c: *root.core.ZContext) void {
 	c.registerShader(
+		c,
 		name,
 		vertex,
 		fragment

@@ -13,6 +13,8 @@ const ZSize = root.types.ZSize;
 const ZMargin = root.types.ZMargin;
 const ZAlign = root.types.ZAlign;
 
+pub const generateFI = @import("interface.zig").generateFI;
+
 /// base widget struct
 /// 
 /// when creating a widget setting `fi` is used to choose the type\
@@ -33,24 +35,24 @@ pub const ZWidget = struct {
 	parent: ?*ZWidget = null,
 	window: ?*root.tree.ZWidgetTree = null,
 	// calculated
-	clamped_bounds: ZBounds = .zero(),
+	clamped_bounds: ZBounds = .zero,
 	size_ratio: f32 = 0,
 	// layout
-	size: ZSize = .zero(),
-	size_min: ZSize = .zero(),
-	size_max: ZSize = .fill(),
-	margin: ZMargin = .zero(),
+	size: ZSize = .zero,
+	size_min: ZSize = .zero,
+	size_max: ZSize = .fill,
+	margin: ZMargin = .zero,
 
-	pub fn init(fi: *const ZWidgetFI) anyerror!*@This() {
-		const self = try root.allocator.create(@This());
+	pub fn init(context: *root.context.ZContext, fi: *const ZWidgetFI) anyerror!*@This() {
+		const self = try context.allocator.create(@This());
 		self.* = @This(){
 			.fi = fi,
 		};
 		if (self.fi.init) |func| {
-			const r = errors.errorFromC(func(self));
+			const r = errors.errorFromC(func(self, context));
 			if (r) |ret| {
 				if (self.fi.deinit) |funcd| {
-					funcd(self);
+					funcd(self, context);
 				}
 				return ret;
 			}
@@ -58,12 +60,12 @@ pub const ZWidget = struct {
 		return self;
 	}
 
-	/// call destroy when removing widget from window/tree
-	pub fn deinit(self: *@This()) void {
+	/// call destroy when removing widget from tree
+	pub fn deinit(self: *@This(), context: *root.context.ZContext) void {
 		if (self.fi.deinit) |func| {
-			func(self);
+			func(self, context);
 		}
-		root.allocator.destroy(self);
+		context.allocator.destroy(self);
 	}
 
 	pub fn enterTree(self: *@This()) void {
@@ -95,9 +97,13 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn destroy(self: *@This()) void {
-		self.exitTree();
-		self.deinit();
+	pub fn destroy(self: *@This()) !void {
+		if (self.window) |tree| {
+			self.exitTree();
+			self.deinit(tree.context);
+			return;
+		}
+		return error.NotInTree;
 	}
 
 	pub fn markDirty(self: *@This()) void {
@@ -150,7 +156,7 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn render(self: *@This(), window: *root.tree.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
+	pub fn render(self: *@This(), window: *root.tree.ZWidgetTree, commands: *root.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
 		if (@import("build_options").debug) {
 			std.debug.print("\n{*} - {s}\n", .{self, self.type_name});
 			std.debug.print("bounds: {}\n", .{self.clamped_bounds});

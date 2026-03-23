@@ -15,8 +15,8 @@ pub const ZWindow = app.ZWindow;
 /// helper that setups builtins and calls the core init
 pub fn init(a: std.mem.Allocator) !void {
 	try app.init(a);
-	assets.init();
-	core.onContextCreate = shaders.registerAllFunc;
+	assets.init(a);
+	app.createContext = shaders.registerAllFunc;
 }
 
 pub fn deinit() void {

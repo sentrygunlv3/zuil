@@ -7,6 +7,18 @@ const input = root.ZuilCore.input;
 const widget = root.ZuilCore.widget;
 const types = root.ZuilCore.types;
 
+// EGL slop
+var current: ?*glfw.Window = null;
+
+fn makeContextCurrent(new: *glfw.Window) void {
+	if (current == new) return;
+	if (current != null) {
+		gl.finish();
+	}
+	glfw.makeContextCurrent(new);
+	current = new;
+}
+
 pub const ZWindow = struct {
 	window: *glfw.Window = undefined,
 	render_texture: u32 = 0,
@@ -23,14 +35,14 @@ pub const ZWindow = struct {
 				.window = try glfw.createWindow(width, height, title, null, main.window),
 			};
 
-			glfw.makeContextCurrent(self.window);
+			makeContextCurrent(self.window);
 		} else {
 			self.* = .{
 				.window = try glfw.Window.create(width, height, title, null, null),
 			};
 			root.main_window = self;
 
-			glfw.makeContextCurrent(self.window);
+			makeContextCurrent(self.window);
 
 			glfw.swapInterval(0);
 
@@ -38,6 +50,12 @@ pub const ZWindow = struct {
 
 			root.gl.enable(root.gl.BLEND);
 			root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
+
+			try root.context.lateInit();
+
+			if (root.createContext) |func| {
+				try func(root.context);
+			}
 		}
 
 		self.initRenderTexture(width, height);
@@ -60,9 +78,9 @@ pub const ZWindow = struct {
 		}
 
 		if (root.main_window.? != self) {
-			self.tree = try .init(size_x, size_y, root_widget, root.main_window.?.tree.context);
+			self.tree = try .init(size_x, size_y, root_widget, root.context);
 		} else {
-			self.tree = try .init(size_x, size_y, root_widget, null);
+			self.tree = try .init(size_x, size_y, root_widget, root.context);
 		}
 
 		const size = self.window.getSize();
@@ -78,6 +96,7 @@ pub const ZWindow = struct {
 	}
 
 	pub fn initRenderTexture(self: *@This(), w: i32, h: i32) void {
+		makeContextCurrent(self.window);
 		gl.genTextures(1, &self.render_texture);
 		gl.bindTexture(gl.TEXTURE_2D, self.render_texture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -170,7 +189,7 @@ pub const ZWindow = struct {
 	}
 
 	fn resizeCallback(window: *glfw.Window, w: c_int, h: c_int) callconv(.c) void {
-		glfw.makeContextCurrent(window);
+		makeContextCurrent(window);
 		root.gl.viewport(0, 0, w, h);
 		if (root.windows.get(window)) |win| {
 			if (win.tree.root) |r| {
@@ -257,7 +276,12 @@ pub const ZWindow = struct {
 	pub fn render(self: *@This()) anyerror!void {
 		const Timer = std.time.Timer;
 		var timer = try Timer.start();
-		glfw.makeContextCurrent(self.window);
+		// any other windows that share the context crash here
+		// if you change this to the main windows context and add "makeContextCurrent(self.window);" before swapBuffers
+		// it doesnt crash and the windows spawn but they render blank
+		//
+		// no idea how to fix this without having to create a completely separate zuil context for each window
+		makeContextCurrent(self.window);
 
 		var width: i32 = undefined;
 		var height: i32 = undefined;
@@ -288,7 +312,7 @@ pub const ZWindow = struct {
 		);
 
 		self.window.swapBuffers();
-		
+
 		if (@import("build_options").debug) std.debug.print("blit: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 	}
 };

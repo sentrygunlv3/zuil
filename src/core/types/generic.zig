@@ -11,18 +11,14 @@ pub const ZAlign = enum {
 	bottom,
 	bottomRight,
 
-	pub fn default() @This() {
-		return .topLeft;
-	}
+	pub const default = @This().topLeft;
 };
 
 pub const ZDirection = enum {
 	horizontal,
 	vertical,
 
-	pub fn default() @This() {
-		return .horizontal;
-	}
+	pub const default = @This().horizontal;
 };
 
 /// area in real pixel
@@ -32,14 +28,12 @@ pub const ZBounds = struct {
 	w: f32 = 0,
 	h: f32 = 0,
 
-	pub fn zero() @This() {
-		return .{
-			.x = 0,
-			.y = 0,
-			.w = 0,
-			.h = 0,
-		};
-	}
+	pub const zero = @This(){
+		.x = 0,
+		.y = 0,
+		.w = 0,
+		.h = 0,
+	};
 };
 
 pub const ZUnit = union(enum) {
@@ -48,13 +42,8 @@ pub const ZUnit = union(enum) {
 	dp: f32,
 	mm: f32,
 
-	pub fn zero() @This() {
-		return .{ .dp = 0 };
-	}
-
-	pub fn fill() @This() {
-		return .{.percentage = 1};
-	}
+	pub const zero = @This(){.dp = 0};
+	pub const fill = @This(){.percentage = 1};
 
 	/// returns raw value
 	pub fn value(self: *@This()) f32 {
@@ -93,12 +82,10 @@ pub const ZPosition = struct {
 	x: ZUnit,
 	y: ZUnit,
 
-	pub fn zero() @This() {
-		return .{
-			.x = .zero(),
-			.y = .zero(),
-		};
-	}
+	pub const zero = @This(){
+		.x = .zero,
+		.y = .zero,
+	};
 
 	pub fn asBounds(self: *@This(), space: ZBounds, window: *root.ZWindow) ZBounds {
 		return .{
@@ -112,19 +99,15 @@ pub const ZSize = struct {
 	w: ZUnit,
 	h: ZUnit,
 
-	pub fn zero() @This() {
-		return .{
-			.w = .zero(),
-			.h = .zero(),
-		};
-	}
+	pub const zero = @This(){
+		.w = .zero,
+		.h = .zero,
+	};
 
-	pub fn fill() @This() {
-		return .{
-			.w = .{.percentage = 1},
-			.h = .{.percentage = 1},
-		};
-	}
+	pub const fill = @This(){
+		.w = .fill,
+		.h = .fill,
+	};
  
 	pub fn asBounds(self: *@This(), space: ZBounds, window: *root.ZWindow) ZBounds {
 		return .{
@@ -140,14 +123,12 @@ pub const ZMargin = struct {
 	left: ZUnit,
 	right: ZUnit,
 
-	pub fn zero() @This() {
-		return .{
-			.top = .zero(),
-			.bottom = .zero(),
-			.left = .zero(),
-			.right = .zero(),
-		};
-	}
+	pub const zero = @This(){
+		.top = .zero,
+		.bottom = .zero,
+		.left = .zero,
+		.right = .zero,
+	};
 
 	pub fn new(size: f32) @This() {
 		return .{

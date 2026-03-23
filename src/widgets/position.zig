@@ -57,7 +57,7 @@ pub fn updateActualSizeZPosition(self: *widget.ZWidget, dirty: bool, w: f32, h: 
 		return 0;
 	};
 
-	var space: root.types.ZBounds = .zero();
+	var space: root.types.ZBounds = .zero;
 	if (self.getData(ZPosition)) |data| {
 		if (data.absolute_size) {
 			space = self.window.?.getBounds();
@@ -76,21 +76,21 @@ pub fn updateActualSizeZPosition(self: *widget.ZWidget, dirty: bool, w: f32, h: 
 	return 0;
 }
 
-fn initZPosition(self: *widget.ZWidget) callconv(.c) c_int {
-	const data = root.allocator.create(ZPosition) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
+fn initZPosition(self: *widget.ZWidget, context: *root.context.ZContext) callconv(.c) c_int {
+	const data = context.allocator.create(ZPosition) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
 	data.* = .{};
 	self.type_name = @typeName(ZPosition);
 	self.data = data;
 	return 0;
 }
 
-fn deinitZPosition(self: *widget.ZWidget) callconv(.c) void {
+fn deinitZPosition(self: *widget.ZWidget, context: *root.context.ZContext) callconv(.c) void {
 	if (self.getData(ZPosition)) |data| {
 		if (data.child) |c| {
 			c.exitTreeExceptParent();
-			c.deinit();
+			c.deinit(context);
 		}
-		root.allocator.destroy(data);
+		context.allocator.destroy(data);
 		self.data = null;
 	}
 }
@@ -115,8 +115,8 @@ fn removeChildZPosition(self: *widget.ZWidget, child: *widget.ZWidget) callconv(
 	return 0;
 }
 
-pub fn zPosition() *ZPositionBuilder {
-	return ZPositionBuilder.init() catch |e| {
+pub fn zPosition(context: *root.context.ZContext) *ZPositionBuilder {
+	return ZPositionBuilder.init(context) catch |e| {
 		std.debug.panic("{}", .{e});
 	};
 }
@@ -125,18 +125,20 @@ pub const ZPositionBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
 	widget: *widget.ZWidget,
+	context: *root.context.ZContext,
 
-	pub fn init() anyerror!*@This() {
-		const self = try root.allocator.create(@This());
+	pub fn init(context: *root.context.ZContext) anyerror!*@This() {
+		const self = try context.allocator.create(@This());
 
-		self.widget = try widget.ZWidget.init(&ZPositionFI);
+		self.widget = try widget.ZWidget.init(context, &ZPositionFI);
+		self.context = context;
 
 		return self;
 	}
 
 	pub fn build(self: *@This()) *widget.ZWidget {
 		const final = self.widget;
-		root.allocator.destroy(self);
+		self.context.allocator.destroy(self);
 		return final;
 	}
 

@@ -4,7 +4,7 @@ const root = @import("../../root.zig");
 const ZBitmap = root.ZBitmap;
 const ZError = root.errors.ZError;
 
-pub fn svgToBitmap(svg: root.ZAsset, width: u32, height: u32) anyerror!ZBitmap {
+pub fn svgToBitmap(allocator: std.mem.Allocator, svg: root.ZAsset, width: u32, height: u32) anyerror!ZBitmap {
 	if (svg.type != .svg) {
 		return ZError.WrongAssetType;
 	}
@@ -51,7 +51,7 @@ pub fn svgToBitmap(svg: root.ZAsset, width: u32, height: u32) anyerror!ZBitmap {
 
 	const data = c_data[0..size];
 
-	const bitmap = try root.allocator.alloc(u8, size);
+	const bitmap = try allocator.alloc(u8, size);
 	@memcpy(bitmap, data);
 
 	return .{

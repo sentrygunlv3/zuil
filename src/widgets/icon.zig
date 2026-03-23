@@ -4,12 +4,11 @@ const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
 
 const widget = root.widget;
 const ZColor = root.color.ZColor;
-const renderer = root.renderer;
 const types = root.types;
 
 pub const ZIcon = struct {
 	icon: []const u8 = "",
-	resource: root.renderer.context.ResourceHandle = undefined,
+	resource: root.context.ResourceHandle = undefined,
 
 	pub fn setIcon(self: *@This(), self_widget: *widget.ZWidget, icon: []const u8) !void {
 		_ = self_widget;
@@ -25,17 +24,17 @@ pub const ZIconFI = widget.ZWidgetFI{
 	.render = renderZIcon,
 };
 
-fn initZIcon(self: *widget.ZWidget) callconv(.c) c_int {
-	const data = root.allocator.create(ZIcon) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
+fn initZIcon(self: *widget.ZWidget, context: *root.context.ZContext) callconv(.c) c_int {
+	const data = context.allocator.create(ZIcon) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
 	data.* = .{};
 	self.type_name = @typeName(ZIcon);
 	self.data = data;
 	return 0;
 }
 
-fn deinitZIcon(self: *widget.ZWidget) callconv(.c) void {
+fn deinitZIcon(self: *widget.ZWidget, context: *root.context.ZContext) callconv(.c) void {
 	if (self.getData(ZIcon)) |data| {
-		root.allocator.destroy(data);
+		context.allocator.destroy(data);
 		self.data = null;
 	}
 }
@@ -45,11 +44,11 @@ fn enterTreeZIcon(self: *widget.ZWidget) callconv(.c) void {
 		const icon = root.assets.getAsset(data.icon) catch {
 			return;
 		};
-		var bitmap = root.svg.svgToBitmap(icon, 256, 256) catch {
+		var bitmap = root.svg.svgToBitmap(self.window.?.context.allocator, icon, 256, 256) catch {
 			return;
 		};
-		defer bitmap.deinit();
-		data.resource = root.renderer.createTexture(&bitmap) catch {
+		defer bitmap.deinit(self.window.?.context.allocator);
+		data.resource = self.window.?.context.createTexture(&bitmap) catch {
 			return;
 		};
 	}
@@ -57,11 +56,11 @@ fn enterTreeZIcon(self: *widget.ZWidget) callconv(.c) void {
 
 fn exitTreeZIcon(self: *widget.ZWidget) callconv(.c) void {
 	if (self.getData(ZIcon)) |data| {
-		data.resource.deinit();
+		data.resource.deinit(self.window.?.context);
 	}
 }
 
-fn renderZIcon(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
+fn renderZIcon(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, commands: *root.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
 	_ = area;
 	if (self.getData(ZIcon)) |data| {
 		const window_size = window.getBounds();
@@ -73,15 +72,15 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, commands: 
 		const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
 
 		commands.append(
-			"bitmap",
+			window.context.getShader("bitmap") catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed),
 			null,
-			&[_]renderer.context.TextureParameter{
+			&[_]root.context.TextureParameter{
 				.{
 					.slot = 0,
 					.texture = data.resource
 				},
 			},
-			&[_]renderer.context.ShaderParameter{
+			&[_]root.context.ShaderParameter{
 				.{
 					.name = "pos",
 					.value = .{.uniform2f = .{
@@ -102,8 +101,8 @@ fn renderZIcon(self: *widget.ZWidget, window: *root.tree.ZWidgetTree, commands: 
 	return 0;
 }
 
-pub fn zIcon() *ZIconBuilder {
-	return ZIconBuilder.init() catch |e| {
+pub fn zIcon(context: *root.context.ZContext) *ZIconBuilder {
+	return ZIconBuilder.init(context) catch |e| {
 		std.debug.panic("{}", .{e});
 	};
 }
@@ -112,18 +111,20 @@ pub const ZIconBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
 	widget: *widget.ZWidget,
+	context: *root.context.ZContext,
 
-	pub fn init() anyerror!*@This() {
-		const self = try root.allocator.create(@This());
+	pub fn init(context: *root.context.ZContext) anyerror!*@This() {
+		const self = try context.allocator.create(@This());
 
-		self.widget = try widget.ZWidget.init(&ZIconFI);
+		self.widget = try widget.ZWidget.init(context, &ZIconFI);
+		self.context = context;
 
 		return self;
 	}
 
 	pub fn build(self: *@This()) *widget.ZWidget {
 		const final = self.widget;
-		root.allocator.destroy(self);
+		self.context.allocator.destroy(self);
 		return final;
 	}
 

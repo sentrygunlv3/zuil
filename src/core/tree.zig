@@ -8,49 +8,36 @@ const types = root.types;
 
 pub const ZWidgetTree = struct {
 	arena: std.heap.ArenaAllocator = undefined,
-	context: *root.renderer.context.RenderContext = undefined,
-	current_bounds: types.ZBounds = .zero(),
+	context: *root.ZContext = undefined,
+	current_bounds: types.ZBounds = .zero,
 	flags: packed struct {
 		layout_dirty: bool = true,
 		render_dirty: bool = true,
 		render_dirty_full: bool = true,
-		shared_context: bool = false,
-		_: u4 = 0,
+		_: u5 = 0,
 	} = .{},
-	dirty: ?types.ZBounds = .zero(),
+	dirty: ?types.ZBounds = .zero,
 	// --- input
 	key_events: std.ArrayList(input.ZEvent) = undefined,
 	focused_widget: ?*widget.ZWidget = null,
 	// ---
 	root: ?*widget.ZWidget = undefined,
-	content_alignment: types.ZAlign = .default(),
+	content_alignment: types.ZAlign = .default,
 	display_size: struct {x: f32 = 0, y: f32 = 0} = .{},
 
-	pub fn init(physical_w: f32, physical_h: f32, root_widget: ?*widget.ZWidget, context: ?*root.renderer.context.RenderContext) !*@This() {
-		const self = try root.allocator.create(@This());
+	pub fn init(physical_w: f32, physical_h: f32, root_widget: ?*widget.ZWidget, context: *root.ZContext) !*@This() {
+		const self = try context.allocator.create(@This());
 		errdefer self.deinit();
 
 		self.* = .{
-			.key_events = try std.ArrayList(input.ZEvent).initCapacity(root.allocator, 0),
+			.key_events = try std.ArrayList(input.ZEvent).initCapacity(context.allocator, 0),
 			.root = root_widget,
+			.context = context,
+			.arena = std.heap.ArenaAllocator.init(context.allocator),
+			.display_size = .{.x = physical_w, .y = physical_h},
 		};
-
-		if (context) |c| {
-			self.context = c;
-			self.flags.shared_context = true;
-		} else {
-			self.context = try root.renderer.context.RenderContext.init();
-			if (root.onContextCreate) |func| {
-				try func(self.context);
-			}
-		}
-
-		root.gl.enable(root.gl.BLEND);
-		root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
-		
-		self.arena = std.heap.ArenaAllocator.init(root.allocator);
-
-		self.display_size = .{.x = physical_w, .y = physical_h};
+		errdefer self.key_events.deinit(context.allocator);
+		errdefer self.arena.deinit();
 
 		if (self.root) |r| {
 			r.setWindow(self);
@@ -61,19 +48,21 @@ pub const ZWidgetTree = struct {
 
 	pub fn deinit(self: *@This()) void {
 		if (self.root) |r| {
-			r.destroy();
+			r.destroy() catch {
+				self.context.log(.err, "{*} trees root has a bad state", .{self});
+			};
 		}
-		if (!self.flags.shared_context) {
-			self.context.deinit();
-		}
-		self.key_events.deinit(root.allocator);
+
+		self.key_events.deinit(self.context.allocator);
 		self.arena.deinit();
-		root.allocator.destroy(self);
+		self.context.allocator.destroy(self);
 	}
 
 	pub fn setRoot(self: *@This(), root_widget: ?*widget.ZWidget) void {
 		if (self.root) |r| {
-			r.destroy();
+			r.destroy() catch {
+				self.context.log(.err, "{*} trees root has a bad state", .{self});
+			};
 		}
 		self.root = root_widget;
 	}
@@ -121,8 +110,9 @@ pub const ZWidgetTree = struct {
 	}
 
 	pub fn render(self: *@This()) anyerror!void {
+		defer _ = self.arena.reset(.free_all);
 		if (self.root) |r| {
-			var commands = try root.renderer.context.RenderCommandList.init(self.arena.allocator());
+			var commands = try root.context.RenderCommandList.init(self.arena.allocator());
 
 			var area = if (self.flags.render_dirty_full) null else self.dirty;
 
@@ -132,7 +122,7 @@ pub const ZWidgetTree = struct {
 				area
 			);
 			if (@import("build_options").debug) {
-				std.debug.print("area: {}\nflags: {}\n", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero(), self.flags});
+				std.debug.print("area: {}\nflags: {}\n", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero, self.flags});
 				std.debug.print("total commands: {}\n", .{commands.commands.items.len});
 			}
 
@@ -140,16 +130,16 @@ pub const ZWidgetTree = struct {
 				// to opengl coordinates
 				area.?.y = self.getBounds().h - area.?.h - area.?.y;
 			}
-			try root.renderer.clip(area);
-			try root.renderer.clear(root.color.GREY);
-			try root.renderer.renderCommands(self.context, &commands);
+			try self.context.clip(area);
+			try self.context.clear(root.color.GREY);
+			try self.context.renderCommands(&commands);
 		}
-		try root.renderer.clip(null);
+		try self.context.clip(null);
 
 		self.flags.render_dirty = false;
 		self.flags.render_dirty_full = false;
 		self.dirty = null;
 
-		try root.renderer.resourcesUpdate();
+		try self.context.resourcesUpdate();
 	}
 };

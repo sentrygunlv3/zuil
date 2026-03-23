@@ -12,14 +12,12 @@ pub const ZColor = struct {
 	b: f32,
 	a: f32,
 
-	pub fn default() @This() {
-		return .{
-			.r = 1.0,
-			.g = 1.0,
-			.b = 1.0,
-			.a = 1.0,
-		};
-	}
+	pub const default = @This(){
+		.r = 1.0,
+		.g = 1.0,
+		.b = 1.0,
+		.a = 1.0,
+	};
 };
 
 pub fn rgb(r: f32, g: f32, b: f32) ZColor {

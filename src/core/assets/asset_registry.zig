@@ -4,8 +4,8 @@ const ZAsset = root.ZAsset;
 
 var assets: std.StringHashMap(ZAsset) = undefined;
 
-pub fn init() void {
-	assets = std.StringHashMap(ZAsset).init(root.allocator);
+pub fn init(allocator: std.mem.Allocator) void {
+	assets = std.StringHashMap(ZAsset).init(allocator);
 }
 
 pub fn deinit() void {

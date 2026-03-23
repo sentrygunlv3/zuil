@@ -8,7 +8,7 @@ const widgets = zuil.widgets;
 
 pub fn main() anyerror!void {
 	var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-	const allocator: std.mem.Allocator = gpa.allocator();
+	const allocator = gpa.allocator();
 
 	try zuil.init(allocator);
 	defer zuil.deinit();
@@ -16,66 +16,63 @@ pub fn main() anyerror!void {
 	try zuil.assets.registerAssetComptime("icon.svg", @embedFile("icon.svg"), .svg);
 	try zuil.assets.registerAssetComptime("firesans.ttf", @embedFile("font/FiraSans-Regular.ttf"), .ttf);
 
-	const font = try zuil.core.font.ttfToFont(try zuil.assets.getAsset("firesans.ttf"), 0, 0);
-	try zuil.core.fonts.put("firesans", font);
-
 	const list =
-	widgets.list()
-	.c.size(.fill(), .fill())
+	widgets.list(zuil.app.context)
+	.c.size(.fill, .fill)
 	.children(.{
-		widgets.container()
+		widgets.container(zuil.app.context)
 		.c.size(.{.dp = 20}, .{.dp = 500})
 		.color(colors.rgb(0, 1.0, 0.5))
 		.build(),
-		widgets.container()
+		widgets.container(zuil.app.context)
 		.c.size(.{.dp = 50}, .{.dp = 50})
 		.color(colors.RED)
 		.build(),
-		widgets.container()
+		widgets.container(zuil.app.context)
 		.c.size(.{.dp = 20}, .{.dp = 500})
 		.color(colors.WHITE)
 		.build(),
-		widgets.list()
-		.c.size(.fill(), .fill())
+		widgets.list(zuil.app.context)
+		.c.size(.fill, .fill)
 		.direction(.vertical)
 		.spacing(1)
 		.children(.{
-			widgets.icon()
+			widgets.icon(zuil.app.context)
 			.c.size(.{.dp = 200}, .{.dp = 200})
 			.c.keepSizeRatio(true)
 			.icon("icon.svg")
 			.build(),
-			widgets.text()
-			.c.size(.fill(), .{.dp = 60})
+			widgets.text(zuil.app.context)
+			.c.size(.fill, .{.dp = 60})
 			.text("Hello ZUIL!")
 			.fontSize(48)
 			.build(),
-			widgets.container()
+			widgets.container(zuil.app.context)
 			.c.size(.{.dp = 50}, .{.dp = 30})
 			.c.eventCallback(containerClick)
 			.color(colors.BLUE)
 			.child(
-				widgets.text()
-				.c.size(.fill(), .fill())
+				widgets.text(zuil.app.context)
+				.c.size(.fill, .fill)
 				.text("button")
 				.color(colors.BLACK)
 				.build(),
 			)
 			.build(),
-			widgets.container()
+			widgets.container(zuil.app.context)
 			.c.size(.{.pixel = 50}, .{.dp = 30})
 			.build(),
-			widgets.container()
+			widgets.container(zuil.app.context)
 			.c.size(.{.mm = 50}, .{.dp = 30})
 			.build(),
-			widgets.container()
+			widgets.container(zuil.app.context)
 			.c.size(.{.percentage = 0.5}, .{.dp = 30})
 			.build(),
-			widgets.position()
-			.c.size(.fill(), .fill())
+			widgets.position(zuil.app.context)
+			.c.size(.fill, .fill)
 			.absolute(true)
 			.child(
-				widgets.container()
+				widgets.container(zuil.app.context)
 				.c.size(.{.dp = 500}, .{.dp = 500})
 				.color(colors.RED)
 				.build()
@@ -87,12 +84,12 @@ pub fn main() anyerror!void {
 	.build();
 
 	const root =
-	widgets.container()
-	.c.size(.{.dp = 1200}, .fill())
+	widgets.container(zuil.app.context)
+	.c.size(.{.dp = 1200}, .fill)
 	.color(colors.WHITE)
 	.child(
-		widgets.container()
-		.c.size(.fill(), .fill())
+		widgets.container(zuil.app.context)
+		.c.size(.fill, .fill)
 		.c.margin(.new(20))
 		.color(colors.GREY)
 		.child(list)
@@ -107,6 +104,9 @@ pub fn main() anyerror!void {
 		root
 	);
 	window.input_handler = processInput;
+
+	const font = try zuil.core.font.ttfToFont(zuil.app.context, try zuil.assets.getAsset("firesans.ttf"), 0, 0);
+	try zuil.app.context.fonts.put(allocator, "firesans", font);
 
 	zuil.run() catch |e| {
 		std.log.err("test: {}", .{e});
@@ -137,12 +137,12 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 				400,
 				200,
 				"child window",
-				widgets.container()
-				.c.size(.fill(), .fill())
+				widgets.container(zuil.app.context)
+				.c.size(.fill, .fill)
 				.color(colors.BLACK)
 				.child(
-					widgets.container()
-					.c.size(.fill(), .fill())
+					widgets.container(zuil.app.context)
+					.c.size(.fill, .fill)
 					.c.margin(.new(20))
 					.color(colors.BLUE)
 					.build()

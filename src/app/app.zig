@@ -8,10 +8,15 @@ pub const ZuilCore = @import("../core/root.zig");
 pub const inputGlfw = @import("input.zig");
 pub const ZWindow = @import("window.zig").ZWindow;
 
+pub const OpenglBackend = @import("backend/opengl.zig").ZRenderFIOpengl;
+
 pub var allocator: std.mem.Allocator = undefined;
+pub var context: *ZuilCore.ZContext = undefined;
 pub var windows: std.AutoHashMap(*glfw.Window, *ZWindow) = undefined;
 pub var main_window: ?*ZWindow = null;
 pub var modifiers = ZuilCore.input.ZModifiers{};
+
+pub var createContext: ?*const fn (context: *ZuilCore.ZContext) anyerror!void = null;
 
 pub const ZAppError = error{
 	NoWindowsCreated,
@@ -19,12 +24,13 @@ pub const ZAppError = error{
 
 pub fn init(a: std.mem.Allocator) !void {
 	allocator = a;
-	try ZuilCore.init(a, ZuilCore.renderer.ZRenderFIOpengl.ZRenderFIOpengl);
 
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();
 
 	windows = std.AutoHashMap(*glfw.Window, *ZWindow).init(allocator);
+
+	context = try ZuilCore.ZContext.init(allocator, OpenglBackend);
 }
 
 pub fn deinit() void {
@@ -32,7 +38,7 @@ pub fn deinit() void {
 
 	windows.deinit();
 
-	ZuilCore.deinit();
+	context.deinit();
 }
 
 pub fn run() !void {

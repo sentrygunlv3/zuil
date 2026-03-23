@@ -11,10 +11,39 @@ const ZMargin = root.types.ZMargin;
 const ZAlign = root.types.ZAlign;
 const ZWidget = root.widget.ZWidget;
 
+pub fn generateFI(comptime t: type) ZWidgetFI {
+	const hasInit = @hasDecl(t, "init");
+	const hasDeinit = @hasDecl(t, "deinit");
+	const hasEnterTree = @hasDecl(t, "enterTree");
+	const hasExitTree = @hasDecl(t, "exitTree");
+
+	if (hasInit and !hasDeinit or !hasInit and hasDeinit) {
+		@compileError("widget cant have only init or deinit, has to have both or neither");
+	}
+
+	if (hasEnterTree and !hasExitTree or !hasEnterTree and hasExitTree) {
+		@compileError("widget cant have only enterTree or exitTree, has to have both or neither");
+	}
+
+	return .{
+		.init = if (hasInit) t.init else null,
+		.deinit = if (hasDeinit) t.deinit else null,
+		.enterTree = if (hasEnterTree) t.enterTree else null,
+		.exitTree = if (hasExitTree) t.exitTree else null,
+		.updatePreferredSize = if (@hasDecl(t, "updatePreferredSize")) t.updatePreferredSize else updatePreferredSize,
+		.updateActualSize = if (@hasDecl(t, "updateActualSize")) t.updateActualSize else updateActualSize,
+		.updatePosition = if (@hasDecl(t, "updatePosition")) t.updatePosition else updatePosition,
+		.render = if (@hasDecl(t, "render")) t.render else render,
+		.isOverPoint = if (@hasDecl(t, "isOverPoint")) t.isOverPoint else isOverPoint,
+		.getChildren = if (@hasDecl(t, "getChildren")) t.getChildren else null,
+		.removeChild = if (@hasDecl(t, "removeChild")) t.removeChild else null,
+	};
+}
+
 /// widget function interface for widget classes
 pub const ZWidgetFI = struct {
-	init: ?*const fn (self: *ZWidget) callconv(.c) c_int = null,
-	deinit: ?*const fn (self: *ZWidget) callconv(.c) void = null,
+	init: ?*const fn (self: *ZWidget, context: *root.context.ZContext) callconv(.c) c_int = null,
+	deinit: ?*const fn (self: *ZWidget, context: *root.context.ZContext) callconv(.c) void = null,
 
 	enterTree: ?*const fn (self: *ZWidget) callconv(.c) void = null,
 	exitTree: ?*const fn (self: *ZWidget) callconv(.c) void = null,
@@ -26,9 +55,9 @@ pub const ZWidgetFI = struct {
 	/// top to bottom
 	updatePosition: ?*const fn (self: *ZWidget, dirty: bool, w: f32, h: f32) callconv(.c) c_int = updatePosition,
 
-	render: ?*const fn (self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int = renderWidget,
+	render: ?*const fn (self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *root.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int = render,
 
-	isOverPoint: ?*const fn (self: *ZWidget, x: f32, y: f32, parent_outside: bool) callconv(.c) ?*ZWidget = isOverPointWidget,
+	isOverPoint: ?*const fn (self: *ZWidget, x: f32, y: f32, parent_outside: bool) callconv(.c) ?*ZWidget = isOverPoint,
 
 	getChildren: ?*const fn (self: *ZWidget, return_len: *usize) callconv(.c) [*]*ZWidget = null,
 	removeChild: ?*const fn (self: *ZWidget, child: *ZWidget) callconv(.c) c_int = null,
@@ -39,7 +68,7 @@ pub const ZWidgetMutableFI = struct {
 	event: ?*const fn (self: *ZWidget, event: *const root.input.ZEvent) callconv(.c) c_int = null,
 };
 
-pub fn renderWidget(self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *root.renderer.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
+pub fn render(self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *root.context.RenderCommandList, area: ?*const types.ZBounds) callconv(.c) c_int {
 	const children = self.getChildren() catch {
 		return 0;
 	};
@@ -49,7 +78,7 @@ pub fn renderWidget(self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *r
 	return 0;
 }
 
-pub fn isOverPointWidget(self: *ZWidget, x: f32, y: f32, parent_outside: bool) callconv(.c) ?*ZWidget {
+pub fn isOverPoint(self: *ZWidget, x: f32, y: f32, parent_outside: bool) callconv(.c) ?*ZWidget {
 	var ref: ?*ZWidget = null;
 	var outside = true;
 

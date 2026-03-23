@@ -4,12 +4,11 @@ const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
 
 const widget = root.widget;
 const ZColor = root.color.ZColor;
-const renderer = root.renderer;
 const types = root.types;
 const colors = root.color;
 
 pub const ZText = struct {
-	color: ZColor = ZColor.default(),
+	color: ZColor = ZColor.default,
 	text: []const u8 = "",
 	font_size: u32 = 14,
 };
@@ -20,17 +19,17 @@ pub const ZTextFI = widget.ZWidgetFI{
 	.render = render,
 };
 
-fn init(self: *widget.ZWidget) callconv(.c) c_int {
-	const data = root.allocator.create(ZText) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
+fn init(self: *widget.ZWidget, context: *root.context.ZContext) callconv(.c) c_int {
+	const data = context.allocator.create(ZText) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
 	data.* = .{};
 	self.type_name = @typeName(ZText);
 	self.data = data;
 	return 0;
 }
 
-fn deinit(self: *widget.ZWidget) callconv(.c) void {
+fn deinit(self: *widget.ZWidget, context: *root.context.ZContext) callconv(.c) void {
 	if (self.getData(ZText)) |data| {
-		root.allocator.destroy(data);
+		context.allocator.destroy(data);
 		self.data = null;
 	}
 }
@@ -40,7 +39,7 @@ fn deinit(self: *widget.ZWidget) callconv(.c) void {
 fn render(
 	self: *widget.ZWidget,
 	tree: *root.tree.ZWidgetTree,
-	commands: *renderer.context.RenderCommandList,
+	commands: *root.context.RenderCommandList,
 	area: ?*const types.ZBounds
 ) callconv(.c) c_int {
 	if (area) |a| {
@@ -54,7 +53,7 @@ fn render(
 		}
 	}
 
-	var color = ZColor.default();
+	var color = ZColor.default;
 	var text: []const u8 = "";
 	var font_size: u32 = 14;
 	if (self.getData(ZText)) |data| {
@@ -71,11 +70,11 @@ fn render(
 	const widgetx = (self.clamped_bounds.x / window_size.w) * 2 - 1;
 	const widgety = 1 - (self.clamped_bounds.y / window_size.h) * 2;
 	//const widgetw = (self.clamped_bounds.w / window_size.w) * 2 - 1;
-	const widgeth = 1 - (self.clamped_bounds.h / window_size.h) * 2;
-	std.debug.print("{}\n", .{widgeth});
+	//const widgeth = 1 - (self.clamped_bounds.h / window_size.h) * 2;
+	//std.debug.print("{}\n", .{widgeth});
 
-	const font = root.fonts.get("firesans") orelse return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
-	const texture = tree.context.getFontTexture(font) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
+	const font = tree.context.fonts.get("firesans") orelse return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
+	const texture = tree.context.getFontTexture(tree.context, font) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
 
 	const sub_font = root.hb.hb_font_create_sub_font(font.hb_font) orelse return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
 	defer root.hb.hb_font_destroy(sub_font);
@@ -103,7 +102,7 @@ fn render(
 	const glyph_pos = root.hb.hb_buffer_get_glyph_positions(buffer, &count_c);
 	const count: u32 = @intCast(count_c);
 
-	var mesh = root.mesh.ZMeshBuilder.init(root.allocator) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
+	var mesh = root.mesh.ZMeshBuilder.init(self.window.?.context.allocator) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
 	defer mesh.deinit();
 
 	const scale = @as(f32, @floatFromInt(font_size)) / 96;
@@ -112,7 +111,7 @@ fn render(
 	const tex_h = @as(f32, @floatFromInt(font.texture.h));
 
 	const line_height = (@as(f32, @floatFromInt(font.face.*.size.*.metrics.height)) / 64) * sizeh * scale;
-	std.debug.print("{}\n", .{line_height});
+	//std.debug.print("{}\n", .{line_height});
 
 	const posx = widgetx;
 	const posy = widgety - line_height / 2;
@@ -154,19 +153,19 @@ fn render(
 		advance += (@as(f32, @floatFromInt(glyph_pos[i].x_advance)) / 64) * sizew;
 	}
 
-	var mesh_handle = renderer.createMesh(&mesh.build()) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
-	renderer.resourceRemoveUser(&mesh_handle) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
+	var mesh_handle = tree.context.createMesh(&mesh.build()) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
+	tree.context.resourceRemoveUser(&mesh_handle) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
 
 	commands.append(
-		"font",
+		tree.context.getShader("font") catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed),
 		mesh_handle,
-		&[_]renderer.context.TextureParameter{
+		&[_]root.context.TextureParameter{
 			.{
 				.slot = 0,
 				.texture = texture
 			},
 		},
-		&[_]renderer.context.ShaderParameter{
+		&[_]root.context.ShaderParameter{
 			.{
 				.name = "color",
 				.value = .{.uniform4f = .{
@@ -182,8 +181,8 @@ fn render(
 	return 0;
 }
 
-pub fn zText() *zTextBuilder {
-	return zTextBuilder.init() catch |e| {
+pub fn zText(context: *root.context.ZContext) *zTextBuilder {
+	return zTextBuilder.init(context) catch |e| {
 		std.debug.panic("{}", .{e});
 	};
 }
@@ -192,18 +191,20 @@ pub const zTextBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
 	widget: *widget.ZWidget,
+	context: *root.context.ZContext,
 
-	pub fn init() anyerror!*@This() {
-		const self = try root.allocator.create(@This());
+	pub fn init(context: *root.context.ZContext) anyerror!*@This() {
+		const self = try context.allocator.create(@This());
 
-		self.widget = try widget.ZWidget.init(&ZTextFI);
+		self.widget = try widget.ZWidget.init(context, &ZTextFI);
+		self.context = context;
 
 		return self;
 	}
 
 	pub fn build(self: *@This()) *widget.ZWidget {
 		const final = self.widget;
-		root.allocator.destroy(self);
+		self.context.allocator.destroy(self);
 		return final;
 	}
 

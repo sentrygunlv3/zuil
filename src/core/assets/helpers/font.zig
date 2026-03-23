@@ -25,32 +25,32 @@ pub const ZFont = struct {
 		font_bearing_y: i32,
 	};
 
-	pub fn init() !*@This() {
-		return try root.allocator.create(@This());
+	pub fn init(allocator: std.mem.Allocator) !*@This() {
+		return try allocator.create(@This());
 	}
 
-	pub fn deinit(self: *@This()) void {
-		hb.hb_font_destroy(&self.hb_font);
-		self.texture.deinit();
+	pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+		hb.hb_font_destroy(self.hb_font);
+		self.texture.deinit(allocator);
 		self.glyphs.deinit();
-		root.allocator.destroy(self);
+		allocator.destroy(self);
 	}
 };
 
-pub fn ttfToFont(svg: root.ZAsset, width: u32, height: u32) anyerror!*ZFont {
+pub fn ttfToFont(context: *root.ZContext, svg: root.ZAsset, width: u32, height: u32) anyerror!*ZFont {
 	_ = width; _ = height;
 	if (svg.type != .ttf) {
 		return ZError.WrongAssetType;
 	}
 
-	var self = try ZFont.init();
+	var self = try ZFont.init(context.allocator);
 
 	switch (svg.data) {
 		.compile_time => |data| {
-			_ = ft.FT_New_Memory_Face(root.freetype, data.ptr, @intCast(data.len), 0, &self.face);
+			_ = ft.FT_New_Memory_Face(context.freetype, data.ptr, @intCast(data.len), 0, &self.face);
 		},
 		.runtime => |data| {
-			_ = ft.FT_New_Memory_Face(root.freetype, data.ptr, @intCast(data.len), 0, &self.face);
+			_ = ft.FT_New_Memory_Face(context.freetype, data.ptr, @intCast(data.len), 0, &self.face);
 		}
 	}
 	_ = ft.FT_Set_Pixel_Sizes(self.face, 0, 96);
@@ -64,7 +64,7 @@ pub fn ttfToFont(svg: root.ZAsset, width: u32, height: u32) anyerror!*ZFont {
 	while (tex_w < max_dim) tex_w <<= 1;
 	const tex_h = tex_w;
 
-	self.texture.data = try root.allocator.alloc(u8, tex_w * tex_h);
+	self.texture.data = try context.allocator.alloc(u8, tex_w * tex_h);
 	self.texture.w = @intCast(tex_w);
 	self.texture.h = @intCast(tex_h);
 	self.texture.format = .R;
@@ -72,7 +72,7 @@ pub fn ttfToFont(svg: root.ZAsset, width: u32, height: u32) anyerror!*ZFont {
 	var pen_x: usize = 0;
 	var pen_y: usize = 0;
 
-	self.glyphs = .init(root.allocator);
+	self.glyphs = .init(context.allocator);
 
 	var i: usize = 0;
 	while (i < glyph_amount) : (i += 1) {

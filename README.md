@@ -17,26 +17,21 @@ ZUIL
 
 ZUIL (Zig UI Library)
 
-basic ui framework made with zig\
-using `zglfw`, `zopengl`, `plutosvg`/`plutovg`, `harfbuzz` and `freetype`
+retained mode gui framework written in zig
+
+using `zglfw`, `zopengl`, `plutosvg`, `harfbuzz` and `freetype` libs
 
 ---
 
 <img src="./screenshot.png">
 
-### features
+### core/default widget features
 
-- modular widget system
 - asset/file registry
-- icon/texture rendering with a resource system
+- resource system
 - input system (keyboard and mouse only)
-- rendering abstraction (only core and shaders are written for opengl)
+- rendering abstraction (shaders are written in GLSL)
 - text rendering (WIP)
-
-### missing features/todo
-
-- more optimized rendering
-- and more
 
 ## examples
 
@@ -51,7 +46,7 @@ widgets.container()
 .color(colors.WHITE)
 .child(
 	widgets.list()
-	.c.size(.fill(), .fill()) // fill is same as .{.percentage = 1}
+	.c.size(.fill, .fill) // fill is same as .{.percentage = 1}
 	.direction(.vertical)
 	.spacing(1)
 	.children(.{
@@ -83,19 +78,15 @@ widgets.container()
 ### example/test project
 
 the test/example project is in the `test` directory\
-build and run with `./test.sh` or `./test.sh -Ddebug`
+run with `./test.sh` or `./test.sh -Ddebug`
 or build manually
 
 keybinds:
 
 - `space`: change the layout
-- `F1`: spawn a new window
-
-(the blue widget under the icon widget is clickable)
+- `F1`: spawn a new window (currently broken see comment in render function inside src/app/window.zig)
 
 ## project structure
-
-the `include` directory has headers for `plutosvg`/`plutovg` instead of using the system installed headers mainly to stop zls from giving false errors
 
 files/modules in `src` dir:
 
@@ -103,23 +94,3 @@ files/modules in `src` dir:
 - `app` directory has glfw specific things and can be used to create windows that use the core widget system
 - `shaders`/`shaders.zig` and `widgets`/`widgets.zig` directories/files have the default widgets/shaders
 - `root.zig` is basically the lib root for the `app` module
-
-## technical info
-
-window processing logic overview
-
-1. process input from queue
-   1. send to global input handler
-   2. if input was let through
-      - send keyboard input to focused widget
-      - send mouse input to hovered widget
-2. if the windows layout is marked dirty check
-   - if root widgets layout is dirty then recalculate the whole tree
-   - if root widget is not dirty go down a step with no recalculation
-     - if a child widget is dirty recalculate layout from that widget down
-     - else continue going down
-3. if the windows render is marked dirty
-   - if entire is dirty
-     - render entire widget tree
-   - if only a part is dirty
-     - render only that area

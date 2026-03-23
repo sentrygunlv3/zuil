@@ -7,7 +7,7 @@ const ZColor = root.color.ZColor;
 const types = root.types;
 
 pub const ZList = struct {
-	direction: types.ZDirection = types.ZDirection.default(),
+	direction: types.ZDirection = types.ZDirection.default,
 	spacing: f32 = 0,
 	children: std.ArrayList(*widget.ZWidget) = undefined,
 };
@@ -150,24 +150,24 @@ pub fn updatePositionZList(self: *widget.ZWidget, dirty: bool, w: f32, h: f32) c
 	return 0;
 }
 
-fn initZList(self: *widget.ZWidget) callconv(.c) c_int {
-	const data = root.allocator.create(ZList) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
+fn initZList(self: *widget.ZWidget, context: *root.context.ZContext) callconv(.c) c_int {
+	const data = context.allocator.create(ZList) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
 	data.* = .{
-		.children = std.ArrayList(*widget.ZWidget).initCapacity(root.allocator, 0) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory),
+		.children = std.ArrayList(*widget.ZWidget).initCapacity(context.allocator, 0) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory),
 	};
 	self.type_name = @typeName(ZList);
 	self.data = data;
 	return 0;
 }
 
-fn deinitZList(self: *widget.ZWidget) callconv(.c) void {
+fn deinitZList(self: *widget.ZWidget, context: *root.context.ZContext) callconv(.c) void {
 	if (self.getData(ZList)) |data| {
 		for (data.children.items) |c| {
 			c.exitTreeExceptParent();
-			c.deinit();
+			c.deinit(context);
 		}
-		data.children.deinit(root.allocator);
-		root.allocator.destroy(data);
+		data.children.deinit(context.allocator);
+		context.allocator.destroy(data);
 		self.data = null;
 	}
 }
@@ -193,8 +193,8 @@ fn removeChildZList(self: *widget.ZWidget, child: *widget.ZWidget) callconv(.c) 
 	return 0;
 }
 
-pub fn zList() *ZListBuilder {
-	return ZListBuilder.init() catch |e| {
+pub fn zList(context: *root.context.ZContext) *ZListBuilder {
+	return ZListBuilder.init(context) catch |e| {
 		std.debug.panic("{}", .{e});
 	};
 }
@@ -203,18 +203,20 @@ pub const ZListBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
 	widget: *widget.ZWidget,
+	context: *root.context.ZContext,
 
-	pub fn init() anyerror!*@This() {
-		const self = try root.allocator.create(@This());
+	pub fn init(context: *root.context.ZContext) anyerror!*@This() {
+		const self = try context.allocator.create(@This());
 
-		self.widget = try widget.ZWidget.init(&ZListFI);
+		self.widget = try widget.ZWidget.init(context, &ZListFI);
+		self.context = context;
 
 		return self;
 	}
 
 	pub fn build(self: *@This()) *widget.ZWidget {
 		const final = self.widget;
-		root.allocator.destroy(self);
+		self.context.allocator.destroy(self);
 		return final;
 	}
 
@@ -245,7 +247,7 @@ pub const ZListBuilder = struct {
 				const child = @field(c, f.name);
 				child.parent = self.widget;
 				child.window = self.widget.window;
-				data.children.append(root.allocator, child) catch |e| {
+				data.children.append(self.context.allocator, child) catch |e| {
 					std.log.err("list builder error: {}", .{e});
 				};
 			}

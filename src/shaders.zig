@@ -1,4 +1,3 @@
-pub const renderer = @import("core/rendering/renderer.zig");
 pub const core = @import("core/root.zig");
 
 // all the builtin shaders
@@ -8,7 +7,7 @@ pub const bitmap = @import("shaders/bitmap.zig");
 pub const font = @import("shaders/font.zig");
 
 /// registers all builtin shaders
-pub fn registerAllFunc(context: *core.renderer.context.RenderContext) anyerror!void {
+pub fn registerAllFunc(context: *core.ZContext) anyerror!void {
 	container.register(context);
 	bitmap.register(context);
 	font.register(context);

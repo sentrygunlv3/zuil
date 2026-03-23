@@ -1,3 +1,4 @@
+const std = @import("std");
 const root = @import("../root.zig");
 
 pub const ZBitmap = struct {
@@ -14,7 +15,7 @@ pub const ZBitmap = struct {
 		BGRA,
 	};
 
-	pub fn deinit(self: *@This()) void {
-		root.allocator.free(self.data);
+	pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+		allocator.free(self.data);
 	}
 };

@@ -24,47 +24,14 @@ pub const input = @import("types/input.zig");
 pub const types = @import("types/generic.zig");
 pub const widget = @import("widget/base.zig");
 pub const assets = @import("assets/asset_registry.zig");
-pub const renderer = @import("rendering/renderer.zig");
+pub const context = @import("context.zig");
 pub const svg = @import("assets/helpers/svg.zig");
 pub const font = @import("assets/helpers/font.zig");
 pub const tree = @import("tree.zig");
 pub const errors = @import("types/error.zig");
 pub const mesh = @import("types/mesh.zig");
 
+pub const ZError = errors.ZError;
 pub const ZBitmap = @import("types/bitmap.zig").ZBitmap;
 pub const ZAsset = @import("types/asset.zig").ZAsset;
-
-/// the function thats called when a new render context is created
-/// 
-/// this can be used to register things like shaders to the shader hashmap
-pub var onContextCreate: ?*const fn (context: *renderer.context.RenderContext) anyerror!void = null;
-
-/// the global allocator used by the core
-pub var allocator: std.mem.Allocator = undefined;
-
-/// the global rendering function interface
-/// 
-/// when zuil core wants to render, create textures, ...
-/// it will use the functions inside this
-pub var render_fi: renderer.ZRenderFI = undefined;
-
-pub var freetype: ft.FT_Library = undefined;
-pub var fonts: std.StringHashMap(*font.ZFont) = undefined;
-
-pub fn init(a: std.mem.Allocator, backend: renderer.ZRenderFI) anyerror!void {
-	allocator = a;
-	render_fi = backend;
-
-	_ = ft.FT_Init_FreeType(&freetype);
-	fonts = .init(allocator);
-
-	try renderer.init();
-}
-
-pub fn deinit() void {
-	renderer.deinit();
-
-	_ = ft.FT_Done_FreeType(freetype);
-
-	fonts.deinit();
-}
+pub const ZContext = context.ZContext;

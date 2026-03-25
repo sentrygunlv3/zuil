@@ -107,7 +107,7 @@ pub fn init() anyerror!void {
 
 	default_mesh = getResource(&try createMesh(&root.ZuilCore.mesh.DefaultMesh));
 
-	if (@import("build_options").debug) std.debug.print("using opengl backend\n", .{});
+	root.context.log(.info, "using opengl backend", .{});
 }
 
 pub fn deinit() void {
@@ -390,6 +390,6 @@ fn renderCommands(commands: *root.ZuilCore.context.RenderCommandList) anyerror!v
 		}
 
 		gl.drawElements(gl.TRIANGLES, @intCast(index_count), gl.UNSIGNED_INT, null);
-		if (@import("build_options").debug) std.debug.print("{s} {d:.3}ms\n", .{"command.shader", @as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
+		root.context.log(.debug, "{d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 	}
 }

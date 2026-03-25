@@ -25,8 +25,9 @@ pub fn main() anyerror!void {
 		.color(colors.rgb(0, 1.0, 0.5))
 		.build(),
 		widgets.container(zuil.app.context)
-		.c.size(.{.dp = 50}, .{.dp = 50})
+		.c.size(.{.pixel = 50}, .{.pixel = 50})
 		.color(colors.RED)
+		.radius(50)
 		.build(),
 		widgets.container(zuil.app.context)
 		.c.size(.{.dp = 20}, .{.dp = 500})
@@ -49,7 +50,6 @@ pub fn main() anyerror!void {
 			.build(),
 			widgets.container(zuil.app.context)
 			.c.size(.{.dp = 50}, .{.dp = 30})
-			.c.eventCallback(containerClick)
 			.color(colors.BLUE)
 			.child(
 				widgets.text(zuil.app.context)
@@ -87,12 +87,20 @@ pub fn main() anyerror!void {
 	widgets.container(zuil.app.context)
 	.c.size(.{.dp = 1200}, .fill)
 	.color(colors.WHITE)
+	.radius(0)
 	.child(
 		widgets.container(zuil.app.context)
 		.c.size(.fill, .fill)
-		.c.margin(.new(20))
+		.c.margin(.new(10))
 		.color(colors.GREY)
-		.child(list)
+		.child(
+			widgets.container(zuil.app.context)
+			.c.size(.fill, .fill)
+			.c.margin(.new(10))
+			.color(colors.TRANSPARENT)
+			.child(list)
+			.build()
+		)
 		.build()
 	)
 	.build();
@@ -149,7 +157,7 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 				)
 				.build()
 			) catch |e| {
-				std.debug.print("{}\n", .{e});
+				zuil.app.context.log(.debug, "{}", .{e});
 			};
 			return false;
 		},
@@ -158,7 +166,7 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 	return true;
 }
 
-fn containerClick(self: *zuil.core.widget.ZWidget, event: *const zuil.core.input.ZEvent) callconv(.c) c_int {
+fn containerClick(self: *zuil.core.widget.ZWidget, event: zuil.core.input.ZEvent) void {
 	if (event.* != zuil.input.ZEvent.mouse) {
 		return 0;
 	} else if (event.*.mouse.action != .release) {

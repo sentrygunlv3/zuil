@@ -37,7 +37,7 @@ using `zglfw`, `zopengl`, `plutosvg`, `harfbuzz` and `freetype` libs
 
 ### widgets
 
-widgets are created using builder functions (the functions will probably change in the future)
+widgets are created using builder functions
 
 ```zig
 // .c for common builder functions
@@ -75,9 +75,9 @@ widgets.container()
 .build();
 ```
 
-### example/test project
+### test project
 
-the test/example project is in the `test` directory\
+the test project is in the `test` directory\
 run with `./test.sh` or `./test.sh -Ddebug`
 or build manually
 

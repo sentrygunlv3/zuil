@@ -1,10 +1,7 @@
 const std = @import("std");
 const root = @import("../root.zig");
 
-pub const ZWidgetFI = @import("interface.zig").ZWidgetFI;
-pub const ZWidgetMutableFI = @import("interface.zig").ZWidgetMutableFI;
-
-const errors = root.errors;
+const ZError = root.ZError;
 
 const types = root.types;
 const ZBounds = root.types.ZBounds;
@@ -13,24 +10,24 @@ const ZSize = root.types.ZSize;
 const ZMargin = root.types.ZMargin;
 const ZAlign = root.types.ZAlign;
 
-pub const generateFI = @import("interface.zig").generateFI;
-
 /// base widget struct
 /// 
-/// when creating a widget setting `fi` is used to choose the type\
-/// `mutable_fi` is for functions that can be changed after creation and are not directly linked to the type
+/// this type is used for creating a new widget type by adding this to the new widgets struct:
+/// ```
+/// super: ZWidget = .{.fi = &vtable},
+///
+/// pub const vtable = ZWidget.VTable.generate(@This());
+///
+/// ```
 /// 
-/// `type_name` has to have the name of the struct stored in `data`
+/// you can see all the functions a widget can have in `ZWidget.VTable`
 pub const ZWidget = struct {
-	type_name: []const u8 = "ZWidget",
-	mutable_fi: ZWidgetMutableFI = .{},
-	fi: *const ZWidgetFI,
+	fi: *const VTable,
 	flags: packed struct {
 		layout_dirty: bool = true,
 		keep_size_ratio: bool = false,
 		_: u6 = 0,
 	} = .{},
-	data: ?*anyopaque = null,
 	// tree
 	parent: ?*ZWidget = null,
 	window: ?*root.tree.ZWidgetTree = null,
@@ -43,29 +40,13 @@ pub const ZWidget = struct {
 	size_max: ZSize = .fill,
 	margin: ZMargin = .zero,
 
-	pub fn init(context: *root.context.ZContext, fi: *const ZWidgetFI) anyerror!*@This() {
-		const self = try context.allocator.create(@This());
-		self.* = @This(){
-			.fi = fi,
-		};
-		if (self.fi.init) |func| {
-			const r = errors.errorFromC(func(self, context));
-			if (r) |ret| {
-				if (self.fi.deinit) |funcd| {
-					funcd(self, context);
-				}
-				return ret;
-			}
-		}
-		return self;
-	}
+	pub const VTable = @import("interface.zig").ZWidgetFI;
 
 	/// call destroy when removing widget from tree
 	pub fn deinit(self: *@This(), context: *root.context.ZContext) void {
 		if (self.fi.deinit) |func| {
 			func(self, context);
 		}
-		context.allocator.destroy(self);
 	}
 
 	pub fn enterTree(self: *@This()) void {
@@ -75,9 +56,9 @@ pub const ZWidget = struct {
 	}
 
 	/// removes references from everything in the tree except the parent widget
-	pub fn exitTreeExceptParent(self: *@This()) void {
+	pub fn exitTreeExceptParent(self: *@This(), context: *root.context.ZContext) void {
 		if (self.fi.exitTree) |func| {
-			func(self);
+			func(self, context);
 		}
 		if (self.window) |window| {
 			if (window.focused_widget == self) {
@@ -87,11 +68,11 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn exitTree(self: *@This()) void {
-		self.exitTreeExceptParent();
+	pub fn exitTree(self: *@This(), context: *root.context.ZContext) void {
+		self.exitTreeExceptParent(context);
 		if (self.parent != null) {
 			self.parent.?.removeChild(self) catch |e| {
-				std.debug.print("exit tree: {}\n", .{e});
+				context.log(.err, "exit tree: {}", .{e});
 			};
 			self.parent = null;
 		}
@@ -99,7 +80,7 @@ pub const ZWidget = struct {
 
 	pub fn destroy(self: *@This()) !void {
 		if (self.window) |tree| {
-			self.exitTree();
+			self.exitTree(tree.context);
 			self.deinit(tree.context);
 			return;
 		}
@@ -132,18 +113,18 @@ pub const ZWidget = struct {
 		self.markDirty();
 	}
 
-	pub fn getData(self: *@This(), T: type) ?*T {
-		if (self.data) |d| {
-			if (std.mem.eql(u8, self.type_name, @typeName(T))) {
-				return @ptrCast(@alignCast(d));
-			}
-		}
-		return null;
+	pub fn as(self: *@This(), comptime T: type) *T {
+		return @as(*T, @alignCast(@fieldParentPtr("super", self)));
+	}
+
+	pub fn getName(self: *@This()) []const u8 {
+		return self.fi.name;
 	}
 
 	// ---
 
 	pub fn setWindow(self: *@This(), window: ?*root.tree.ZWidgetTree) void {
+		if (self.window == null and window == null) return;
 		self.window = window;
 		if (window != null) {
 			self.enterTree();
@@ -156,43 +137,30 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn render(self: *@This(), window: *root.tree.ZWidgetTree, commands: *root.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
-		if (@import("build_options").debug) {
-			std.debug.print("\n{*} - {s}\n", .{self, self.type_name});
-			std.debug.print("bounds: {}\n", .{self.clamped_bounds});
-		}
+	pub fn render(self: *@This(), tree: *root.tree.ZWidgetTree, commands: *root.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
+		tree.context.log(.debug, "{*} - {s}", .{self, self.getName()});
+		tree.context.log(.debug, "bounds: {}", .{self.clamped_bounds});
+
 		if (self.fi.render) |func| {
-			const r = errors.errorFromC(func(self, window, commands, if (area != null) &area.? else null));
-			if (r) |ret| {
-				return ret;
-			}
+			try func(self, tree, commands, if (area != null) area.? else null);
 		}
 	}
 
 	pub fn updatePreferredSize(self: *@This(), dirty: bool, x: f32, y: f32) anyerror!void {
 		if (self.fi.updatePreferredSize) |func| {
-			const r = errors.errorFromC(func(self, dirty, x, y));
-			if (r) |ret| {
-				return ret;
-			}
+			try func(self, dirty, x, y);
 		}
 	}
 
 	pub fn updateActualSize(self: *@This(), dirty: bool, x: f32, y: f32) anyerror!void {
 		if (self.fi.updateActualSize) |func| {
-			const r = errors.errorFromC(func(self, dirty, x, y));
-			if (r) |ret| {
-				return ret;
-			}
+			try func(self, dirty, x, y);
 		}
 	}
 
 	pub fn updatePosition(self: *@This(), dirty: bool, w: f32, h: f32) anyerror!void {
 		if (self.fi.updatePosition) |func| {
-			const r = errors.errorFromC(func(self, dirty, w, h));
-			if (r) |ret| {
-				return ret;
-			}
+			try func(self, dirty, w, h);
 		}
 		self.flags.layout_dirty = false;
 		self.window.?.markDirtyRender(self.clamped_bounds);
@@ -206,21 +174,16 @@ pub const ZWidget = struct {
 	}
 
 	pub fn event(self: *@This(), e: root.input.ZEvent) anyerror!void {
-		if (self.mutable_fi.event) |func| {
-			const r = errors.errorFromC(func(self, &e));
-			if (r) |ret| {
-				return ret;
-			}
+		if (self.fi.event) |func| {
+			func(self, e);
 		}
 	}
 
 	pub fn getChildren(self: *@This()) anyerror![]*ZWidget {
 		if (self.fi.getChildren) |func| {
-			var size: usize = 0;
-			const ptr = func(self, &size);
-			return ptr[0..size];
+			return try func(self);
 		}
-		return errors.ZError.MissingWidgetFunction;
+		return ZError.MissingWidgetFunction;
 	}
 
 	/// this only removes the child from the parent
@@ -230,11 +193,8 @@ pub const ZWidget = struct {
 	/// to destroy the child call `destroy` on the child
 	pub fn removeChild(self: *@This(), child: *@This()) anyerror!void {
 		if (self.fi.removeChild) |func| {
-			const r = errors.errorFromC(func(self, child));
-			if (r) |ret| {
-				return ret;
-			}
+			try func(self, child);
 		}
-		return errors.ZError.MissingWidgetFunction;
+		return ZError.MissingWidgetFunction;
 	}
 };

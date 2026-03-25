@@ -17,7 +17,7 @@ pub const ResourceHandle = struct {
 
 	pub fn deinit(self: *@This(), context: *root.ZContext) void {
 		context.resourceRemoveUser(self) catch |e| {
-			std.debug.print("resource: {}\n", .{e});
+			context.log(.err, "resource ({*}) {}", .{self, e});
 		};
 	}
 };
@@ -30,7 +30,23 @@ pub const LogType = enum(u8) {
 };
 
 fn log_default(t: LogType, string: [*c]const u8) callconv(.c) void {
-	if (@import("build_options").debug) std.debug.print("[{s}] {s}\n", .{@tagName(t), string});
+	// https://ss64.com/nt/syntax-ansi.html
+	switch (t) {
+		.debug => {
+			if (@import("build_options").debug) {
+				std.debug.print("\u{001b}[102m\u{001b}[30m[{s:7}]\u{001b}[0m {s}\n", .{@tagName(t), string});
+			}
+		},
+		.err => {
+			std.debug.print("\u{001b}[41m\u{001b}[30m[{s:7}]\u{001b}[0m {s}\n", .{"error", string});
+		},
+		.warning => {
+			std.debug.print("\u{001b}[43m\u{001b}[30m[{s:7}]\u{001b}[0m {s}\n", .{@tagName(t), string});
+		},
+		.info => {
+			std.debug.print("\u{001b}[104m\u{001b}[30m[{s:7}]\u{001b}[0m {s}\n", .{@tagName(t), string});
+		},
+	}
 }
 
 pub const ZContext = struct {
@@ -97,64 +113,35 @@ pub const ZContext = struct {
 	}
 
 	pub fn resourceRemoveUser(self: *@This(), resource: *ResourceHandle) anyerror!void {
-		if (self.renderer.resourceRemoveUser) |func| {
-			try func(resource);
-			return;
-		}
-		return root.ZError.NotSupportedByBackend;
+		try self.renderer.resourceRemoveUser(resource);
 	}
 
-	pub fn resourcesUpdate(self: *@This()) anyerror!void {
-		if (self.renderer.resourcesUpdate) |func| {
-			func();
-			return;
-		}
-		return root.ZError.NotSupportedByBackend;
+	pub fn resourcesUpdate(self: *@This()) void {
+		self.renderer.resourcesUpdate();
 	}
 
-	pub fn clip(self: *@This(), area: ?root.types.ZBounds) !void {
-		if (self.renderer.clip) |func| {
-			func(area);
-			return;
-		}
-		return root.ZError.NotSupportedByBackend;
+	pub fn clip(self: *@This(), area: ?root.types.ZBounds) void {
+		self.renderer.clip(area);
 	}
 
-	pub fn clear(self: *@This(), color: root.color.ZColor) !void {
-		if (self.renderer.clear) |func| {
-			func(color);
-			return;
-		}
-		return root.ZError.NotSupportedByBackend;
+	pub fn clear(self: *@This(), color: root.color.ZColor) void {
+		self.renderer.clear(color);
 	}
 
 	pub fn renderCommands(self: *@This(), commands: *zrenderer.RenderCommandList) anyerror!void {
-		if (self.renderer.renderCommands) |func| {
-			try func(commands);
-			return;
-		}
-		return root.ZError.NotSupportedByBackend;
+		try self.renderer.renderCommands(commands);
 	}
 
 	pub fn createTexture(self: *@This(), bitmap: *root.ZBitmap) anyerror!TextureHandle {
-		if (self.renderer.createTexture) |func| {
-			return try func(bitmap);
-		}
-		return root.ZError.NotSupportedByBackend;
+		return try self.renderer.createTexture(bitmap);
 	}
 
 	pub fn createShader(self: *@This(), v: []const u8, f: []const u8) !ShaderHandle {
-		if (self.renderer.createShader) |func| {
-			return try func(v, f);
-		}
-		return root.ZError.NotSupportedByBackend;
+		return try self.renderer.createShader(v, f);
 	}
 
 	pub fn createMesh(self: *@This(), mesh: *const root.mesh.ZMesh) anyerror!MeshHandle {
-		if (self.renderer.createMesh) |func| {
-			return try func(mesh);
-		}
-		return root.ZError.NotSupportedByBackend;
+		return try self.renderer.createMesh(mesh);
 	}
 
 	pub fn getFontTexture(self: *@This(), context: *root.ZContext, font: *root.font.ZFont) !TextureHandle {

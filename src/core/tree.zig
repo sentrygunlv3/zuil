@@ -98,12 +98,18 @@ pub const ZWidgetTree = struct {
 		const space = self.getBounds();
 
 		if (self.root) |r| {
-			if (@import("build_options").debug) std.debug.print("updatePreferredSize\n", .{});
-			try r.updatePreferredSize(if (r.flags.layout_dirty) true else false, space.w, space.h);
-			if (@import("build_options").debug) std.debug.print("updateActualSize\n", .{});
-			try r.updateActualSize(if (r.flags.layout_dirty) true else false, space.w, space.h);
-			if (@import("build_options").debug) std.debug.print("updatePosition\n", .{});
-			try r.updatePosition(if (r.flags.layout_dirty) true else false, space.w, space.h);
+			self.context.log(.debug, "updatePreferredSize", .{});
+			r.updatePreferredSize(if (r.flags.layout_dirty) true else false, space.w, space.h) catch |e| {
+				self.context.log(.warning, "a{}", .{e});
+			};
+			self.context.log(.debug, "updateActualSize", .{});
+			r.updateActualSize(if (r.flags.layout_dirty) true else false, space.w, space.h) catch |e| {
+				self.context.log(.warning, "b{}", .{e});
+			};
+			self.context.log(.debug, "updatePosition", .{});
+			r.updatePosition(if (r.flags.layout_dirty) true else false, space.w, space.h) catch |e| {
+				self.context.log(.warning, "c{}", .{e});
+			};
 		}
 
 		self.flags.layout_dirty = false;
@@ -121,25 +127,23 @@ pub const ZWidgetTree = struct {
 				&commands,
 				area
 			);
-			if (@import("build_options").debug) {
-				std.debug.print("area: {}\nflags: {}\n", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero, self.flags});
-				std.debug.print("total commands: {}\n", .{commands.commands.items.len});
-			}
+			self.context.log(.debug, "area: {} flags: {}", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero, self.flags});
+			self.context.log(.debug, "total commands: {}", .{commands.commands.items.len});
 
 			if (area != null) {
 				// to opengl coordinates
 				area.?.y = self.getBounds().h - area.?.h - area.?.y;
 			}
-			try self.context.clip(area);
-			try self.context.clear(root.color.GREY);
+			self.context.clip(area);
+			self.context.clear(root.color.GREY);
 			try self.context.renderCommands(&commands);
 		}
-		try self.context.clip(null);
+		self.context.clip(null);
 
 		self.flags.render_dirty = false;
 		self.flags.render_dirty_full = false;
 		self.dirty = null;
 
-		try self.context.resourcesUpdate();
+		self.context.resourcesUpdate();
 	}
 };

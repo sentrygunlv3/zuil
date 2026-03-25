@@ -2,16 +2,16 @@ const std = @import("std");
 const root = @import("root.zig");
 
 pub const ZRenderer = struct {
-	init: *const fn () anyerror!void = undefined,
-	deinit: *const fn () void = undefined,
-	resourceRemoveUser: ?*const fn (resource: *root.context.ResourceHandle) anyerror!void = null,
-	resourcesUpdate: ?*const fn () void = null,
-	clip: ?*const fn (area: ?root.types.ZBounds) void = null,
-	clear: ?*const fn (color: root.color.ZColor) void = null,
-	renderCommands: ?*const fn (commands: *RenderCommandList) anyerror!void = null,
-	createTexture: ?*const fn (bitmap: *root.ZBitmap) anyerror!root.context.TextureHandle = null,
-	createShader: ?*const fn (v: []const u8, f: []const u8) anyerror!root.context.ShaderHandle = null,
-	createMesh: ?*const fn (mesh: *const root.mesh.ZMesh) anyerror!root.context.MeshHandle = null,
+	init: *const fn () anyerror!void,
+	deinit: *const fn () void,
+	resourceRemoveUser: *const fn (resource: *root.context.ResourceHandle) anyerror!void,
+	resourcesUpdate: *const fn () void,
+	clip: *const fn (area: ?root.types.ZBounds) void,
+	clear: *const fn (color: root.color.ZColor) void,
+	renderCommands: *const fn (commands: *RenderCommandList) anyerror!void,
+	createTexture: *const fn (bitmap: *root.ZBitmap) anyerror!root.context.TextureHandle,
+	createShader: *const fn (v: []const u8, f: []const u8) anyerror!root.context.ShaderHandle,
+	createMesh: *const fn (mesh: *const root.mesh.ZMesh) anyerror!root.context.MeshHandle,
 };
 
 pub const RenderCommandList = struct {

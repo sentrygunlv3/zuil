@@ -31,6 +31,7 @@ pub fn init(a: std.mem.Allocator) !void {
 	windows = std.AutoHashMap(*glfw.Window, *ZWindow).init(allocator);
 
 	context = try ZuilCore.ZContext.init(allocator, OpenglBackend);
+	//context.log(.err, "test", .{});
 }
 
 pub fn deinit() void {
@@ -55,7 +56,7 @@ pub fn run() !void {
 		var iterator = windows.valueIterator();
 		while (iterator.next()) |window| {
 			const value = window.*.process() catch |e| {
-				std.debug.print("{}\n", .{e});
+				context.log(.err, "{}", .{e});
 				return;
 			};
 			if (!value) {

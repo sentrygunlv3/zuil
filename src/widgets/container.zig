@@ -2,68 +2,65 @@ const std = @import("std");
 const root = @import("../root.zig").core;
 const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
 
-const widget = root.widget;
+const ZWidget = root.widget.ZWidget;
 const ZColor = root.color.ZColor;
 const types = root.types;
 
-pub const ZContainerFI = widget.generateFI(ZContainer);
-
 pub const ZContainer = struct {
-	color: ZColor = ZColor.default,
-	child: ?*widget.ZWidget = null,
+	color: ZColor = .default,
+	radius: f32 = 10,
+	child: ?*ZWidget = null,
 
-	pub fn init(self: *widget.ZWidget, context: *root.context.ZContext) callconv(.c) c_int {
-		const data = context.allocator.create(ZContainer) catch return @intFromEnum(root.errors.ZErrorC.OutOfMemory);
-		data.* = .{};
-		self.type_name = @typeName(ZContainer);
-		self.data = data;
-		return 0;
+	super: ZWidget = .{.fi = &vtable},
+
+	pub const vtable = ZWidget.VTable.generate(@This());
+
+	pub fn init(context: *root.context.ZContext) !*@This() {
+		const self = try context.allocator.create(@This());
+		self.* = .{};
+		return self;
 	}
 
-	pub fn deinit(self: *widget.ZWidget, context: *root.context.ZContext) callconv(.c) void {
-		if (self.getData(ZContainer)) |data| {
-			if (data.child) |c| {
-				c.exitTreeExceptParent();
-				c.deinit(context);
-			}
-			context.allocator.destroy(data);
-			self.data = null;
+	pub fn deinit(widget: *ZWidget, context: *root.context.ZContext) void {
+		const self: *@This() = widget.as(@This());
+
+		if (self.child) |c| {
+			c.exitTreeExceptParent(context);
+			c.deinit(context);
 		}
+		context.allocator.destroy(self);
 	}
 
 	pub fn render(
-		self: *widget.ZWidget,
+		widget: *ZWidget,
 		tree: *root.tree.ZWidgetTree,
 		commands: *root.context.RenderCommandList,
-		area: ?*const types.ZBounds
-	) callconv(.c) c_int {
+		area: ?types.ZBounds
+	) !void {
+		const self: *@This() = widget.as(@This());
+
 		block: {
 			if (area) |a| {
 				if (
-					self.clamped_bounds.x > a.x + a.w or
-					self.clamped_bounds.x + self.clamped_bounds.w < a.x or
-					self.clamped_bounds.y > a.y + a.h or
-					self.clamped_bounds.y + self.clamped_bounds.h < a.y
+					widget.clamped_bounds.x > a.x + a.w or
+					widget.clamped_bounds.x + widget.clamped_bounds.w < a.x or
+					widget.clamped_bounds.y > a.y + a.h or
+					widget.clamped_bounds.y + widget.clamped_bounds.h < a.y
 				) {
 					break :block;
 				}
 			}
 
-			var color = ZColor.default;
-			if (self.getData(ZContainer)) |data| {
-				color = data.color;
-			}
-
 			const window_size = tree.getBounds();
 
-			const sizew = (self.clamped_bounds.w / window_size.w) * 2;
-			const sizeh = (self.clamped_bounds.h / window_size.h) * 2;
+			const sizew = (widget.clamped_bounds.w / window_size.w) * 2;
+			const sizeh = (widget.clamped_bounds.h / window_size.h) * 2;
 
-			const posx = (self.clamped_bounds.x / window_size.w) * 2.0;
-			const posy = (self.clamped_bounds.y / window_size.h) * 2.0;
+			const posx = (widget.clamped_bounds.x / window_size.w) * 2.0;
+			const posy = (widget.clamped_bounds.y / window_size.h) * 2.0;
 
-			commands.append(
-				tree.context.getShader("container") catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed),
+			try commands.append(
+				try tree.context.getShader("container"),
 				null,
 				&[0]root.context.TextureParameter{},
 				&[_]root.context.ShaderParameter{
@@ -90,90 +87,85 @@ pub const ZContainer = struct {
 					},
 					.{
 						.name = "radius",
-						.value = .{.uniform1f = 10}
+						.value = .{.uniform1f = self.radius}
 					},
 					.{
 						.name = "color",
 						.value = .{.uniform4f = .{
-							.a = color.r,
-							.b = color.g,
-							.c = color.b,
-							.d = color.a,
+							.a = self.color.r,
+							.b = self.color.g,
+							.c = self.color.b,
+							.d = self.color.a,
 						}}
 					},
 				},
-			) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
+			);
 		}
 
-		if (self.getData(ZContainer)) |data| {
-			if (data.child) |child| {
-				child.render(tree, commands, if (area != null) area.?.* else null) catch return @intFromEnum(root.errors.ZErrorC.renderWidgetFailed);
-			}
+		if (self.child) |child| {
+			try child.render(tree, commands, if (area != null) area.? else null);
 		}
-		return 0;
 	}
 
-	pub fn getChildren(self: *widget.ZWidget, return_len: *usize) callconv(.c) [*]*widget.ZWidget {
-		if (self.getData(ZContainer)) |data| {
-			if (data.child) |_| {
-				return_len.* = 1;
-				return @as([*]*widget.ZWidget, @ptrCast(&data.child.?))[0..1];
-			}
+	pub fn getChildren(widget: *ZWidget) ![]*ZWidget {
+		const self: *@This() = widget.as(@This());
+
+		if (self.child) |child| {
+			var s = [_]*ZWidget{child};
+			return &s;
 		}
-		return_len.* = 0;
-		return &[0]*widget.ZWidget{};
+		return &[_]*ZWidget{};
 	}
 
-	pub fn removeChild(self: *widget.ZWidget, child: *widget.ZWidget) callconv(.c) c_int {
-		if (self.getData(ZContainer)) |data| {
-			if (data.child == child) {
-				data.child = null;
-			}
+	pub fn removeChild(widget: *ZWidget, child: *ZWidget) !void {
+		const self: *@This() = widget.as(@This());
+
+		if (self.child == child) {
+			self.child = null;
 		}
-		return 0;
+		return root.ZError.NoChildFound;
 	}
 };
-
-pub fn zContainer(context: *root.context.ZContext) *ZContainerBuilder {
-	return ZContainerBuilder.init(context) catch |e| {
-		std.debug.panic("{}", .{e});
-	};
-}
 
 pub const ZContainerBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
-	widget: *widget.ZWidget,
+	widget: *ZContainer,
 	context: *root.context.ZContext,
 
 	pub fn init(context: *root.context.ZContext) anyerror!*@This() {
 		const self = try context.allocator.create(@This());
+		errdefer context.allocator.destroy(self);
 
-		self.widget = try widget.ZWidget.init(context, &ZContainerFI);
-		self.context = context;
+		self.* = .{
+			.widget = try ZContainer.init(context),
+			.context = context,
+		};
 
 		return self;
 	}
 
-	pub fn build(self: *@This()) *widget.ZWidget {
-		const final = self.widget;
+	pub fn build(self: *@This()) *ZWidget {
+		const final = &self.widget.super;
 		self.context.allocator.destroy(self);
 		return final;
 	}
 
-	pub fn color(self: *@This(), c: ZColor) *@This() {
-		if (self.widget.getData(ZContainer)) |data| {
-			data.*.color = c;
-		}
+	pub fn color(self: *@This(), new: ZColor) *@This() {
+		self.widget.color = new;
 		return self;
 	}
 
-	pub fn child(self: *@This(), c: *widget.ZWidget) *@This() {
-		if (self.widget.getData(ZContainer)) |data| {
-			data.child = c;
-			data.child.?.parent = self.widget;
-			data.child.?.window = self.widget.window;
-		}
+	pub fn radius(self: *@This(), new: f32) *@This() {
+		self.widget.radius = new;
+		return self;
+	}
+
+	pub fn child(self: *@This(), new: *ZWidget) *@This() {
+		self.widget.child = new;
+		self.widget.child.?.parent = &self.widget.super;
+		self.widget.child.?.window = self.widget.super.window;
+
 		return self;
 	}
 };

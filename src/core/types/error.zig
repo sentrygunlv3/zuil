@@ -2,7 +2,7 @@ pub const ZError = error{
 	NotImplemented,
 	// widget
 	MissingWidgetFunction,
-	NoWidgetData,
+	NoChildFound,
 	// rendering
 	NotSupportedByBackend,
 	FailedToCompileShader,
@@ -16,28 +16,5 @@ pub const ZError = error{
 	FailedToCreateSvg,
 
 	OutOfMemory,
-	updatePreferredSizeFailed,
-	updateActualSizeFailed,
-	updatePositionFailed,
-	renderWidgetFailed,
+	CError,
 };
-
-pub const ZErrorC = enum(c_int) {
-	noError = 0,
-	OutOfMemory,
-	updatePreferredSizeFailed,
-	updateActualSizeFailed,
-	updatePositionFailed,
-	renderWidgetFailed,
-};
-
-pub fn errorFromC(e: c_int) ?ZError {
-	return switch (@as(ZErrorC, @enumFromInt(e))) {
-		.noError => null,
-		.OutOfMemory => ZError.OutOfMemory,
-		.updatePreferredSizeFailed => ZError.updatePreferredSizeFailed,
-		.updateActualSizeFailed => ZError.updateActualSizeFailed,
-		.updatePositionFailed => ZError.updatePositionFailed,
-		.renderWidgetFailed => ZError.renderWidgetFailed,
-	};
-}

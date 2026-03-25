@@ -226,7 +226,7 @@ pub const ZWindow = struct {
 			return false;
 		}
 		if (self.tree.key_events.items.len != 0) {
-			if (@import("build_options").debug) std.debug.print("\n--- process input ---\n", .{});
+			root.context.log(.debug, "--- process input ---", .{});
 			for (self.tree.key_events.items) |event| {
 				if (self.input_handler) |func| {
 					if (!func(self, event)) {
@@ -235,17 +235,17 @@ pub const ZWindow = struct {
 					switch (event) {
 						.key => {
 							if (self.tree.focused_widget) |focused| {
-								if (@import("build_options").debug) std.debug.print("{*}\n", .{focused});
+								root.context.log(.debug, "{*}", .{focused});
 								try focused.event(event);
 							}
 						},
 						.mouse => {
 							if (self.tree.root) |r| {
 								if (r.isOverPoint(event.mouse.x, event.mouse.y, false)) |hovered| {
-									if (@import("build_options").debug) std.debug.print("{*}\n", .{hovered});
+									root.context.log(.debug, "{*}", .{hovered});
 									try hovered.event(event);
 								} else {
-									if (@import("build_options").debug) std.debug.print("nothing hovered\n", .{});
+									root.context.log(.debug, "nothing hovered", .{});
 								}
 							}
 						},
@@ -257,18 +257,18 @@ pub const ZWindow = struct {
 		}
 		const Timer = std.time.Timer;
 		if (self.tree.flags.layout_dirty) {
-			if (@import("build_options").debug) std.debug.print("\n--- process layout ---\n", .{});
+			root.context.log(.debug, "--- process layout ---", .{});
 			var timer = try Timer.start();
 
 			try self.tree.layout();
-			if (@import("build_options").debug) std.debug.print("time: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
+			root.context.log(.debug, "time: {d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 		}
 		if (self.tree.flags.layout_dirty or self.tree.flags.render_dirty) {
-			if (@import("build_options").debug) std.debug.print("\n--- process render ---\n", .{});
+			root.context.log(.debug, "--- process render ---", .{});
 			var timer = try Timer.start();
 
 			try self.render();
-			if (@import("build_options").debug) std.debug.print("time: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
+			root.context.log(.debug, "time: {d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 		}
 		return true;
 	}
@@ -291,13 +291,13 @@ pub const ZWindow = struct {
 
 		gl.viewport(0, 0, width, height);
 
-		if (@import("build_options").debug) std.debug.print("start: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
+		root.context.log(.debug, "start: {d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 
 		timer = try Timer.start();
 
 		try self.tree.render();
 
-		if (@import("build_options").debug) std.debug.print("tree: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
+		root.context.log(.debug, "tree: {d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 
 		timer = try Timer.start();
 
@@ -313,6 +313,6 @@ pub const ZWindow = struct {
 
 		self.window.swapBuffers();
 
-		if (@import("build_options").debug) std.debug.print("blit: {d:.3}ms\n", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
+		root.context.log(.debug, "blit: {d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 	}
 };

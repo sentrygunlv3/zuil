@@ -13,7 +13,7 @@ pub fn BuilderMixin(comptime T: type) type {
 		pub fn size(self: *@This(), w: root.types.ZUnit, h: root.types.ZUnit) *T {
 			const builder: *T = @alignCast(@fieldParentPtr("c", self));
 
-			builder.widget.setSize(.{
+			builder.widget.super.setSize(.{
 				.w = w,
 				.h = h
 			});
@@ -23,22 +23,15 @@ pub fn BuilderMixin(comptime T: type) type {
 		pub fn margin(self: *@This(), new: root.types.ZMargin) *T {
 			const builder: *T = @alignCast(@fieldParentPtr("c", self));
 
-			builder.widget.margin = new;
-			builder.widget.markDirty();
+			builder.widget.super.margin = new;
+			builder.widget.super.markDirty();
 			return builder;
 		}
 
 		pub fn keepSizeRatio(self: *@This(), state: bool) *T {
 			const builder: *T = @alignCast(@fieldParentPtr("c", self));
 
-			builder.widget.setKeepRatio(state);
-			return builder;
-		}
-
-		pub fn eventCallback(self: *@This(), event: *const fn (*root.widget.ZWidget, *const root.input.ZEvent) callconv(.c) c_int) *T {
-			const builder: *T = @alignCast(@fieldParentPtr("c", self));
-
-			builder.widget.mutable_fi.event = event;
+			builder.widget.super.setKeepRatio(state);
 			return builder;
 		}
 	};

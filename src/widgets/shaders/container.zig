@@ -1,5 +1,5 @@
 const std = @import("std");
-const root = @import("../root.zig");
+const root = @import("../widgets.zig");
 
 const name = "container";
 
@@ -53,7 +53,7 @@ const fragment =
 	\\}
 ;
 
-pub fn register(c: *root.core.ZContext) void {
+pub fn register(c: *root.zuil.ZContext) void {
 	c.registerShader(
 		c,
 		name,

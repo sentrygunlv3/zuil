@@ -1,11 +1,11 @@
 const std = @import("std");
-const root = @import("../root.zig").core;
-const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
+const zuil = @import("zuilcore");
+const BuilderMixin = zuil.widget.BuilderMixin;
 
-const ZWidget = root.widget.ZWidget;
-const ZColor = root.color.ZColor;
-const types = root.types;
-const colors = root.color;
+const ZWidget = zuil.widget.ZWidget;
+const ZColor = zuil.color.ZColor;
+const types = zuil.types;
+const colors = zuil.color;
 
 pub const ZText = struct {
 	color: ZColor = ZColor.default,
@@ -16,13 +16,13 @@ pub const ZText = struct {
 
 	pub const vtable = ZWidget.VTable.generate(@This());
 
-	pub fn init(context: *root.context.ZContext) !*@This() {
+	pub fn init(context: *zuil.context.ZContext) !*@This() {
 		const self = try context.allocator.create(@This());
 		self.* = .{};
 		return self;
 	}
 
-	pub fn deinit(widget: *ZWidget, context: *root.context.ZContext) void {
+	pub fn deinit(widget: *ZWidget, context: *zuil.context.ZContext) void {
 		const self: *@This() = widget.as(@This());
 
 		context.allocator.destroy(self);
@@ -32,8 +32,8 @@ pub const ZText = struct {
 	// probably needs a complety rewrite to work with more advanced stuff
 	pub fn render(
 		widget: *ZWidget,
-		tree: *root.tree.ZWidgetTree,
-		commands: *root.context.RenderCommandList,
+		tree: *zuil.tree.ZWidgetTree,
+		commands: *zuil.context.RenderCommandList,
 		area: ?types.ZBounds
 	) !void {
 		const self: *@This() = widget.as(@This());
@@ -62,21 +62,21 @@ pub const ZText = struct {
 		//const widgetw = (self.clamped_bounds.w / window_size.w) * 2 - 1;
 		//const widgeth = 1 - (self.clamped_bounds.h / window_size.h) * 2;
 
-		const sub_font = root.hb.hb_font_create_sub_font(font.hb_font);
-		defer root.hb.hb_font_destroy(sub_font);
-		root.hb.hb_font_set_scale(sub_font, @intCast(self.font_size * 64), @intCast(self.font_size * 64));
+		const sub_font = zuil.hb.hb_font_create_sub_font(font.hb_font);
+		defer zuil.hb.hb_font_destroy(sub_font);
+		zuil.hb.hb_font_set_scale(sub_font, @intCast(self.font_size * 64), @intCast(self.font_size * 64));
 
-		const buffer = root.hb.hb_buffer_create();
-		defer root.hb.hb_buffer_destroy(buffer);
-		root.hb.hb_buffer_reset(buffer);
+		const buffer = zuil.hb.hb_buffer_create();
+		defer zuil.hb.hb_buffer_destroy(buffer);
+		zuil.hb.hb_buffer_reset(buffer);
 
-		root.hb.hb_buffer_set_direction(buffer, root.hb.HB_DIRECTION_LTR);
-		root.hb.hb_buffer_set_script(buffer, root.hb.HB_SCRIPT_LATIN);
-		root.hb.hb_buffer_set_language(buffer, root.hb.hb_language_from_string("en", -1));
+		zuil.hb.hb_buffer_set_direction(buffer, zuil.hb.HB_DIRECTION_LTR);
+		zuil.hb.hb_buffer_set_script(buffer, zuil.hb.HB_SCRIPT_LATIN);
+		zuil.hb.hb_buffer_set_language(buffer, zuil.hb.hb_language_from_string("en", -1));
 
-		root.hb.hb_buffer_add_utf8(buffer, self.text.ptr, @intCast(self.text.len), 0, @intCast(self.text.len));
+		zuil.hb.hb_buffer_add_utf8(buffer, self.text.ptr, @intCast(self.text.len), 0, @intCast(self.text.len));
 
-		root.hb.hb_shape(
+		zuil.hb.hb_shape(
 			sub_font,
 			buffer,
 			null,
@@ -84,11 +84,11 @@ pub const ZText = struct {
 		);
 
 		var count_c: c_uint = 0;
-		const glyph_info = root.hb.hb_buffer_get_glyph_infos(buffer, &count_c);
-		const glyph_pos = root.hb.hb_buffer_get_glyph_positions(buffer, &count_c);
+		const glyph_info = zuil.hb.hb_buffer_get_glyph_infos(buffer, &count_c);
+		const glyph_pos = zuil.hb.hb_buffer_get_glyph_positions(buffer, &count_c);
 		const count: u32 = @intCast(count_c);
 
-		var mesh = try root.mesh.ZMeshBuilder.init(widget.window.?.context.allocator);
+		var mesh = try zuil.mesh.ZMeshBuilder.init(widget.window.?.context.allocator);
 		defer mesh.deinit();
 
 		const scale = @as(f32, @floatFromInt(self.font_size)) / 96;
@@ -144,13 +144,13 @@ pub const ZText = struct {
 		try commands.append(
 			try tree.context.getShader("font"),
 			mesh_handle,
-			&[_]root.context.TextureParameter{
+			&[_]zuil.context.TextureParameter{
 				.{
 					.slot = 0,
 					.texture = texture
 				},
 			},
-			&[_]root.context.ShaderParameter{
+			&[_]zuil.context.ShaderParameter{
 				.{
 					.name = "color",
 					.value = .{.uniform4f = .{
@@ -169,9 +169,9 @@ pub const zTextBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
 	widget: *ZText,
-	context: *root.context.ZContext,
+	context: *zuil.context.ZContext,
 
-	pub fn init(context: *root.context.ZContext) anyerror!*@This() {
+	pub fn init(context: *zuil.context.ZContext) anyerror!*@This() {
 		const self = try context.allocator.create(@This());
 		errdefer context.allocator.destroy(self);
 

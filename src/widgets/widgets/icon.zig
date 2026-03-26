@@ -1,26 +1,26 @@
 const std = @import("std");
-const root = @import("../root.zig").core;
-const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
+const zuil = @import("zuilcore");
+const BuilderMixin = zuil.widget.BuilderMixin;
 
-const ZWidget = root.widget.ZWidget;
-const ZColor = root.color.ZColor;
-const types = root.types;
+const ZWidget = zuil.widget.ZWidget;
+const ZColor = zuil.color.ZColor;
+const types = zuil.types;
 
 pub const ZIcon = struct {
 	icon: []const u8 = "",
-	resource: root.context.ResourceHandle = undefined,
+	resource: zuil.context.ResourceHandle = undefined,
 
 	super: ZWidget = .{.fi = &vtable},
 
 	pub const vtable = ZWidget.VTable.generate(@This());
 
-	pub fn init(context: *root.context.ZContext) !*@This() {
+	pub fn init(context: *zuil.context.ZContext) !*@This() {
 		const self = try context.allocator.create(@This());
 		self.* = .{};
 		return self;
 	}
 
-	pub fn deinit(widget: *ZWidget, context: *root.context.ZContext) void {
+	pub fn deinit(widget: *ZWidget, context: *zuil.context.ZContext) void {
 		const self: *@This() = widget.as(@This());
 
 		context.allocator.destroy(self);
@@ -29,10 +29,10 @@ pub const ZIcon = struct {
 	pub fn enterTree(widget: *ZWidget) void {
 		const self: *@This() = widget.as(@This());
 
-		const icon = root.assets.getAsset(self.icon) catch {
+		const icon = zuil.assets.getAsset(self.icon) catch {
 			return;
 		};
-		var bitmap = root.svg.svgToBitmap(widget.window.?.context.allocator, icon, 256, 256) catch {
+		var bitmap = zuil.svg.svgToBitmap(widget.window.?.context.allocator, icon, 256, 256) catch {
 			return;
 		};
 		defer bitmap.deinit(widget.window.?.context.allocator);
@@ -41,7 +41,7 @@ pub const ZIcon = struct {
 		};
 	}
 
-	pub fn exitTree(widget: *ZWidget, context: *root.context.ZContext) void {
+	pub fn exitTree(widget: *ZWidget, context: *zuil.context.ZContext) void {
 		const self: *@This() = widget.as(@This());
 
 		self.resource.deinit(context);
@@ -49,8 +49,8 @@ pub const ZIcon = struct {
 
 	pub fn render(
 		widget: *ZWidget,
-		tree: *root.tree.ZWidgetTree,
-		commands: *root.context.RenderCommandList,
+		tree: *zuil.tree.ZWidgetTree,
+		commands: *zuil.context.RenderCommandList,
 		area: ?types.ZBounds
 	) !void {
 		const self: *@This() = widget.as(@This());
@@ -67,13 +67,13 @@ pub const ZIcon = struct {
 		try commands.append(
 			try tree.context.getShader("bitmap"),
 			null,
-			&[_]root.context.TextureParameter{
+			&[_]zuil.context.TextureParameter{
 				.{
 					.slot = 0,
 					.texture = self.resource
 				},
 			},
-			&[_]root.context.ShaderParameter{
+			&[_]zuil.context.ShaderParameter{
 				.{
 					.name = "pos",
 					.value = .{.uniform2f = .{
@@ -101,9 +101,9 @@ pub const ZIconBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
 	widget: *ZIcon,
-	context: *root.context.ZContext,
+	context: *zuil.context.ZContext,
 
-	pub fn init(context: *root.context.ZContext) anyerror!*@This() {
+	pub fn init(context: *zuil.context.ZContext) anyerror!*@This() {
 		const self = try context.allocator.create(@This());
 		errdefer context.allocator.destroy(self);
 

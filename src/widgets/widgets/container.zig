@@ -1,10 +1,10 @@
 const std = @import("std");
-const root = @import("../root.zig").core;
-const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
+const zuil = @import("zuilcore");
+const BuilderMixin = zuil.widget.BuilderMixin;
 
-const ZWidget = root.widget.ZWidget;
-const ZColor = root.color.ZColor;
-const types = root.types;
+const ZWidget = zuil.widget.ZWidget;
+const ZColor = zuil.color.ZColor;
+const types = zuil.types;
 
 pub const ZContainer = struct {
 	color: ZColor = .default,
@@ -15,13 +15,13 @@ pub const ZContainer = struct {
 
 	pub const vtable = ZWidget.VTable.generate(@This());
 
-	pub fn init(context: *root.context.ZContext) !*@This() {
+	pub fn init(context: *zuil.context.ZContext) !*@This() {
 		const self = try context.allocator.create(@This());
 		self.* = .{};
 		return self;
 	}
 
-	pub fn deinit(widget: *ZWidget, context: *root.context.ZContext) void {
+	pub fn deinit(widget: *ZWidget, context: *zuil.context.ZContext) void {
 		const self: *@This() = widget.as(@This());
 
 		if (self.child) |c| {
@@ -33,8 +33,8 @@ pub const ZContainer = struct {
 
 	pub fn render(
 		widget: *ZWidget,
-		tree: *root.tree.ZWidgetTree,
-		commands: *root.context.RenderCommandList,
+		tree: *zuil.tree.ZWidgetTree,
+		commands: *zuil.context.RenderCommandList,
 		area: ?types.ZBounds
 	) !void {
 		const self: *@This() = widget.as(@This());
@@ -62,8 +62,8 @@ pub const ZContainer = struct {
 			try commands.append(
 				try tree.context.getShader("container"),
 				null,
-				&[0]root.context.TextureParameter{},
-				&[_]root.context.ShaderParameter{
+				&[0]zuil.context.TextureParameter{},
+				&[_]zuil.context.ShaderParameter{
 					.{
 						.name = "pos",
 						.value = .{.uniform2f = .{
@@ -123,7 +123,7 @@ pub const ZContainer = struct {
 		if (self.child == child) {
 			self.child = null;
 		}
-		return root.ZError.NoChildFound;
+		return zuil.ZError.NoChildFound;
 	}
 };
 
@@ -131,9 +131,9 @@ pub const ZContainerBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
 	widget: *ZContainer,
-	context: *root.context.ZContext,
+	context: *zuil.context.ZContext,
 
-	pub fn init(context: *root.context.ZContext) anyerror!*@This() {
+	pub fn init(context: *zuil.context.ZContext) anyerror!*@This() {
 		const self = try context.allocator.create(@This());
 		errdefer context.allocator.destroy(self);
 

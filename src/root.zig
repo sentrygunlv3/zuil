@@ -1,9 +1,8 @@
 const std = @import("std");
 
-pub const core = @import("core/root.zig");
+pub const core = @import("zuilcore");
 pub const app = @import("app/app.zig");
-pub const widgets = @import("widgets.zig");
-pub const shaders = @import("shaders.zig");
+pub const widgets = @import("widgets/widgets.zig");
 
 pub const assets = core.assets;
 pub const widget = core.widget;
@@ -16,7 +15,7 @@ pub const ZWindow = app.ZWindow;
 pub fn init(a: std.mem.Allocator) !void {
 	try app.init(a);
 	assets.init(a);
-	app.createContext = shaders.registerAllFunc;
+	app.createContext = widgets.registerAllFunc;
 }
 
 pub fn deinit() void {

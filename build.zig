@@ -22,6 +22,14 @@ pub fn build(b: *std.Build) void {
 		.optimize = optimize,
 	});
 
+	const zuil_core = b.createModule(.{
+		.root_source_file = b.path("src/core/root.zig"),
+		.target = target,
+		.optimize = optimize,
+	});
+	zuil_core.addImport("build.zig.zon", build_zig_zon);
+	zuil_core.addOptions("build_options", build_options);
+
 	var lib = b.addLibrary(.{
 		.name = "zuil",
 		.linkage = .static,
@@ -32,9 +40,8 @@ pub fn build(b: *std.Build) void {
 			.strip = !debug,
 		}),
 	});
-	lib.root_module.addImport("build.zig.zon", build_zig_zon);
+	lib.root_module.addImport("zuilcore", zuil_core);
 
-	lib.root_module.addOptions("build_options", build_options);
 	//lib.root_module.addSystemIncludePath(b.path("include"));
 
 	lib.root_module.addImport("glfw", glfw.module("root"));

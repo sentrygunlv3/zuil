@@ -100,15 +100,15 @@ pub const ZWidgetTree = struct {
 		if (self.root) |r| {
 			self.context.log(.debug, "updatePreferredSize", .{});
 			r.updatePreferredSize(if (r.flags.layout_dirty) true else false, space.w, space.h) catch |e| {
-				self.context.log(.warning, "a{}", .{e});
+				self.context.log(.warning, "{}", .{e});
 			};
 			self.context.log(.debug, "updateActualSize", .{});
 			r.updateActualSize(if (r.flags.layout_dirty) true else false, space.w, space.h) catch |e| {
-				self.context.log(.warning, "b{}", .{e});
+				self.context.log(.warning, "{}", .{e});
 			};
 			self.context.log(.debug, "updatePosition", .{});
 			r.updatePosition(if (r.flags.layout_dirty) true else false, space.w, space.h) catch |e| {
-				self.context.log(.warning, "c{}", .{e});
+				self.context.log(.warning, "{}", .{e});
 			};
 		}
 
@@ -116,7 +116,7 @@ pub const ZWidgetTree = struct {
 	}
 
 	pub fn render(self: *@This()) anyerror!void {
-		defer _ = self.arena.reset(.free_all);
+		defer _ = self.arena.reset(.retain_capacity);
 		if (self.root) |r| {
 			var commands = try root.context.RenderCommandList.init(self.arena.allocator());
 
@@ -130,6 +130,7 @@ pub const ZWidgetTree = struct {
 			self.context.log(.debug, "area: {} flags: {}", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero, self.flags});
 			self.context.log(.debug, "total commands: {}", .{commands.commands.items.len});
 
+			// TODO: move to opengl backend/app module
 			if (area != null) {
 				// to opengl coordinates
 				area.?.y = self.getBounds().h - area.?.h - area.?.y;

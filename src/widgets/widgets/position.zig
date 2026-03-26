@@ -1,10 +1,10 @@
 const std = @import("std");
-const root = @import("../root.zig").core;
-const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
+const zuil = @import("zuilcore");
+const BuilderMixin = zuil.widget.BuilderMixin;
 
-const ZWidget = root.widget.ZWidget;
-const ZColor = root.color.ZColor;
-const types = root.types;
+const ZWidget = zuil.widget.ZWidget;
+const ZColor = zuil.color.ZColor;
+const types = zuil.types;
 
 pub const ZPosition = struct {
 	x: f32 = 0,
@@ -16,13 +16,13 @@ pub const ZPosition = struct {
 
 	pub const vtable = ZWidget.VTable.generate(@This());
 
-	pub fn init(context: *root.context.ZContext) !*@This() {
+	pub fn init(context: *zuil.context.ZContext) !*@This() {
 		const self = try context.allocator.create(@This());
 		self.* = .{};
 		return self;
 	}
 
-	pub fn deinit(widget: *ZWidget, context: *root.context.ZContext) void {
+	pub fn deinit(widget: *ZWidget, context: *zuil.context.ZContext) void {
 		const self: *@This() = widget.as(@This());
 
 		if (self.child) |c| {
@@ -65,7 +65,7 @@ pub const ZPosition = struct {
 			}
 		}
 
-		var space: root.types.ZBounds = .zero;
+		var space: zuil.types.ZBounds = .zero;
 		if (self.absolute_size) {
 			space = widget.window.?.getBounds();
 		} else {
@@ -97,7 +97,7 @@ pub const ZPosition = struct {
 		if (self.child == child) {
 			self.child = null;
 		}
-		return root.ZError.NoChildFound;
+		return zuil.ZError.NoChildFound;
 	}
 };
 
@@ -105,9 +105,9 @@ pub const ZPositionBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
 	widget: *ZPosition,
-	context: *root.context.ZContext,
+	context: *zuil.context.ZContext,
 
-	pub fn init(context: *root.context.ZContext) anyerror!*@This() {
+	pub fn init(context: *zuil.context.ZContext) anyerror!*@This() {
 		const self = try context.allocator.create(@This());
 		errdefer context.allocator.destroy(self);
 

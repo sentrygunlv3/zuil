@@ -3,7 +3,7 @@ pub const glfw = @import("glfw");
 pub const opengl = @import("opengl");
 pub const gl = opengl.bindings;
 
-pub const ZuilCore = @import("../core/root.zig");
+pub const ZuilCore = @import("zuilcore");
 
 pub const inputGlfw = @import("input.zig");
 pub const ZWindow = @import("window.zig").ZWindow;

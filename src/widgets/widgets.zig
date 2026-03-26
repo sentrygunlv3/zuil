@@ -1,8 +1,18 @@
 //! all the builtin widgets
 
-fn buildFunc(T: type) fn (context: *@import("root.zig").core.context.ZContext) *T {
+pub const zuil = @import("zuilcore");
+
+/// registers all builtin shaders
+pub fn registerAllFunc(context: *zuil.ZContext) anyerror!void {
+	@import("shaders/container.zig").register(context);
+	@import("shaders/bitmap.zig").register(context);
+	@import("shaders/font.zig").register(context);
+}
+
+
+fn buildFunc(T: type) fn (context: *zuil.context.ZContext) *T {
 	return struct {
-		fn func(context: *@import("root.zig").core.context.ZContext) *T {
+		fn func(context: *zuil.context.ZContext) *T {
 			return T.init(context) catch |e| {
 				@import("std").debug.panic("{}", .{e});
 			};

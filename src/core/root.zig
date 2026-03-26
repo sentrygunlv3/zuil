@@ -1,7 +1,6 @@
 //! the root of zuil core
 
 const std = @import("std");
-pub const opengl = @import("opengl");
 
 pub const c = @cImport({
 	@cInclude("plutosvg.h");
@@ -16,8 +15,6 @@ pub const hb = @cImport({
 });
 
 pub const cffi = @import("c.zig");
-
-pub const gl = opengl.bindings;
 
 pub const color = @import("types/color.zig");
 pub const input = @import("types/input.zig");

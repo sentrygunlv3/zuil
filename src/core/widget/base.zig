@@ -10,6 +10,8 @@ const ZSize = root.types.ZSize;
 const ZMargin = root.types.ZMargin;
 const ZAlign = root.types.ZAlign;
 
+pub const BuilderMixin = @import("builder.zig").BuilderMixin;
+
 /// base widget struct
 /// 
 /// this type is used for creating a new widget type by adding this to the new widgets struct:

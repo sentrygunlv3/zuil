@@ -1,10 +1,10 @@
 const std = @import("std");
-const root = @import("../root.zig").core;
-const BuilderMixin = @import("../core/widget/builder.zig").BuilderMixin;
+const zuil = @import("zuilcore");
+const BuilderMixin = zuil.widget.BuilderMixin;
 
-const ZWidget = root.widget.ZWidget;
-const ZColor = root.color.ZColor;
-const types = root.types;
+const ZWidget = zuil.widget.ZWidget;
+const ZColor = zuil.color.ZColor;
+const types = zuil.types;
 
 pub const ZList = struct {
 	direction: types.ZDirection = types.ZDirection.default,
@@ -15,7 +15,7 @@ pub const ZList = struct {
 
 	pub const vtable = ZWidget.VTable.generate(@This());
 
-	pub fn init(context: *root.context.ZContext) !*@This() {
+	pub fn init(context: *zuil.context.ZContext) !*@This() {
 		const self = try context.allocator.create(@This());
 		self.* = .{
 			.children = try std.ArrayList(*ZWidget).initCapacity(context.allocator, 0),
@@ -23,7 +23,7 @@ pub const ZList = struct {
 		return self;
 	}
 
-	pub fn deinit(widget: *ZWidget, context: *root.context.ZContext) void {
+	pub fn deinit(widget: *ZWidget, context: *zuil.context.ZContext) void {
 		const self: *@This() = widget.as(@This());
 
 		for (self.children.items) |c| {
@@ -176,9 +176,9 @@ pub const ZListBuilder = struct {
 	/// common functions
 	c: BuilderMixin(@This()) = .{},
 	widget: *ZList,
-	context: *root.context.ZContext,
+	context: *zuil.context.ZContext,
 
-	pub fn init(context: *root.context.ZContext) anyerror!*@This() {
+	pub fn init(context: *zuil.context.ZContext) anyerror!*@This() {
 		const self = try context.allocator.create(@This());
 		errdefer context.allocator.destroy(self);
 

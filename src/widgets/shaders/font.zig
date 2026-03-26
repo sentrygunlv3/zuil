@@ -1,7 +1,7 @@
 const std = @import("std");
-const root = @import("../root.zig");
+const root = @import("../widgets.zig");
 
-const name = "bitmap";
+const name = "font";
 
 const vertex =
 	\\#version 400 core
@@ -16,8 +16,8 @@ const vertex =
 	\\
 	\\void main() {
 	\\    gl_Position = vec4(
-	\\        (posIn.x * size.x - 1) + pos.x,
-	\\        (1 - posIn.y * size.y) - pos.y,
+	\\        posIn.x,
+	\\        posIn.y,
 	\\        0.0, 1.0
 	\\    );
 	\\    texCoord = vec2(aTex.x, aTex.y);
@@ -30,15 +30,22 @@ const fragment =
 	\\in vec2 texCoord;
 	\\
 	\\uniform sampler2D tex0;
+	\\uniform vec4 color;
 	\\
 	\\out vec4 FragColor;
 	\\
 	\\void main() {
-	\\    FragColor = texture(tex0, texCoord);
+	\\    vec4 mask = texture(tex0, texCoord);
+	\\    FragColor = vec4(
+	\\        color.r,
+	\\        color.g,
+	\\        color.b,
+	\\        mask.r * color.a
+	\\    );
 	\\}
 ;
 
-pub fn register(c: *root.core.ZContext) void {
+pub fn register(c: *root.zuil.ZContext) void {
 	c.registerShader(
 		c,
 		name,

@@ -232,25 +232,25 @@ pub const ZWindow = struct {
 					if (!func(self, event)) {
 						continue;
 					}
-					switch (event) {
-						.key => {
-							if (self.tree.focused_widget) |focused| {
-								root.context.log(.debug, "{*}", .{focused});
-								try focused.event(event);
+				}
+				switch (event) {
+					.key => {
+						if (self.tree.focused_widget) |focused| {
+							root.context.log(.debug, "{*}", .{focused});
+							try focused.event(event);
+						}
+					},
+					.mouse => {
+						if (self.tree.root) |r| {
+							if (r.isOverPoint(event.mouse.x, event.mouse.y, false)) |hovered| {
+								root.context.log(.debug, "{*}", .{hovered});
+								try hovered.event(event);
+							} else {
+								root.context.log(.debug, "nothing hovered", .{});
 							}
-						},
-						.mouse => {
-							if (self.tree.root) |r| {
-								if (r.isOverPoint(event.mouse.x, event.mouse.y, false)) |hovered| {
-									root.context.log(.debug, "{*}", .{hovered});
-									try hovered.event(event);
-								} else {
-									root.context.log(.debug, "nothing hovered", .{});
-								}
-							}
-						},
-						else => {}
-					}
+						}
+					},
+					else => {}
 				}
 			}
 			self.tree.key_events.clearAndFree(root.allocator);

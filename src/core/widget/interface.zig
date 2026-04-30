@@ -13,7 +13,7 @@ const ZWidget = root.widget.ZWidget;
 
 /// widget function interface for widget classes
 pub const ZWidgetFI = struct {
-	deinit: ?*const fn (self: *ZWidget, context: *root.context.ZContext) void = null,
+	deinit: *const fn (self: *ZWidget, context: *root.context.ZContext) void,
 
 	enterTree: ?*const fn (self: *ZWidget) void = null,
 	exitTree: ?*const fn (self: *ZWidget, context: *root.context.ZContext) void = null,

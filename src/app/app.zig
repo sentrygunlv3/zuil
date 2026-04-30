@@ -31,7 +31,7 @@ pub fn init(a: std.mem.Allocator) !void {
 	windows = std.AutoHashMap(*glfw.Window, *ZWindow).init(allocator);
 
 	context = try ZuilCore.ZContext.init(allocator, OpenglBackend);
-	//context.log(.err, "test", .{});
+	context.log(.info, "ZUIL init", .{});
 }
 
 pub fn deinit() void {
@@ -39,6 +39,7 @@ pub fn deinit() void {
 
 	windows.deinit();
 
+	context.log(.info, "ZUIL deinit", .{});
 	context.deinit();
 }
 

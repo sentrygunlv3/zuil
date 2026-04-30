@@ -7,8 +7,8 @@
    viewBox="0 0 512 512"
    version="1.1"
    id="svg1"
-   inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
-   sodipodi:docname="icon-new.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   sodipodi:docname="icon.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -16,24 +16,23 @@
    xmlns:svg="http://www.w3.org/2000/svg">
   <sodipodi:namedview
      id="namedview1"
-     pagecolor="#d1d1d1"
+     pagecolor="#ffffff"
      bordercolor="#000000"
      borderopacity="0.25"
-     inkscape:showpageshadow="true"
+     inkscape:showpageshadow="2"
      inkscape:pageopacity="0.0"
-     inkscape:pagecheckerboard="true"
+     inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
-     inkscape:zoom="0.70710678"
-     inkscape:cx="49.497474"
-     inkscape:cy="323.8549"
+     inkscape:zoom="0.55242717"
+     inkscape:cx="56.115994"
+     inkscape:cy="342.12654"
      inkscape:window-width="1920"
      inkscape:window-height="1008"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer2"
-     labelstyle="default" />
+     inkscape:current-layer="layer1" />
   <defs
      id="defs1">
     <marker
@@ -120,49 +119,45 @@
        inkscape:label="Layer 2"
        transform="matrix(1,0,-0.08748866,1,22.528333,0)">
       <rect
-         style="display:inline;fill:#299ef9;fill-opacity:1;stroke:#ffffff;stroke-width:15;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+         style="fill:#299ef9;fill-opacity:1;stroke:#ffffff;stroke-width:15;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
          id="rect1"
          width="200"
          height="380"
          x="156"
-         y="66"
-         ry="0"
-         rx="0" />
+         y="66" />
       <rect
-         style="display:inline;fill:#299ef9;fill-opacity:1;stroke:#ffffff;stroke-width:10.0003;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+         style="fill:#299ef9;fill-opacity:1;stroke:#ffffff;stroke-width:10;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
          id="rect3"
-         width="285.9162"
-         height="36.575352"
-         x="118.06643"
-         y="447.74106"
-         transform="matrix(1,0,-0.0110961,0.99993844,0,0)" />
+         width="257.05133"
+         height="37.051342"
+         x="127.47435"
+         y="447.47437" />
       <rect
-         style="fill:#299ef9;fill-opacity:1;stroke:#ffffff;stroke-width:10.00030783;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+         style="fill:#299ef9;fill-opacity:1;stroke:#ffffff;stroke-width:10;stroke-linecap:square;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
          id="rect4"
-         width="285.9162"
-         height="36.575352"
-         x="113.4393"
-         y="30.715363"
-         transform="matrix(1,0,-0.0110961,0.99993844,0,0)" />
+         width="257.05133"
+         height="37.051342"
+         x="127.47435"
+         y="30.474352" />
       <g
          inkscape:groupmode="layer"
          id="layer3"
          inkscape:label="Layer 3"
          style="display:inline">
         <path
-           style="display:inline;fill:#f9a319;fill-opacity:1;stroke:#ffffff;stroke-width:20;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#CapTriangle);marker-end:url(#marker8);paint-order:normal"
-           d="m 316.22053,100 -2.70354,312"
-           id="path4"
+           style="fill:#f9a319;fill-opacity:1;stroke:#ffffff;stroke-width:20;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1;paint-order:normal;marker-start:url(#CapTriangle);marker-end:url(#marker8)"
+           d="m 191,241 130,30"
+           id="path1"
            sodipodi:nodetypes="cc" />
         <path
-           style="display:inline;fill:#f9a319;fill-opacity:1;stroke:#ffffff;stroke-width:20;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#CapTriangle);marker-end:url(#marker8);paint-order:normal"
-           d="m 256.22053,100 -2.70354,312"
-           id="path9"
+           style="fill:#f9a319;fill-opacity:1;stroke:#ffffff;stroke-width:20;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1;paint-order:normal;marker-start:url(#CapTriangle);marker-end:url(#marker8)"
+           d="m 191,130 130,30"
+           id="path2"
            sodipodi:nodetypes="cc" />
         <path
-           style="display:inline;fill:#f9a319;fill-opacity:1;stroke:#ffffff;stroke-width:20;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#CapTriangle);marker-end:url(#marker8);paint-order:normal"
-           d="m 196.22053,100 -2.70354,312"
-           id="path10"
+           style="fill:#f9a319;fill-opacity:1;stroke:#ffffff;stroke-width:20;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1;paint-order:normal;marker-start:url(#CapTriangle);marker-end:url(#marker8)"
+           d="m 191,360 130,30"
+           id="path3"
            sodipodi:nodetypes="cc" />
       </g>
     </g>

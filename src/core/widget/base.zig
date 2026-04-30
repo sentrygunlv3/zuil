@@ -46,9 +46,7 @@ pub const ZWidget = struct {
 
 	/// call destroy when removing widget from tree
 	pub fn deinit(self: *@This(), context: *root.context.ZContext) void {
-		if (self.fi.deinit) |func| {
-			func(self, context);
-		}
+		self.fi.deinit(self, context);
 	}
 
 	pub fn enterTree(self: *@This()) void {

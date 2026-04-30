@@ -92,5 +92,4 @@ files/modules in `src` dir:
 
 - `core` directory has the base widget system
 - `app` directory has glfw specific things and can be used to create windows that use the core widget system
-- `shaders`/`shaders.zig` and `widgets`/`widgets.zig` directories/files have the default widgets/shaders
-- `root.zig` is basically the lib root for the `app` module
+- `widgets` directory has the default widgets/shaders

@@ -35,12 +35,12 @@ pub fn init(a: std.mem.Allocator) !void {
 }
 
 pub fn deinit() void {
-	glfw.terminate();
-
 	windows.deinit();
 
 	context.log(.info, "ZUIL deinit", .{});
 	context.deinit();
+
+	glfw.terminate();
 }
 
 pub fn run() !void {

@@ -112,7 +112,7 @@ pub const ZContainer = struct {
 
 		if (self.child) |child| {
 			var s = [_]*ZWidget{child};
-			return &s;
+			return s[0..];
 		}
 		return &[_]*ZWidget{};
 	}

@@ -17,7 +17,7 @@ pub fn build(b: *std.Build) void {
 		}),
 	});
 	exe.root_module.addImport("zuil", zuil.module("root"));
-	exe.linkLibrary(zuil.artifact("zuil"));
+	exe.root_module.linkLibrary(zuil.artifact("zuil"));
 
 	b.installArtifact(exe);
 }

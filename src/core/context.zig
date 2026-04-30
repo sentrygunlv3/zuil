@@ -56,7 +56,7 @@ pub const ZContext = struct {
 	},
 	renderer: zrenderer.ZRenderer,
 
-	freetype: root.ft.FT_Library = undefined,
+	freetype: root.c.FT_Library = undefined,
 
 	shaders: std.StringHashMap(ShaderHandle),
 
@@ -80,24 +80,44 @@ pub const ZContext = struct {
 		errdefer self.fonts.deinit();
 		errdefer self.font_textures.deinit();
 
-		_ = root.ft.FT_Init_FreeType(&self.freetype);
-		errdefer _ = root.ft.FT_Done_FreeType(self.freetype);
+		_ = root.c.FT_Init_FreeType(&self.freetype);
+		errdefer _ = root.c.FT_Done_FreeType(self.freetype);
 
 		return self;
 	}
 
 	pub fn lateInit(self: *@This()) !void {
-		try self.renderer.init();
+		try self.renderer.init(self.allocator);
 		errdefer self.renderer.deinit();
 	}
 
 	pub fn deinit(self: *@This()) void {
-		self.renderer.deinit();
-		_ = root.ft.FT_Done_FreeType(self.freetype);
-
+		var shader_it = self.shaders.iterator();
+		while (shader_it.next()) |entry| {
+			self.renderer.resourceRemoveUser(entry.value_ptr) catch |e| {
+				self.log(.err, "failed to deinit shader: {}", .{e});
+			};
+		}
 		self.shaders.deinit();
+
+		var font_it = self.fonts.iterator();
+		while (font_it.next()) |entry| {
+			entry.value_ptr.*.deinit(self.allocator);
+		}
 		self.fonts.deinit(self.allocator);
+
+		var ftex_it = self.font_textures.iterator();
+		while (ftex_it.next()) |entry| {
+			self.renderer.resourceRemoveUser(entry.value_ptr) catch |e| {
+				self.log(.err, "failed to deinit font texture: {}", .{e});
+			};
+		}
 		self.font_textures.deinit();
+
+		self.renderer.resourcesUpdate();
+		self.renderer.deinit();
+
+		_ = root.c.FT_Done_FreeType(self.freetype);
 
 		self.allocator.destroy(self);
 	}

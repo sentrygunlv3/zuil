@@ -2,7 +2,7 @@ const std = @import("std");
 const root = @import("root.zig");
 
 pub const ZRenderer = struct {
-	init: *const fn () anyerror!void,
+	init: *const fn (alloc: std.mem.Allocator) anyerror!void,
 	deinit: *const fn () void,
 	resourceRemoveUser: *const fn (resource: *root.context.ResourceHandle) anyerror!void,
 	resourcesUpdate: *const fn () void,

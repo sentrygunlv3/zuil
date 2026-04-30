@@ -255,27 +255,21 @@ pub const ZWindow = struct {
 			}
 			self.tree.key_events.clearAndFree(root.allocator);
 		}
-		const Timer = std.time.Timer;
+
 		if (self.tree.flags.layout_dirty) {
 			root.context.log(.debug, "--- process layout ---", .{});
-			var timer = try Timer.start();
 
 			try self.tree.layout();
-			root.context.log(.debug, "time: {d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 		}
 		if (self.tree.flags.layout_dirty or self.tree.flags.render_dirty) {
 			root.context.log(.debug, "--- process render ---", .{});
-			var timer = try Timer.start();
 
 			try self.render();
-			root.context.log(.debug, "time: {d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 		}
 		return true;
 	}
 
 	pub fn render(self: *@This()) anyerror!void {
-		const Timer = std.time.Timer;
-		var timer = try Timer.start();
 		// any other windows that share the context crash here
 		// if you change this to the main windows context and add "makeContextCurrent(self.window);" before swapBuffers
 		// it doesnt crash and the windows spawn but they render blank
@@ -291,15 +285,7 @@ pub const ZWindow = struct {
 
 		gl.viewport(0, 0, width, height);
 
-		root.context.log(.debug, "start: {d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
-
-		timer = try Timer.start();
-
 		try self.tree.render();
-
-		root.context.log(.debug, "tree: {d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
-
-		timer = try Timer.start();
 
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, self.render_frame);
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, 0);
@@ -312,7 +298,5 @@ pub const ZWindow = struct {
 		);
 
 		self.window.swapBuffers();
-
-		root.context.log(.debug, "blit: {d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 	}
 };

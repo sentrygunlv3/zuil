@@ -6,11 +6,10 @@ const colors = zuil.core.color;
 
 const widgets = zuil.widgets;
 
-pub fn main() anyerror!void {
-	var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-	const allocator = gpa.allocator();
+pub fn main(init: std.process.Init) anyerror!void {
+	const alloc = init.gpa;
 
-	try zuil.init(allocator);
+	try zuil.init(alloc);
 	defer zuil.deinit();
 
 	try zuil.assets.registerAssetComptime("icon.svg", @embedFile("icon.svg"), .svg);
@@ -114,7 +113,7 @@ pub fn main() anyerror!void {
 	window.input_handler = processInput;
 
 	const font = try zuil.core.font.ttfToFont(zuil.app.context, try zuil.assets.getAsset("firesans.ttf"), 0, 0);
-	try zuil.app.context.fonts.put(allocator, "firesans", font);
+	try zuil.app.context.fonts.put(alloc, "firesans", font);
 
 	zuil.run() catch |e| {
 		std.log.err("test: {}", .{e});

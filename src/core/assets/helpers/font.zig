@@ -1,8 +1,8 @@
 const std = @import("std");
 const root = @import("../../root.zig");
 
-const ft = root.ft;
-const hb = root.hb;
+const ft = root.c;
+const hb = root.c;
 
 const ZBitmap = root.ZBitmap;
 const ZError = root.errors.ZError;
@@ -10,7 +10,7 @@ const ZError = root.errors.ZError;
 pub const ZFont = struct {
 	texture: ZBitmap = undefined,
 	face: ft.FT_Face = undefined,
-	hb_font: *root.hb.struct_hb_font_t = undefined,
+	hb_font: *root.c.struct_hb_font_t = undefined,
 	glyphs: std.AutoHashMap(u32, Glyph) = undefined,
 
 	pub const Glyph = struct {
@@ -79,24 +79,24 @@ pub fn ttfToFont(context: *root.ZContext, svg: root.ZAsset, width: u32, height: 
 		_ = ft.FT_Load_Char(self.face, i, ft.FT_LOAD_RENDER | ft.FT_LOAD_FORCE_AUTOHINT | ft.FT_LOAD_TARGET_LIGHT);
 		const bitmap = &self.face.*.glyph.*.bitmap;
 
-		if (pen_x + @as(usize, @intCast(bitmap.width)) >= tex_w) {
+		if (pen_x + @as(usize, @intCast(bitmap.*.width)) >= tex_w) {
 			pen_x = 0;
 			pen_y += ((@as(usize, @intCast(self.face.*.size.*.metrics.height)) >> 6) + 1);
 		}
 
 		var row: usize = 0;
-		while (row < bitmap.rows) : (row += 1) {
+		while (row < bitmap.*.rows) : (row += 1) {
 			var col: usize = 0;
-			while (col < bitmap.width) : (col += 1) {
-				self.texture.data[(pen_y + row) * tex_w + (pen_x + col)] = bitmap.buffer[row * @as(usize, @intCast(bitmap.pitch)) + col];
+			while (col < bitmap.*.width) : (col += 1) {
+				self.texture.data[(pen_y + row) * tex_w + (pen_x + col)] = bitmap.*.buffer[row * @as(usize, @intCast(bitmap.*.pitch)) + col];
 			}
 		}
 
 		try self.glyphs.put(self.face.*.glyph.*.glyph_index, .{
 			.x = @intCast(pen_x),
 			.y = @intCast(pen_y),
-			.w = @intCast(pen_x + @as(usize, @intCast(bitmap.width))),
-			.h = @intCast(pen_y + @as(usize, @intCast(bitmap.rows))),
+			.w = @intCast(pen_x + @as(usize, @intCast(bitmap.*.width))),
+			.h = @intCast(pen_y + @as(usize, @intCast(bitmap.*.rows))),
 
 			.font_width = @intCast(self.face.*.glyph.*.metrics.width >> 6),
 			.font_height = @intCast(self.face.*.glyph.*.metrics.height >> 6),
@@ -104,7 +104,7 @@ pub fn ttfToFont(context: *root.ZContext, svg: root.ZAsset, width: u32, height: 
 			.font_bearing_y = @intCast(self.face.*.glyph.*.metrics.horiBearingY >> 6),
 		});
 
-		pen_x += @as(usize, @intCast(bitmap.width)) + 1;
+		pen_x += @as(usize, @intCast(bitmap.*.width)) + 1;
 	}
 
 	self.hb_font = hb.hb_ft_font_create_referenced(@ptrCast(self.face)) orelse return error.null;

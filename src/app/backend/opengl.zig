@@ -5,7 +5,6 @@ const gl = root.gl;
 
 const ZError = root.ZuilCore.errors.ZError;
 
-var gpa: std.heap.GeneralPurposeAllocator(.{}) = undefined;
 var allocator: std.mem.Allocator = undefined;
 
 /// global resource array
@@ -60,11 +59,13 @@ pub const Resource = struct {
 	}
 
 	pub fn deinit(self: *@This()) void {
+		root.context.log(.debug, "deleting: {*} - {s}", .{self, @tagName(self.type)});
 		switch (self.type) {
 			.texture => {
 				gl.deleteTextures(1, self.type.texture);
 			},
 			.shader => {
+				gl.deleteProgram(self.type.shader.shader);
 				self.type.shader.locations.deinit();
 			},
 			.mesh => {
@@ -98,9 +99,8 @@ pub const ZRenderFIOpengl = root.ZuilCore.context.ZRenderer{
 	.createMesh = createMesh,
 };
 
-pub fn init() anyerror!void {
-	gpa = .init;
-	allocator = gpa.allocator();
+pub fn init(alloc: std.mem.Allocator) anyerror!void {
+	allocator = alloc;
 
 	resources = try .initCapacity(allocator, 16);
 	resources_to_remove = try .initCapacity(allocator, 16);
@@ -111,6 +111,7 @@ pub fn init() anyerror!void {
 }
 
 pub fn deinit() void {
+	default_mesh.deinit();
 	resources.deinit(allocator);
 	resources_to_remove.deinit(allocator);
 }
@@ -125,14 +126,15 @@ fn resourceRemoveUser(resource: *root.ZuilCore.context.ResourceHandle) anyerror!
 
 fn resourcesUpdate() void {
 	for (resources_to_remove.items) |value| {
-		for (resources.items, 0..) |item, index| {
+		for (resources.items, 0..) |item, i| {
 			if (item == value) {
-				const removed = resources.swapRemove(index);
-				removed.deinit();
+				_ = resources.swapRemove(i);
+				item.deinit();
 				break;
 			}
 		}
 	}
+	resources_to_remove.clearRetainingCapacity();
 }
 
 fn getFormatInternal(format: root.ZuilCore.ZBitmap.Format) c_uint {
@@ -173,10 +175,11 @@ fn createTexture(bitmap: *root.ZuilCore.ZBitmap) !root.ZuilCore.context.Resource
 		gl.UNSIGNED_BYTE,
 		bitmap.data.ptr
 	);
-	const resource = try Resource.init(.{.texture = texture}, false);
+
+	const resource = try Resource.init(.{.texture = texture}, true);
 	errdefer resource.deinit();
 	try resources.append(allocator, resource);
-	resource.users += 1;
+
 	return .{
 		.resource = resource
 	};
@@ -202,7 +205,7 @@ fn createShader(v: []const u8, f: []const u8) !root.ZuilCore.context.ResourceHan
 
 	const resource = try Resource.init(.{.shader = .{
 		.shader = program,
-	}}, false);
+	}}, true);
 	errdefer resource.deinit();
 	try resources.append(allocator, resource);
 
@@ -258,11 +261,11 @@ fn createMesh(mesh: *const root.ZuilCore.mesh.ZMesh) !root.ZuilCore.context.Reso
 			.element_buffer = element_buffer,
 			.index_count = @intCast(mesh.indices.len),
 		}},
-		false
+		true
 	);
 	errdefer resource.deinit();
 	try resources.append(allocator, resource);
-	resource.users += 1;
+
 	return .{
 		.resource = resource
 	};
@@ -290,10 +293,8 @@ fn clear(color: root.ZuilCore.color.ZColor) void {
 fn renderCommands(commands: *root.ZuilCore.context.RenderCommandList) anyerror!void {
 	//gl.polygonMode(gl.FRONT_AND_BACK, gl.LINE);
 	var current: u32 = 0;
-	const Timer = std.time.Timer;
-	for (commands.commands.items) |command| {
-		var timer = try Timer.start();
 
+	for (commands.commands.items) |command| {
 		var mesh_resource: *Resource = default_mesh;
 		if (command.mesh) |mesh| {
 			mesh_resource = getResource(&mesh);
@@ -390,6 +391,5 @@ fn renderCommands(commands: *root.ZuilCore.context.RenderCommandList) anyerror!v
 		}
 
 		gl.drawElements(gl.TRIANGLES, @intCast(index_count), gl.UNSIGNED_INT, null);
-		root.context.log(.debug, "{d:.3}ms", .{@as(f64, @floatFromInt(timer.read())) / std.time.ns_per_ms});
 	}
 }

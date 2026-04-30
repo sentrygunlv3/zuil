@@ -22,10 +22,25 @@ pub fn build(b: *std.Build) void {
 		.optimize = optimize,
 	});
 
+	const translate_c = b.addTranslateC(.{
+		.root_source_file = b.path("src/c.h"),
+		.target = target,
+		.optimize = optimize,
+	});
+	translate_c.linkSystemLibrary("freetype", .{});
+	translate_c.linkSystemLibrary("harfbuzz", .{});
+	translate_c.linkSystemLibrary("plutosvg", .{});
+
 	const zuil_core = b.createModule(.{
 		.root_source_file = b.path("src/core/root.zig"),
 		.target = target,
 		.optimize = optimize,
+		.imports = &.{
+			.{
+				.name = "c",
+				.module = translate_c.createModule(),
+			},
+		},
 	});
 	zuil_core.addImport("build.zig.zon", build_zig_zon);
 	zuil_core.addOptions("build_options", build_options);
@@ -47,10 +62,6 @@ pub fn build(b: *std.Build) void {
 	lib.root_module.addImport("glfw", glfw.module("root"));
 	lib.root_module.linkLibrary(glfw.artifact("glfw"));
 	lib.root_module.addImport("opengl", opengl.module("root"));
-
-	lib.root_module.linkSystemLibrary("freetype", .{});
-	lib.root_module.linkSystemLibrary("harfbuzz", .{});
-	lib.root_module.linkSystemLibrary("plutosvg", .{});
 
 	b.installArtifact(lib);
 

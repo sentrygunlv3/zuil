@@ -2,17 +2,7 @@
 
 const std = @import("std");
 
-pub const c = @cImport({
-	@cInclude("plutosvg.h");
-});
-
-pub const ft = @cImport({
-	@cInclude("freetype/freetype.h");
-});
-
-pub const hb = @cImport({
-	@cInclude("harfbuzz/hb-ft.h");
-});
+pub const c = @import("c");
 
 pub const cffi = @import("c.zig");
 

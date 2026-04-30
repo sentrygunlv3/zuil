@@ -2,15 +2,17 @@
 	.name = .zuil,
 	.version = "0.0.1",
 	.fingerprint = 0x87c7c8c20db7b89d,
-	.minimum_zig_version = "0.15.2",
+	.minimum_zig_version = "0.16.0",
 	.dependencies = .{
 		.zglfw = .{
-			.url = "https://github.com/sentrygunlv3/zglfw/archive/refs/heads/main.zip",
-			.hash = "zglfw-0.10.0-dev-zgVDNES4IQAAXAcsFiHfmadlpDCHhF2cUqWxBGIViyU6",
+			// "https://github.com/zig-gamedev/zglfw/archive/refs/heads/main.zip"
+			.url = "https://github.com/kcbanner/zglfw/archive/refs/heads/c_translate.zip",
+			.hash = "zglfw-0.10.0-dev-zgVDNLS5IQDWZby-C6cQ7Hx0vHBuuJBmtToGa1OeSxuy",
 		},
 		.zopengl = .{
-			.url = "https://github.com/zig-gamedev/zopengl/archive/refs/heads/main.zip",
-			.hash = "zopengl-0.6.0-dev-5-tnz-G3CwB-4D72AAxsMmXZR_k8nwASrWcdo8CBVnoc",
+			// "https://github.com/zig-gamedev/zopengl/archive/refs/heads/main.zip"
+			.url = "https://github.com/fourlexboehm/zopengl/archive/refs/heads/update-for-zig-0-16.zip",
+			.hash = "zopengl-0.6.0-dev-5-tnz76mDgBd5vSbvhwr7PrWteiut8CYUM3nR7ivKd4Z",
 		},
 	},
 	.paths = .{

@@ -126,12 +126,12 @@ pub const ZWidget = struct {
 	pub fn setWindow(self: *@This(), window: ?*root.tree.ZWidgetTree) void {
 		if (self.window == null and window == null) return;
 		self.window = window;
+
 		if (window != null) {
 			self.enterTree();
 		}
-		const children = self.getChildren() catch {
-			return;
-		};
+
+		const children = self.getChildren() orelse return;
 		for (children) |child| {
 			child.setWindow(window);
 		}
@@ -179,11 +179,11 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn getChildren(self: *@This()) anyerror![]*ZWidget {
+	pub fn getChildren(self: *@This()) ?[]*ZWidget {
 		if (self.fi.getChildren) |func| {
-			return try func(self);
+			return func(self);
 		}
-		return ZError.MissingWidgetFunction;
+		return null;
 	}
 
 	/// this only removes the child from the parent

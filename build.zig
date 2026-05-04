@@ -4,17 +4,16 @@ pub fn build(b: *std.Build) void {
 	const target = b.standardTargetOptions(.{});
 	const optimize = b.standardOptimizeOption(.{});
 
-	const build_options = b.addOptions();
-	const debug = b.option(bool, "debug", "enable debug") orelse false;
-	build_options.addOption(bool, "debug",debug);
-
-	const glfw = b.dependency("zglfw", .{.shared = true});
-	const opengl = b.dependency("zopengl", .{});
-
-	if (!debug) {
-		glfw.module("root").strip = true;
-		opengl.module("root").strip = true;
-	}
+	const glfw = b.dependency("zglfw", .{
+		.target = target,
+		.optimize = optimize,
+		.shared = true
+	});
+	const opengl = b.dependency("zopengl", .{
+		.target = target,
+		// error: invalid option: -Doptimize
+		//.optimize = optimize,
+	});
 
 	const build_zig_zon = b.createModule(.{
 		.root_source_file = b.path("build.zig.zon"),
@@ -43,7 +42,6 @@ pub fn build(b: *std.Build) void {
 		},
 	});
 	zuil_core.addImport("build.zig.zon", build_zig_zon);
-	zuil_core.addOptions("build_options", build_options);
 
 	var lib = b.addLibrary(.{
 		.name = "zuil",
@@ -52,12 +50,9 @@ pub fn build(b: *std.Build) void {
 			.root_source_file = b.path("src/root.zig"),
 			.target = target,
 			.optimize = optimize,
-			.strip = !debug,
 		}),
 	});
 	lib.root_module.addImport("zuilcore", zuil_core);
-
-	//lib.root_module.addSystemIncludePath(b.path("include"));
 
 	lib.root_module.addImport("glfw", glfw.module("root"));
 	lib.root_module.linkLibrary(glfw.artifact("glfw"));

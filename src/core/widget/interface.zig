@@ -30,7 +30,7 @@ pub const ZWidgetFI = struct {
 	isOverPoint: ?*const fn (self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?*ZWidget = isOverPoint,
 	event: ?*const fn (self: *ZWidget, event: root.input.ZEvent) void = null,
 
-	getChildren: ?*const fn (self: *ZWidget) anyerror![]*ZWidget = null,
+	getChildren: ?*const fn (self: *ZWidget) ?[]*ZWidget = null,
 	removeChild: ?*const fn (self: *ZWidget, child: *ZWidget) anyerror!void = null,
 
 	name: []const u8,
@@ -66,7 +66,7 @@ pub const ZWidgetFI = struct {
 };
 
 pub fn render(self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *root.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
-	const children = self.getChildren() catch return;
+	const children = self.getChildren() orelse return;
 	for (children) |child| {
 		try child.render(window, commands, if (area != null) area.? else null);
 	}
@@ -88,9 +88,7 @@ pub fn isOverPoint(self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?*ZWidg
 		}
 	}
 
-	const children = self.getChildren() catch {
-		return null;
-	};
+	const children = self.getChildren() orelse return null;
 
 	for (children) |child| {
 		if (child.isOverPoint(x, y, outside)) |new| {
@@ -112,7 +110,7 @@ pub fn updatePreferredSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror
 
 		self.size_ratio = size_w / size_h;
 	} else {
-		const children = self.getChildren() catch return;
+		const children = self.getChildren() orelse return;
 		for (children) |child| {
 			try child.updatePreferredSize(
 				dirty or child.flags.layout_dirty,
@@ -123,7 +121,7 @@ pub fn updatePreferredSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror
 		return;
 	}
 
-	const children = self.getChildren() catch return;
+	const children = self.getChildren() orelse return;
 
 	const size_max_w = if (self.size_max.w == .percentage) 0 else self.size_max.w.asPixel(false, .{.w = w, .h = h}, self.window.?);
 	const size_max_h = if (self.size_max.h == .percentage) 0 else self.size_max.h.asPixel(true, .{.w = w, .h = h}, self.window.?);
@@ -183,7 +181,7 @@ pub fn updateActualSize(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!vo
 		}
 	}
 
-	const children = self.getChildren() catch return;
+	const children = self.getChildren() orelse return;
 
 	for (children) |child| {
 		try child.updateActualSize(
@@ -200,7 +198,7 @@ pub fn updatePosition(self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!void
 	self.clamped_bounds.x += margin.left;
 	self.clamped_bounds.y += margin.top;
 
-	const children = self.getChildren() catch return;
+	const children = self.getChildren() orelse return;
 
 	for (children) |child| {
 		child.clamped_bounds.x = self.clamped_bounds.x;

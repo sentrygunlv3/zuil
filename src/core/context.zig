@@ -33,7 +33,7 @@ fn log_default(t: LogType, string: [*c]const u8) callconv(.c) void {
 	// https://ss64.com/nt/syntax-ansi.html
 	switch (t) {
 		.debug => {
-			if (@import("build_options").debug) {
+			if (@import("builtin").mode == std.builtin.OptimizeMode.Debug) {
 				std.debug.print("\u{001b}[102m\u{001b}[30m[{s:7}]\u{001b}[0m {s}\n", .{@tagName(t), string});
 			}
 		},

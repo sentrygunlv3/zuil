@@ -154,9 +154,10 @@ pub const ZList = struct {
 		}
 	}
 
-	pub fn getChildren(widget: *ZWidget) ![]*ZWidget {
+	pub fn getChildren(widget: *ZWidget) ?[]*ZWidget {
 		const self: *@This() = widget.as(@This());
 
+		if (self.children.items.len == 0) return null;
 		return self.children.items;
 	}
 

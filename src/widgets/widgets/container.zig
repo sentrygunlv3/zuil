@@ -107,14 +107,13 @@ pub const ZContainer = struct {
 		}
 	}
 
-	pub fn getChildren(widget: *ZWidget) ![]*ZWidget {
+	pub fn getChildren(widget: *ZWidget) ?[]*ZWidget {
 		const self: *@This() = widget.as(@This());
 
-		if (self.child) |child| {
-			var s = [_]*ZWidget{child};
-			return s[0..];
+		if (self.child != null) {
+			return (&self.child.?)[0..1];
 		}
-		return &[_]*ZWidget{};
+		return null;
 	}
 
 	pub fn removeChild(widget: *ZWidget, child: *ZWidget) !void {

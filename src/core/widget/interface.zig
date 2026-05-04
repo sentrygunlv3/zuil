@@ -36,6 +36,13 @@ pub const ZWidgetFI = struct {
 	name: []const u8,
 
 	pub fn generate(comptime t: type) ZWidgetFI {
+		if (!@hasField(t, "super")) {
+			@compileError(std.fmt.comptimePrint(
+				"{s} doesnt have a field named \"super\" with type \"ZWidget\"",
+				.{@typeName(t)}
+			));
+		}
+
 		const hasEnterTree = @hasDecl(t, "enterTree");
 		const hasExitTree = @hasDecl(t, "exitTree");
 

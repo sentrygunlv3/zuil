@@ -25,7 +25,7 @@ using `zglfw`, `zopengl`, `plutosvg`, `harfbuzz` and `freetype` libs
 
 <img src="./screenshot.png">
 
-### core/default widget features
+### current features/progress
 
 - asset/file registry
 - resource system
@@ -77,9 +77,7 @@ widgets.container()
 
 ### test project
 
-the test project is in the `test` directory\
-run with `./test.sh` or `./test.sh -Ddebug`
-or build manually
+there is a test/example project in the `test` directory
 
 keybinds:
 
@@ -88,8 +86,8 @@ keybinds:
 
 ## project structure
 
-files/modules in `src` dir:
+directories in `src` dir:
 
-- `core` directory has the base widget system
-- `app` directory has glfw specific things and can be used to create windows that use the core widget system
-- `widgets` directory has the default widgets/shaders
+- `core` has the base widget system
+- `app` has glfw specific things and can be used to create windows that use the core widget system
+- `widgets` has the default widgets/shaders

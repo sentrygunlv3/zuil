@@ -29,7 +29,7 @@ pub const LogType = enum(u8) {
 	debug,
 };
 
-fn log_default(t: LogType, string: [*c]const u8) callconv(.c) void {
+fn log_default(t: LogType, string: []const u8) void {
 	// https://ss64.com/nt/syntax-ansi.html
 	switch (t) {
 		.debug => {
@@ -52,7 +52,7 @@ fn log_default(t: LogType, string: [*c]const u8) callconv(.c) void {
 pub const ZContext = struct {
 	allocator: std.mem.Allocator,
 	external: struct {
-		log: *const fn (t: LogType, string: [*c]const u8) callconv(.c) void = log_default,
+		log: *const fn (t: LogType, string: []const u8) void = log_default,
 	},
 	renderer: zrenderer.ZRenderer,
 

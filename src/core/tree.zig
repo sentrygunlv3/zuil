@@ -9,18 +9,18 @@ const types = root.types;
 pub const ZWidgetTree = struct {
 	arena: std.heap.ArenaAllocator = undefined,
 	context: *root.ZContext = undefined,
-	current_bounds: types.ZBounds = .zero,
+	// --- input
+	key_events: std.ArrayList(input.ZEvent) = undefined,
+	focused_widget: ?*widget.ZWidget = null,
+	// ---
 	flags: packed struct {
 		layout_dirty: bool = true,
 		render_dirty: bool = true,
 		render_dirty_full: bool = true,
 		_: u5 = 0,
 	} = .{},
+	current_bounds: types.ZBounds = .zero,
 	dirty: ?types.ZBounds = .zero,
-	// --- input
-	key_events: std.ArrayList(input.ZEvent) = undefined,
-	focused_widget: ?*widget.ZWidget = null,
-	// ---
 	root: ?*widget.ZWidget = undefined,
 	content_alignment: types.ZAlign = .default,
 	display_size: struct {x: f32 = 0, y: f32 = 0} = .{},
@@ -136,7 +136,7 @@ pub const ZWidgetTree = struct {
 				area.?.y = self.getBounds().h - area.?.h - area.?.y;
 			}
 			self.context.clip(area);
-			self.context.clear(root.color.GREY);
+			self.context.clear(self.context.theme.background);
 			try self.context.renderCommands(&commands);
 		}
 		self.context.clip(null);

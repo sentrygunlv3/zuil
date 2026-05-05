@@ -7,8 +7,8 @@ const ZColor = zuil.color.ZColor;
 const types = zuil.types;
 
 pub const ZContainer = struct {
-	color: ZColor = .default,
-	radius: f32 = 10,
+	color: ?ZColor = null,
+	radius: ?f32 = null,
 	child: ?*ZWidget = null,
 
 	super: ZWidget = .{.fi = &vtable},
@@ -51,6 +51,13 @@ pub const ZContainer = struct {
 				}
 			}
 
+			const Style = @import("../widgets.zig").Style;
+			const s = tree.context.theme.get(@typeName(Style)) orelse {
+				tree.context.log(.err, "style \"{s}\" not found in theme", .{@typeName(Style)});
+				return;
+			};
+			const style: *Style = @ptrCast(@alignCast(s));
+
 			const window_size = tree.getBounds();
 
 			const sizew = (widget.clamped_bounds.w / window_size.w) * 2;
@@ -58,6 +65,8 @@ pub const ZContainer = struct {
 
 			const posx = (widget.clamped_bounds.x / window_size.w) * 2.0;
 			const posy = (widget.clamped_bounds.y / window_size.h) * 2.0;
+
+			const color = self.color orelse style.container.border;
 
 			try commands.append(
 				try tree.context.getShader("container"),
@@ -87,15 +96,15 @@ pub const ZContainer = struct {
 					},
 					.{
 						.name = "radius",
-						.value = .{.uniform1f = self.radius}
+						.value = .{.uniform1f = self.radius orelse style.container.radius}
 					},
 					.{
 						.name = "color",
 						.value = .{.uniform4f = .{
-							.a = self.color.r,
-							.b = self.color.g,
-							.c = self.color.b,
-							.d = self.color.a,
+							.a = color.r,
+							.b = color.g,
+							.c = color.b,
+							.d = color.a,
 						}}
 					},
 				},

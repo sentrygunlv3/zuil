@@ -56,6 +56,8 @@ pub const ZContext = struct {
 	},
 	renderer: zrenderer.ZRenderer,
 
+	theme: *root.Theme,
+
 	freetype: root.c.FT_Library = undefined,
 
 	shaders: std.StringHashMap(ShaderHandle),
@@ -63,7 +65,7 @@ pub const ZContext = struct {
 	fonts: std.StringHashMapUnmanaged(*root.font.ZFont),
 	font_textures: std.AutoHashMap(*root.font.ZFont, TextureHandle),
 
-	pub fn init(allocator: std.mem.Allocator, renderer: zrenderer.ZRenderer) !*@This() {
+	pub fn init(allocator: std.mem.Allocator, renderer: zrenderer.ZRenderer, theme: *root.Theme) !*@This() {
 		const self = try allocator.create(@This());
 		errdefer self.allocator.destroy(self);
 
@@ -71,6 +73,7 @@ pub const ZContext = struct {
 			.allocator = allocator,
 			.external = .{},
 			.renderer = renderer,
+			.theme = theme,
 
 			.shaders = .init(allocator),
 			.fonts = .empty,
@@ -122,7 +125,7 @@ pub const ZContext = struct {
 		self.allocator.destroy(self);
 	}
 
-	pub fn setLogCallback(self: *@This(), func: *const fn (t: LogType, string: [*c]const u8) void) void {
+	pub fn setLogCallback(self: *@This(), func: *const fn (t: LogType, string: []const u8) void) void {
 		self.external.log = func;
 	}
 

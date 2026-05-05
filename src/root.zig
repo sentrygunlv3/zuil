@@ -12,8 +12,8 @@ pub const types = core.types;
 pub const ZWindow = app.ZWindow;
 
 /// helper that setups builtins and calls the core init
-pub fn init(a: std.mem.Allocator) !void {
-	try app.init(a);
+pub fn init(a: std.mem.Allocator, theme: *core.Theme) !void {
+	try app.init(a, theme);
 	assets.init(a);
 	app.createContext = widgets.registerAllFunc;
 }

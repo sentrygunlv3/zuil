@@ -9,7 +9,11 @@ const widgets = zuil.widgets;
 pub fn main(init: std.process.Init) anyerror!void {
 	const alloc = init.gpa;
 
-	try zuil.init(alloc);
+	const theme = try zuil.core.Theme.init(alloc);
+	defer theme.deinit(alloc);
+	try widgets.addStyles(alloc, theme);
+
+	try zuil.init(alloc, theme);
 	defer zuil.deinit();
 
 	try zuil.assets.registerAssetComptime("icon.svg", @embedFile("icon.svg"), .svg);
@@ -18,97 +22,122 @@ pub fn main(init: std.process.Init) anyerror!void {
 	const list =
 	widgets.list(zuil.app.context)
 	.c.size(.fill, .fill)
+	.direction(.vertical)
 	.children(.{
 		widgets.container(zuil.app.context)
-		.c.size(.{.dp = 20}, .{.dp = 500})
-		.color(colors.rgb(0, 1.0, 0.5))
-		.build(),
-		widgets.container(zuil.app.context)
-		.c.size(.{.pixel = 50}, .{.pixel = 50})
-		.color(colors.RED)
-		.radius(50)
-		.build(),
-		widgets.container(zuil.app.context)
-		.c.size(.{.dp = 20}, .{.dp = 500})
-		.color(colors.WHITE)
-		.build(),
-		widgets.list(zuil.app.context)
-		.c.size(.fill, .fill)
-		.direction(.vertical)
-		.spacing(1)
-		.children(.{
+		.c.size(.{.pixel = 250}, .{.pixel = 250})
+		.c.keepSizeRatio(true)
+		.color(.BLACK)
+		.radius(250)
+		.child(
 			widgets.icon(zuil.app.context)
-			.c.size(.{.dp = 200}, .{.dp = 200})
+			.c.size(.{.pixel = 200}, .{.pixel = 200})
 			.c.keepSizeRatio(true)
 			.icon("icon.svg")
 			.build(),
-			widgets.text(zuil.app.context)
-			.c.size(.fill, .{.dp = 60})
-			.text("Hello ZUIL!")
-			.fontSize(48)
-			.build(),
-			widgets.container(zuil.app.context)
-			.c.size(.{.dp = 50}, .{.dp = 30})
-			.color(colors.BLUE)
-			.child(
-				widgets.text(zuil.app.context)
-				.c.size(.fill, .fill)
-				.text("button")
-				.color(colors.BLACK)
-				.build(),
-			)
-			.build(),
-			widgets.container(zuil.app.context)
-			.c.size(.{.pixel = 50}, .{.dp = 30})
-			.build(),
-			widgets.container(zuil.app.context)
-			.c.size(.{.mm = 50}, .{.dp = 30})
-			.build(),
-			widgets.container(zuil.app.context)
-			.c.size(.{.percentage = 0.5}, .{.dp = 30})
-			.build(),
-			widgets.position(zuil.app.context)
-			.c.size(.fill, .fill)
-			.absolute(true)
-			.child(
-				widgets.container(zuil.app.context)
-				.c.size(.{.dp = 500}, .{.dp = 500})
-				.color(colors.RED)
-				.build()
-			)
-			.build(),
-		})
-		.build()
+		)
+		.build(),
 	})
 	.build();
 
 	const root =
-	widgets.container(zuil.app.context)
-	.c.size(.{.dp = 1200}, .fill)
-	.color(colors.WHITE)
-	.radius(0)
-	.child(
+	widgets.list(zuil.app.context)
+	.c.size(.fill, .fill)
+	.children(.{
 		widgets.container(zuil.app.context)
-		.c.size(.fill, .fill)
-		.c.margin(.new(10))
-		.color(colors.GREY)
+		.c.size(.{.pixel = 300}, .fill)
+		.radius(0)
 		.child(
 			widgets.container(zuil.app.context)
 			.c.size(.fill, .fill)
 			.c.margin(.new(10))
-			.color(colors.TRANSPARENT)
-			.child(list)
+			.color(theme.background)
+			.child(
+				widgets.container(zuil.app.context)
+				.c.size(.fill, .fill)
+				.c.margin(.new(10))
+				.color(.TRANSPARENT)
+				.child(list)
+				.build()
+			)
 			.build()
 		)
+		.build(),
+		widgets.container(zuil.app.context)
+		.c.size(.fill, .fill)
+		.c.margin(.new(10))
+		.color(.TRANSPARENT)
+		.child(
+			widgets.list(zuil.app.context)
+			.c.size(.fill, .fill)
+			.direction(.vertical)
+			.spacing(1)
+			.children(.{
+				widgets.text(zuil.app.context)
+				.c.size(.fill, .{.dp = 60})
+				.text("Hello ZUIL!")
+				.fontSize(48)
+				.build(),
+				widgets.container(zuil.app.context)
+				.c.size(.{.dp = 50}, .{.dp = 30})
+				.child(
+					widgets.text(zuil.app.context)
+					.c.size(.fill, .fill)
+					.text("50 dp")
+					.build(),
+				)
+				.build(),
+				widgets.container(zuil.app.context)
+				.c.size(.{.pixel = 50}, .{.dp = 30})
+				.child(
+					widgets.text(zuil.app.context)
+					.c.size(.fill, .fill)
+					.text("50 pixels")
+					.build(),
+				)
+				.build(),
+				// the mm units seem correct on my display
+				// but i havent actually tried this on other displays
+				widgets.container(zuil.app.context)
+				.c.size(.{.mm = 50}, .{.dp = 30})
+				.child(
+					widgets.text(zuil.app.context)
+					.c.size(.fill, .fill)
+					.text("50 mm")
+					.build(),
+				)
+				.build(),
+				widgets.container(zuil.app.context)
+				.c.size(.{.percentage = 0.5}, .{.dp = 30})
+				.child(
+					widgets.text(zuil.app.context)
+					.c.size(.fill, .fill)
+					.text("50 %")
+					.build(),
+				)
+				.build(),
+				widgets.position(zuil.app.context)
+				.c.size(.fill, .fill)
+				.absolute(true)
+				.child(
+					widgets.container(zuil.app.context)
+					.c.size(.{.dp = 500}, .{.dp = 500})
+					.color(.RED)
+					.build()
+				)
+				.build(),
+			})
+			.build(),
+		)
 		.build()
-	)
+	})
 	.build();
 
 	const window = try zuil.ZWindow.init(
 		800,
 		450,
 		"hello",
-		root
+		root,
 	);
 	window.input_handler = processInput;
 
@@ -121,24 +150,13 @@ pub fn main(init: std.process.Init) anyerror!void {
 }
 
 fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
+	_ = self;
 	if (event != zuil.input.ZEvent.key) {
 		return true;
 	} else if (event.key.action != .release) {
 		return true;
 	}
 	switch (event.key.key) {
-		.space => {
-			if (self.tree.root) |r| {
-				if (r.size.w == .percentage) {
-					r.size.w = .{.dp = 1200};
-				} else {
-					r.size.w = .{.percentage = 1};
-				}
-				r.markDirty();
-			}
-
-			return false;
-		},
 		.fn_1 => {
 			_ = zuil.ZWindow.init(
 				400,
@@ -146,12 +164,12 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 				"child window",
 				widgets.container(zuil.app.context)
 				.c.size(.fill, .fill)
-				.color(colors.BLACK)
+				.color(.BLACK)
 				.child(
 					widgets.container(zuil.app.context)
 					.c.size(.fill, .fill)
 					.c.margin(.new(20))
-					.color(colors.BLUE)
+					.color(.BLUE)
 					.build()
 				)
 				.build()

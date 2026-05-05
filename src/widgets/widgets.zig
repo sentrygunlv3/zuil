@@ -1,5 +1,7 @@
 //! all the builtin widgets
 
+const std = @import("std");
+
 pub const zuil = @import("zuilcore");
 
 /// registers all builtin shaders
@@ -30,3 +32,28 @@ pub const zposition = @import("widgets/position.zig");
 pub const position = buildFunc(zposition.ZPositionBuilder);
 pub const ztext = @import("widgets/text.zig");
 pub const text = buildFunc(ztext.zTextBuilder);
+
+pub const Style = struct {
+	//background: zuil.color.ZColor = .default,
+	container: struct {
+		radius: f32 = 10,
+		color: zuil.color.ZColor = .rgb256(40, 40, 41),
+		border: zuil.color.ZColor = .rgb256(90, 90, 100),
+	} = .{},
+	text: struct {
+		color: zuil.color.ZColor = .rgb(0.9, 0.9, 0.9),
+	} = .{},
+};
+
+pub fn addStyles(alloc: std.mem.Allocator, theme: *zuil.Theme) !void {
+	const t = try alloc.create(Style);
+	errdefer alloc.destroy(t);
+
+	t.* = .{};
+
+	try theme.put(@typeName(Style), .{
+		.ptr = t,
+		.func_deinit = undefined,
+	});
+	theme.background = .rgb256(41, 44, 48);
+}

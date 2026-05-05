@@ -8,7 +8,7 @@ const types = zuil.types;
 const colors = zuil.color;
 
 pub const ZText = struct {
-	color: ZColor = ZColor.default,
+	color: ?ZColor = null,
 	text: []const u8 = "",
 	font_size: u32 = 14,
 
@@ -48,6 +48,13 @@ pub const ZText = struct {
 				return;
 			}
 		}
+
+		const Style = @import("../widgets.zig").Style;
+		const s = tree.context.theme.get(@typeName(Style)) orelse {
+			tree.context.log(.err, "style \"{s}\" not found in theme", .{@typeName(Style)});
+			return;
+		};
+		const style: *Style = @ptrCast(@alignCast(s));
 
 		const font = tree.context.fonts.get("firesans") orelse return;
 		const texture = try tree.context.getFontTexture(tree.context, font);
@@ -141,6 +148,8 @@ pub const ZText = struct {
 		var mesh_handle = try tree.context.createMesh(&mesh.build());
 		try tree.context.resourceRemoveUser(&mesh_handle);
 
+		const color = self.color orelse style.text.color;
+
 		try commands.append(
 			try tree.context.getShader("font"),
 			mesh_handle,
@@ -154,10 +163,10 @@ pub const ZText = struct {
 				.{
 					.name = "color",
 					.value = .{.uniform4f = .{
-						.a = self.color.r,
-						.b = self.color.g,
-						.c = self.color.b,
-						.d = self.color.a,
+						.a = color.r,
+						.b = color.g,
+						.c = color.b,
+						.d = color.a,
 					}}
 				},
 			},

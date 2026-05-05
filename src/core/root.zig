@@ -22,3 +22,4 @@ pub const ZError = errors.ZError;
 pub const ZBitmap = @import("types/bitmap.zig").ZBitmap;
 pub const ZAsset = @import("types/asset.zig").ZAsset;
 pub const ZContext = context.ZContext;
+pub const Theme = @import("theme.zig").Theme;

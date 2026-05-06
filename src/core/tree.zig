@@ -24,8 +24,9 @@ pub const ZWidgetTree = struct {
 	root: ?*widget.ZWidget = undefined,
 	content_alignment: types.ZAlign = .default,
 	display_size: struct {x: f32 = 0, y: f32 = 0} = .{},
+	scaling: struct {x: f32 = 0, y: f32 = 0} = .{},
 
-	pub fn init(physical_w: f32, physical_h: f32, root_widget: ?*widget.ZWidget, context: *root.ZContext) !*@This() {
+	pub fn init(physical: struct {w: f32, h: f32}, scaling: struct {w: f32, h: f32}, root_widget: ?*widget.ZWidget, context: *root.ZContext) !*@This() {
 		const self = try context.allocator.create(@This());
 		errdefer self.deinit();
 
@@ -34,7 +35,8 @@ pub const ZWidgetTree = struct {
 			.root = root_widget,
 			.context = context,
 			.arena = std.heap.ArenaAllocator.init(context.allocator),
-			.display_size = .{.x = physical_w, .y = physical_h},
+			.display_size = .{.x = physical.w, .y = physical.h},
+			.scaling = .{.x = scaling.w, .y = scaling.h},
 		};
 		errdefer self.key_events.deinit(context.allocator);
 		errdefer self.arena.deinit();

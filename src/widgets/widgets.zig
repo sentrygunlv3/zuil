@@ -43,6 +43,10 @@ pub const Style = struct {
 	text: struct {
 		color: zuil.color.ZColor = .rgb(0.9, 0.9, 0.9),
 	} = .{},
+
+	pub fn deinit(self: *anyopaque, alloc: std.mem.Allocator) void {
+		alloc.destroy(@as(*@This(), @ptrCast(@alignCast(self))));
+	}
 };
 
 pub fn addStyles(alloc: std.mem.Allocator, theme: *zuil.Theme) !void {
@@ -53,7 +57,7 @@ pub fn addStyles(alloc: std.mem.Allocator, theme: *zuil.Theme) !void {
 
 	try theme.put(@typeName(Style), .{
 		.ptr = t,
-		.func_deinit = undefined,
+		.func_deinit = Style.deinit,
 	});
 	theme.background = .rgb256(41, 44, 48);
 }

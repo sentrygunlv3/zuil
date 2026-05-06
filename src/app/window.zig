@@ -26,19 +26,19 @@ pub const ZWindow = struct {
 	tree: *root.ZuilCore.tree.ZWidgetTree = undefined,
 	input_handler: ?*const fn (self: *@This(), event: input.ZEvent) bool = null,
 
-	pub fn init(width: i32, height: i32, title: [:0]const u8, root_widget: ?*widget.ZWidget) !*@This() {
+	pub fn init(width: u32, height: u32, title: [:0]const u8, root_widget: ?*widget.ZWidget) !*@This() {
 		const self = try root.allocator.create(@This());
 		errdefer self.deinit();
 
 		if (root.main_window) |main| {
 			self.* = .{
-				.window = try glfw.createWindow(width, height, title, null, main.window),
+				.window = try glfw.Window.create(@intCast(width), @intCast(height), title, null, main.window),
 			};
 
 			makeContextCurrent(self.window);
 		} else {
 			self.* = .{
-				.window = try glfw.Window.create(width, height, title, null, null),
+				.window = try glfw.Window.create(@intCast(width), @intCast(height), title, null, null),
 			};
 			root.main_window = self;
 
@@ -58,12 +58,16 @@ pub const ZWindow = struct {
 			}
 		}
 
-		self.initRenderTexture(width, height);
+		const scaling = self.window.getContentScale();
+
+		self.initRenderTexture(width, height, scaling[0], scaling[1]);
 
 		const arrow_cursor = try glfw.createStandardCursor(.arrow);
 		glfw.setCursor(self.window, arrow_cursor);
 
 		_ = glfw.setWindowSizeCallback(self.window, resizeCallback);
+		_ = glfw.setWindowContentScaleCallback(self.window, contentScaleCallback);
+
 		_ = glfw.setKeyCallback(self.window, keyCallback);
 		_ = glfw.setMouseButtonCallback(self.window, mouseButtonCallback);
 
@@ -77,11 +81,12 @@ pub const ZWindow = struct {
 			size_y = @as(f32, @floatFromInt(mode.height)) / @as(f32, @floatFromInt(size[1]));
 		}
 
-		if (root.main_window.? != self) {
-			self.tree = try .init(size_x, size_y, root_widget, root.context);
-		} else {
-			self.tree = try .init(size_x, size_y, root_widget, root.context);
-		}
+		self.tree = try .init(
+			.{.w = size_x, .h = size_y},
+			.{.w = scaling[0], .h = scaling[1]},
+			root_widget,
+			root.context
+		);
 
 		const size = self.window.getSize();
 		self.tree.current_bounds = .{
@@ -95,7 +100,7 @@ pub const ZWindow = struct {
 		return self;
 	}
 
-	pub fn initRenderTexture(self: *@This(), w: i32, h: i32) void {
+	pub fn initRenderTexture(self: *@This(), w: u32, h: u32, scale_w: f32, scale_h: f32) void {
 		makeContextCurrent(self.window);
 		gl.genTextures(1, &self.render_texture);
 		gl.bindTexture(gl.TEXTURE_2D, self.render_texture);
@@ -105,8 +110,8 @@ pub const ZWindow = struct {
 			gl.TEXTURE_2D,
 			0,
 			gl.RGBA,
-			w,
-			h,
+			@intFromFloat(@as(f32, @floatFromInt(w)) * scale_w),
+			@intFromFloat(@as(f32, @floatFromInt(h)) * scale_h),
 			0,
 			gl.RGBA,
 			gl.UNSIGNED_BYTE,
@@ -188,9 +193,40 @@ pub const ZWindow = struct {
 		};
 	}
 
+	fn contentScaleCallback(window: *glfw.Window, w: f32, h: f32) callconv(.c) void {
+		if (root.windows.get(window)) |win| {
+			if (win.tree.root) |r| {
+				r.markDirty();
+			}
+			win.tree.flags.render_dirty_full = true;
+
+			win.tree.scaling = .{
+				.x = w,
+				.y = h,
+			};
+
+			const size = window.getSize();
+
+			makeContextCurrent(window);
+			root.gl.viewport(0, 0, size[0], size[1]);
+
+			gl.bindTexture(gl.TEXTURE_2D, win.render_texture);
+			gl.texImage2D(
+				gl.TEXTURE_2D,
+				0,
+				gl.RGBA,
+				@intFromFloat(@as(f32, @floatFromInt(size[0])) * win.tree.scaling.x),
+				@intFromFloat(@as(f32, @floatFromInt(size[1])) * win.tree.scaling.y),
+				0,
+				gl.RGBA,
+				gl.UNSIGNED_BYTE,
+				null
+			);
+			gl.bindTexture(gl.TEXTURE_2D, 0);
+		}
+	}
+
 	fn resizeCallback(window: *glfw.Window, w: c_int, h: c_int) callconv(.c) void {
-		makeContextCurrent(window);
-		root.gl.viewport(0, 0, w, h);
 		if (root.windows.get(window)) |win| {
 			if (win.tree.root) |r| {
 				r.markDirty();
@@ -205,13 +241,16 @@ pub const ZWindow = struct {
 				.h = @floatFromInt(size[1]),
 			};
 
+			makeContextCurrent(window);
+			root.gl.viewport(0, 0, w, h);
+
 			gl.bindTexture(gl.TEXTURE_2D, win.render_texture);
 			gl.texImage2D(
 				gl.TEXTURE_2D,
 				0,
 				gl.RGBA,
-				w,
-				h,
+				@intFromFloat(@as(f32, @floatFromInt(w)) * win.tree.scaling.x),
+				@intFromFloat(@as(f32, @floatFromInt(h)) * win.tree.scaling.y),
 				0,
 				gl.RGBA,
 				gl.UNSIGNED_BYTE,

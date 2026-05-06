@@ -19,8 +19,12 @@ pub const Theme = struct {
 	}
 
 	pub fn deinit(self: *@This(), alloc: std.mem.Allocator) void {
-		_ = alloc;
+		var it = self.styles.valueIterator();
+		while (it.next()) |style| {
+			style.func_deinit(style.ptr, alloc);
+		}
 		self.styles.deinit();
+		alloc.destroy(self);
 	}
 
 	pub fn put(self: *@This(), key: []const u8, style: Style) !void {

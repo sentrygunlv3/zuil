@@ -30,10 +30,16 @@ pub fn main(init: std.process.Init) anyerror!void {
 		.color(.BLACK)
 		.radius(250)
 		.child(
-			widgets.icon(zuil.app.context)
-			.c.size(.{.pixel = 200}, .{.pixel = 200})
-			.c.keepSizeRatio(true)
-			.icon("icon.svg")
+			widgets.position(zuil.app.context)
+			.c.size(.fill, .fill)
+			.alignment(true)
+			.child(
+				widgets.icon(zuil.app.context)
+				.c.size(.{.pixel = 200}, .{.pixel = 200})
+				.c.keepSizeRatio(true)
+				.icon("icon.svg")
+				.build(),
+			)
 			.build(),
 		)
 		.build(),

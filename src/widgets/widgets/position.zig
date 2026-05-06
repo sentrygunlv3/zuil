@@ -9,7 +9,10 @@ const types = zuil.types;
 pub const ZPosition = struct {
 	x: f32 = 0,
 	y: f32 = 0,
+	alignment: bool = false,
+
 	absolute_size: bool = false,
+
 	child: ?*ZWidget = null,
 
 	super: ZWidget = .{.fi = &vtable},
@@ -81,6 +84,28 @@ pub const ZPosition = struct {
 		}
 	}
 
+	pub fn updatePosition(widget: *ZWidget, dirty: bool, w: f32, h: f32) !void {
+		const self: *@This() = widget.as(@This());
+
+		const margin = widget.margin.asPixel(.{.w = w, .h = h}, widget.window.?);
+		widget.clamped_bounds.x += margin.left;
+		widget.clamped_bounds.y += margin.top;
+
+		const children = widget.getChildren() orelse return;
+
+		for (children) |child| {
+			child.clamped_bounds.x = widget.clamped_bounds.x + self.x;
+			child.clamped_bounds.y = widget.clamped_bounds.y + self.y;
+
+			if (self.alignment) {
+				child.clamped_bounds.x += (widget.clamped_bounds.w * 0.5) - (child.clamped_bounds.w * 0.5);
+				child.clamped_bounds.y += (widget.clamped_bounds.h * 0.5) - (child.clamped_bounds.h * 0.5);
+			}
+
+			try child.updatePosition(dirty or child.flags.layout_dirty, widget.clamped_bounds.w, widget.clamped_bounds.h);
+		}
+	}
+
 	pub fn getChildren(widget: *ZWidget) ?[]*ZWidget {
 		const self: *@This() = widget.as(@This());
 
@@ -122,6 +147,11 @@ pub const ZPositionBuilder = struct {
 		const final = &self.widget.super;
 		self.context.allocator.destroy(self);
 		return final;
+	}
+
+	pub fn alignment(self: *@This(), new: bool) *@This() {
+		self.widget.alignment = new;
+		return self;
 	}
 
 	pub fn position(self: *@This(), x: f32, y: f32) *@This() {

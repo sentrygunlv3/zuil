@@ -58,9 +58,7 @@ pub const ZWindow = struct {
 			}
 		}
 
-		const scaling = self.window.getContentScale();
-
-		self.initRenderTexture(width, height, scaling[0], scaling[1]);
+		self.initRenderTexture();
 
 		const arrow_cursor = try glfw.createStandardCursor(.arrow);
 		glfw.setCursor(self.window, arrow_cursor);
@@ -81,6 +79,8 @@ pub const ZWindow = struct {
 			size_y = @as(f32, @floatFromInt(mode.height)) / @as(f32, @floatFromInt(size[1]));
 		}
 
+		const scaling = self.window.getContentScale();
+
 		self.tree = try .init(
 			.{.w = size_x, .h = size_y},
 			.{.w = scaling[0], .h = scaling[1]},
@@ -100,18 +100,19 @@ pub const ZWindow = struct {
 		return self;
 	}
 
-	pub fn initRenderTexture(self: *@This(), w: u32, h: u32, scale_w: f32, scale_h: f32) void {
+	pub fn initRenderTexture(self: *@This()) void {
 		makeContextCurrent(self.window);
 		gl.genTextures(1, &self.render_texture);
 		gl.bindTexture(gl.TEXTURE_2D, self.render_texture);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		const size = self.window.getFramebufferSize();
 		gl.texImage2D(
 			gl.TEXTURE_2D,
 			0,
 			gl.RGBA,
-			@intFromFloat(@as(f32, @floatFromInt(w)) * scale_w),
-			@intFromFloat(@as(f32, @floatFromInt(h)) * scale_h),
+			size[0],
+			size[1],
 			0,
 			gl.RGBA,
 			gl.UNSIGNED_BYTE,
@@ -205,7 +206,7 @@ pub const ZWindow = struct {
 				.y = h,
 			};
 
-			const size = window.getSize();
+			const size = window.getFramebufferSize();
 
 			makeContextCurrent(window);
 			root.gl.viewport(0, 0, size[0], size[1]);
@@ -215,8 +216,8 @@ pub const ZWindow = struct {
 				gl.TEXTURE_2D,
 				0,
 				gl.RGBA,
-				@intFromFloat(@as(f32, @floatFromInt(size[0])) * win.tree.scaling.x),
-				@intFromFloat(@as(f32, @floatFromInt(size[1])) * win.tree.scaling.y),
+				size[0],
+				size[1],
 				0,
 				gl.RGBA,
 				gl.UNSIGNED_BYTE,

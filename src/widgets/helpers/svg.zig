@@ -1,5 +1,6 @@
 const std = @import("std");
-const root = @import("../../root.zig");
+const root = @import("../root.zig").zuil;
+const c = @import("c");
 
 const ZBitmap = root.ZBitmap;
 const ZError = root.errors.ZError;
@@ -9,10 +10,10 @@ pub fn svgToBitmap(allocator: std.mem.Allocator, svg: root.ZAsset, width: u32, h
 		return ZError.WrongAssetType;
 	}
 
-	var document: ?*root.c.struct_plutosvg_document = null;
+	var document: ?*c.struct_plutosvg_document = null;
 	switch (svg.data) {
 		.compile_time => {
-			document = root.c.plutosvg_document_load_from_data(
+			document = c.plutosvg_document_load_from_data(
 				svg.data.compile_time.ptr,
 				@intCast(svg.data.compile_time.len),
 				-1,
@@ -22,7 +23,7 @@ pub fn svgToBitmap(allocator: std.mem.Allocator, svg: root.ZAsset, width: u32, h
 			);
 		},
 		.runtime => {
-			document = root.c.plutosvg_document_load_from_data(
+			document = c.plutosvg_document_load_from_data(
 				svg.data.runtime.ptr,
 				@intCast(svg.data.runtime.len),
 				-1,
@@ -36,16 +37,16 @@ pub fn svgToBitmap(allocator: std.mem.Allocator, svg: root.ZAsset, width: u32, h
 	if (document == null) {
 		return ZError.FailedToCreateSvg;
 	}
-	defer root.c.plutosvg_document_destroy(document);
+	defer c.plutosvg_document_destroy(document);
 
-	const surface = root.c.plutosvg_document_render_to_surface(document, null, @intCast(width), @intCast(height), null, null, null);
+	const surface = c.plutosvg_document_render_to_surface(document, null, @intCast(width), @intCast(height), null, null, null);
 	if (surface == null) {
 		return ZError.FailedToCreateSvg;
 	}
-	defer root.c.plutovg_surface_destroy(surface);
+	defer c.plutovg_surface_destroy(surface);
 
-	const c_data = root.c.plutovg_surface_get_data(surface);
-	const stride: u32 = @intCast(root.c.plutovg_surface_get_stride(surface));
+	const c_data = c.plutovg_surface_get_data(surface);
+	const stride: u32 = @intCast(c.plutovg_surface_get_stride(surface));
 
 	const size = height * stride;
 

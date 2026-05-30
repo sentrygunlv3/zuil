@@ -13,8 +13,15 @@ pub fn main(init: std.process.Init) anyerror!void {
 	defer theme.deinit(alloc);
 	try widgets.addStyles(alloc, theme);
 
-	try zuil.init(alloc, theme);
-	defer zuil.deinit();
+	zuil.assets.init(alloc);
+	defer zuil.assets.deinit();
+
+	try zuil.app.init(alloc, theme);
+	defer zuil.app.deinit();
+
+	zuil.app.createContext = &zuil.widgets.registerShader;
+
+	try zuil.widgets.register(zuil.app.context);
 
 	try zuil.assets.registerAssetComptime("icon.svg", @embedFile("icon.svg"), .svg);
 	try zuil.assets.registerAssetComptime("firesans.ttf", @embedFile("font/FiraSans-Regular.ttf"), .ttf);
@@ -147,10 +154,15 @@ pub fn main(init: std.process.Init) anyerror!void {
 	);
 	window.input_handler = processInput;
 
-	const font = try zuil.core.font.ttfToFont(zuil.app.context, try zuil.assets.getAsset("firesans.ttf"), 0, 0);
-	try zuil.app.context.fonts.put(alloc, "firesans", font);
+	const font = try zuil.widgets.font.ttfToFont(zuil.app.context, try zuil.assets.getAsset("firesans.ttf"), 0, 0);
+	const w = zuil.app.context.getSubcontext(zuil.widgets.NAME) orelse {
+		zuil.app.context.log(.err, "failed to get widgets subcontext", .{});
+		return;
+	};
+	const widget_context: *zuil.widgets.ZWidgetContext = @ptrCast(@alignCast(w));
+	try widget_context.fonts.put(alloc, "firesans", font);
 
-	zuil.run() catch |e| {
+	zuil.app.run() catch |e| {
 		std.log.err("test: {}", .{e});
 	};
 }

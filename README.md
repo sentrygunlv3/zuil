@@ -25,13 +25,26 @@ using `zglfw`, `zopengl`, `plutosvg`, `harfbuzz` and `freetype` libs
 
 <img src="./screenshot.png">
 
-### current features/progress
+### current plan
 
-- asset/file registry
-- resource system
-- input system (keyboard and mouse only)
-- rendering abstraction (shaders are written in GLSL)
-- text rendering (WIP)
+usage (with app module):
+1. core
+   1. init asset registry
+   2. init theme
+2. app
+   1. init app module
+3. widgets
+   1. register widget lib context
+   2. register style to theme
+4. user
+   1. register assets
+   2. init widget tree
+   3. init window
+5. app
+   1. app run
+
+rendering:\
+replace renderer with a painter interface system and allow casting to the actual backend if its a know type for more advanced stuff
 
 ## examples
 

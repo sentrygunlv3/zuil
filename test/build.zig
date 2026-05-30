@@ -23,7 +23,6 @@ pub fn build(b: *std.Build) void {
 			}
 		}),
 	});
-	exe.root_module.linkLibrary(zuil.artifact("zuil"));
 
 	b.installArtifact(exe);
 

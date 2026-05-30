@@ -1,7 +1,6 @@
 const std = @import("std");
 const root = @import("root.zig");
 
-const gl = root.gl;
 const input = root.input;
 const widget = root.widget;
 const types = root.types;

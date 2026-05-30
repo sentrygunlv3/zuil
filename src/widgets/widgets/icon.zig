@@ -1,5 +1,6 @@
 const std = @import("std");
 const zuil = @import("zuilcore");
+const root = @import("../root.zig");
 const BuilderMixin = zuil.widget.BuilderMixin;
 
 const ZWidget = zuil.widget.ZWidget;
@@ -32,7 +33,7 @@ pub const ZIcon = struct {
 		const icon = zuil.assets.getAsset(self.icon) catch {
 			return;
 		};
-		var bitmap = zuil.svg.svgToBitmap(widget.window.?.context.allocator, icon, 256, 256) catch {
+		var bitmap = root.svg.svgToBitmap(widget.window.?.context.allocator, icon, 256, 256) catch {
 			return;
 		};
 		defer bitmap.deinit(widget.window.?.context.allocator);

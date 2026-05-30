@@ -14,6 +14,7 @@ pub const ZError = error{
 	WrongAssetType,
 	// ---
 	FailedToCreateSvg,
+	MissingSubcontext,
 
 	OutOfMemory,
 	CError,

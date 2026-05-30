@@ -1,5 +1,7 @@
 const std = @import("std");
 const zuil = @import("zuilcore");
+const root = @import("../root.zig");
+const c = @import("c");
 const BuilderMixin = zuil.widget.BuilderMixin;
 
 const ZWidget = zuil.widget.ZWidget;
@@ -49,15 +51,21 @@ pub const ZText = struct {
 			}
 		}
 
-		const Style = @import("../widgets.zig").Style;
+		const Style = @import("../root.zig").Style;
 		const s = tree.context.theme.get(@typeName(Style)) orelse {
 			tree.context.log(.err, "style \"{s}\" not found in theme", .{@typeName(Style)});
 			return;
 		};
 		const style: *Style = @ptrCast(@alignCast(s));
 
-		const font = tree.context.fonts.get("firesans") orelse return;
-		const texture = try tree.context.getFontTexture(tree.context, font);
+		const w = tree.context.getSubcontext(root.NAME) orelse {
+			tree.context.log(.err, "subcontext \"{s}\" not found", .{root.NAME});
+			return;
+		};
+		const widget_context: *root.ZWidgetContext = @ptrCast(@alignCast(w));
+
+		const font = widget_context.fonts.get("firesans") orelse return;
+		const texture = try widget_context.getFontTexture(tree.context, font);
 
 		const window_size = tree.getBounds();
 
@@ -69,21 +77,21 @@ pub const ZText = struct {
 		//const widgetw = (self.clamped_bounds.w / window_size.w) * 2 - 1;
 		//const widgeth = 1 - (self.clamped_bounds.h / window_size.h) * 2;
 
-		const sub_font = zuil.c.hb_font_create_sub_font(font.hb_font);
-		defer zuil.c.hb_font_destroy(sub_font);
-		zuil.c.hb_font_set_scale(sub_font, @intCast(self.font_size * 64), @intCast(self.font_size * 64));
+		const sub_font = c.hb_font_create_sub_font(font.hb_font);
+		defer c.hb_font_destroy(sub_font);
+		c.hb_font_set_scale(sub_font, @intCast(self.font_size * 64), @intCast(self.font_size * 64));
 
-		const buffer = zuil.c.hb_buffer_create();
-		defer zuil.c.hb_buffer_destroy(buffer);
-		zuil.c.hb_buffer_reset(buffer);
+		const buffer = c.hb_buffer_create();
+		defer c.hb_buffer_destroy(buffer);
+		c.hb_buffer_reset(buffer);
 
-		zuil.c.hb_buffer_set_direction(buffer, zuil.c.HB_DIRECTION_LTR);
-		zuil.c.hb_buffer_set_script(buffer, zuil.c.HB_SCRIPT_LATIN);
-		zuil.c.hb_buffer_set_language(buffer, zuil.c.hb_language_from_string("en", -1));
+		c.hb_buffer_set_direction(buffer, c.HB_DIRECTION_LTR);
+		c.hb_buffer_set_script(buffer, c.HB_SCRIPT_LATIN);
+		c.hb_buffer_set_language(buffer, c.hb_language_from_string("en", -1));
 
-		zuil.c.hb_buffer_add_utf8(buffer, self.text.ptr, @intCast(self.text.len), 0, @intCast(self.text.len));
+		c.hb_buffer_add_utf8(buffer, self.text.ptr, @intCast(self.text.len), 0, @intCast(self.text.len));
 
-		zuil.c.hb_shape(
+		c.hb_shape(
 			sub_font,
 			buffer,
 			null,
@@ -91,8 +99,8 @@ pub const ZText = struct {
 		);
 
 		var count_c: c_uint = 0;
-		const glyph_info = zuil.c.hb_buffer_get_glyph_infos(buffer, &count_c);
-		const glyph_pos = zuil.c.hb_buffer_get_glyph_positions(buffer, &count_c);
+		const glyph_info = c.hb_buffer_get_glyph_infos(buffer, &count_c);
+		const glyph_pos = c.hb_buffer_get_glyph_positions(buffer, &count_c);
 		const count: u32 = @intCast(count_c);
 
 		var mesh = try zuil.mesh.ZMeshBuilder.init(widget.window.?.context.allocator);

@@ -1,5 +1,6 @@
 const std = @import("std");
 const zuil = @import("zuilcore");
+const root = @import("../root.zig");
 const BuilderMixin = zuil.widget.BuilderMixin;
 
 const ZWidget = zuil.widget.ZWidget;
@@ -51,7 +52,7 @@ pub const ZContainer = struct {
 				}
 			}
 
-			const Style = @import("../widgets.zig").Style;
+			const Style = root.Style;
 			const s = tree.context.theme.get(@typeName(Style)) orelse {
 				tree.context.log(.err, "style \"{s}\" not found in theme", .{@typeName(Style)});
 				return;

@@ -58,12 +58,14 @@ pub const ZContext = struct {
 
 	theme: *root.Theme,
 
-	freetype: root.c.FT_Library = undefined,
+	subcontext_hashmap: std.StringHashMap(Subcontext),
 
 	shaders: std.StringHashMap(ShaderHandle),
 
-	fonts: std.StringHashMapUnmanaged(*root.font.ZFont),
-	font_textures: std.AutoHashMap(*root.font.ZFont, TextureHandle),
+	pub const Subcontext = struct {
+		ptr: *anyopaque,
+		func_deinit: *const fn (self: *anyopaque, context: *ZContext) void,
+	};
 
 	pub fn init(allocator: std.mem.Allocator, renderer: zrenderer.ZRenderer, theme: *root.Theme) !*@This() {
 		const self = try allocator.create(@This());
@@ -74,17 +76,12 @@ pub const ZContext = struct {
 			.external = .{},
 			.renderer = renderer,
 			.theme = theme,
+			.subcontext_hashmap = .init(allocator),
 
 			.shaders = .init(allocator),
-			.fonts = .empty,
-			.font_textures = .init(allocator),
 		};
+		errdefer self.subcontext_hashmap.deinit();
 		errdefer self.shaders.deinit();
-		errdefer self.fonts.deinit();
-		errdefer self.font_textures.deinit();
-
-		_ = root.c.FT_Init_FreeType(&self.freetype);
-		errdefer _ = root.c.FT_Done_FreeType(self.freetype);
 
 		return self;
 	}
@@ -95,6 +92,13 @@ pub const ZContext = struct {
 	}
 
 	pub fn deinit(self: *@This()) void {
+		var it = self.subcontext_hashmap.valueIterator();
+		while (it.next()) |s| {
+			s.func_deinit(s.ptr, self);
+		}
+
+		self.subcontext_hashmap.deinit();
+
 		var shader_it = self.shaders.iterator();
 		while (shader_it.next()) |entry| {
 			self.renderer.resourceRemoveUser(entry.value_ptr) catch |e| {
@@ -103,24 +107,8 @@ pub const ZContext = struct {
 		}
 		self.shaders.deinit();
 
-		var font_it = self.fonts.iterator();
-		while (font_it.next()) |entry| {
-			entry.value_ptr.*.deinit(self.allocator);
-		}
-		self.fonts.deinit(self.allocator);
-
-		var ftex_it = self.font_textures.iterator();
-		while (ftex_it.next()) |entry| {
-			self.renderer.resourceRemoveUser(entry.value_ptr) catch |e| {
-				self.log(.err, "failed to deinit font texture: {}", .{e});
-			};
-		}
-		self.font_textures.deinit();
-
 		self.renderer.resourcesUpdate();
 		self.renderer.deinit();
-
-		_ = root.c.FT_Done_FreeType(self.freetype);
 
 		self.allocator.destroy(self);
 	}
@@ -167,16 +155,6 @@ pub const ZContext = struct {
 		return try self.renderer.createMesh(mesh);
 	}
 
-	pub fn getFontTexture(self: *@This(), context: *root.ZContext, font: *root.font.ZFont) !TextureHandle {
-		if (self.font_textures.get(font)) |s| {
-			return s;
-		}
-		var handle = try context.createTexture(&font.texture);
-		errdefer context.resourceRemoveUser(&handle) catch {};
-		try self.font_textures.put(font, handle);
-		return handle;
-	}
-
 	pub fn getShader(self: *@This(), name: []const u8) !ShaderHandle {
 		const handle = self.shaders.get(name);
 		if (handle) |s| {
@@ -185,9 +163,18 @@ pub const ZContext = struct {
 		return root.ZError.MissingShader;
 	}
 
-	pub fn registerShader(self: *@This(), context: *root.ZContext, name: []const u8, v: []const u8, f: []const u8) !void {
+	pub fn registerShader(self: *@This(), context: *@This(), name: []const u8, v: []const u8, f: []const u8) !void {
 		const handle = try context.createShader(v, f);
 
 		try self.shaders.put(name, handle);
+	}
+
+	pub fn putSubcontext(self: *@This(), key: []const u8, style: Subcontext) !void {
+		try self.subcontext_hashmap.put(key, style);
+	}
+
+	pub fn getSubcontext(self: *const @This(), key: []const u8) ?*anyopaque {
+		const style = self.subcontext_hashmap.get(key) orelse return null;
+		return style.ptr;
 	}
 };

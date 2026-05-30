@@ -1,5 +1,5 @@
 const std = @import("std");
-const root = @import("../widgets.zig");
+const root = @import("../root.zig");
 
 const name = "font";
 

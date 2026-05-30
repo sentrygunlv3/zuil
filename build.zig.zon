@@ -5,13 +5,11 @@
 	.minimum_zig_version = "0.16.0",
 	.dependencies = .{
 		.zglfw = .{
-			// "https://github.com/zig-gamedev/zglfw/archive/refs/heads/main.zip"
-			.url = "https://github.com/kcbanner/zglfw/archive/refs/heads/c_translate.zip",
-			.hash = "zglfw-0.10.0-dev-zgVDNLS5IQDWZby-C6cQ7Hx0vHBuuJBmtToGa1OeSxuy",
+			.url = "https://github.com/zig-gamedev/zglfw/archive/refs/heads/main.zip",
+			.hash = "zglfw-0.10.0-dev-zgVDNIy4IQDJNRy4jrP1As-SZxfJpuWhU1iJ-wBab_VD",
 		},
 		.zopengl = .{
-			// "https://github.com/zig-gamedev/zopengl/archive/refs/heads/main.zip"
-			.url = "https://github.com/fourlexboehm/zopengl/archive/refs/heads/update-for-zig-0-16.zip",
+			.url = "https://github.com/zig-gamedev/zopengl/archive/refs/heads/main.zip",
 			.hash = "zopengl-0.6.0-dev-5-tnz76mDgBd5vSbvhwr7PrWteiut8CYUM3nR7ivKd4Z",
 		},
 	},

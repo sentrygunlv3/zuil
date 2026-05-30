@@ -1,11 +1,11 @@
 const std = @import("std");
-const root = @import("../../root.zig");
+const root = @import("../root.zig");
 
 const ft = root.c;
 const hb = root.c;
 
-const ZBitmap = root.ZBitmap;
-const ZError = root.errors.ZError;
+const ZBitmap = root.zuil.ZBitmap;
+const ZError = root.zuil.errors.ZError;
 
 pub const ZFont = struct {
 	texture: ZBitmap = undefined,
@@ -37,7 +37,7 @@ pub const ZFont = struct {
 	}
 };
 
-pub fn ttfToFont(context: *root.ZContext, svg: root.ZAsset, width: u32, height: u32) anyerror!*ZFont {
+pub fn ttfToFont(context: *root.zuil.ZContext, svg: root.zuil.ZAsset, width: u32, height: u32) anyerror!*ZFont {
 	_ = width; _ = height;
 	if (svg.type != .ttf) {
 		return ZError.WrongAssetType;
@@ -45,12 +45,18 @@ pub fn ttfToFont(context: *root.ZContext, svg: root.ZAsset, width: u32, height: 
 
 	var self = try ZFont.init(context.allocator);
 
+	const w = context.getSubcontext(root.NAME) orelse {
+		context.log(.err, "subcontext \"{s}\" not found", .{root.NAME});
+		return ZError.MissingSubcontext;
+	};
+	const widget_context: *root.ZWidgetContext = @ptrCast(@alignCast(w));
+
 	switch (svg.data) {
 		.compile_time => |data| {
-			_ = ft.FT_New_Memory_Face(context.freetype, data.ptr, @intCast(data.len), 0, &self.face);
+			_ = ft.FT_New_Memory_Face(widget_context.freetype, data.ptr, @intCast(data.len), 0, &self.face);
 		},
 		.runtime => |data| {
-			_ = ft.FT_New_Memory_Face(context.freetype, data.ptr, @intCast(data.len), 0, &self.face);
+			_ = ft.FT_New_Memory_Face(widget_context.freetype, data.ptr, @intCast(data.len), 0, &self.face);
 		}
 	}
 	_ = ft.FT_Set_Pixel_Sizes(self.face, 0, 96);

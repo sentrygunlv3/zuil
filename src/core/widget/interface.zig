@@ -80,6 +80,8 @@ pub fn render(self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *root.co
 }
 
 pub fn isOverPoint(self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?*ZWidget {
+	if (self.flags.ignore_input) return null;
+
 	var ref: ?*ZWidget = null;
 	var outside = true;
 
@@ -95,7 +97,7 @@ pub fn isOverPoint(self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?*ZWidg
 		}
 	}
 
-	const children = self.getChildren() orelse return null;
+	const children = self.getChildren() orelse return ref;
 
 	for (children) |child| {
 		if (child.isOverPoint(x, y, outside)) |new| {

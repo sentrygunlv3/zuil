@@ -105,6 +105,8 @@ pub const zposition = @import("widgets/position.zig");
 pub const position = buildFunc(zposition.ZPositionBuilder);
 pub const ztext = @import("widgets/text.zig");
 pub const text = buildFunc(ztext.zTextBuilder);
+pub const zbutton = @import("widgets/button.zig");
+pub const button = buildFunc(zbutton.ZButtonBuilder);
 
 pub const Style = struct {
 	//background: zuil.color.ZColor = .default,

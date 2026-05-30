@@ -283,7 +283,7 @@ pub const ZWindow = struct {
 					.mouse => {
 						if (self.tree.root) |r| {
 							if (r.isOverPoint(event.mouse.x, event.mouse.y, false)) |hovered| {
-								root.context.log(.debug, "{*}", .{hovered});
+								root.context.log(.debug, "click at x {} - y {} hit {*}", .{event.mouse.x, event.mouse.y, hovered});
 								try hovered.event(event);
 							} else {
 								root.context.log(.debug, "nothing hovered", .{});

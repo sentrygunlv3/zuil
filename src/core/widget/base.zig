@@ -28,7 +28,8 @@ pub const ZWidget = struct {
 	flags: packed struct {
 		layout_dirty: bool = true,
 		keep_size_ratio: bool = false,
-		_: u6 = 0,
+		ignore_input: bool = false,
+		_: u5 = 0,
 	} = .{},
 	// tree
 	parent: ?*ZWidget = null,
@@ -110,6 +111,11 @@ pub const ZWidget = struct {
 
 	pub fn setKeepRatio(self: *@This(), new: bool) void {
 		self.flags.keep_size_ratio = new;
+		self.markDirty();
+	}
+
+	pub fn setIgnoreInput(self: *@This(), new: bool) void {
+		self.flags.ignore_input = new;
 		self.markDirty();
 	}
 

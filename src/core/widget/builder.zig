@@ -34,5 +34,12 @@ pub fn BuilderMixin(comptime T: type) type {
 			builder.widget.super.setKeepRatio(state);
 			return builder;
 		}
+
+		pub fn ignoreInput(self: *@This(), state: bool) *T {
+			const builder: *T = @alignCast(@fieldParentPtr("c", self));
+
+			builder.widget.super.setIgnoreInput(state);
+			return builder;
+		}
 	};
 }

@@ -1,10 +1,11 @@
 const std = @import("std");
-const print = std.debug.print;
 
 const zuil = @import("zuil");
 const colors = zuil.core.color;
 
 const widgets = zuil.widgets;
+
+var number: u32 = 0;
 
 pub fn main(init: std.process.Init) anyerror!void {
 	const alloc = init.gpa;
@@ -136,11 +137,25 @@ pub fn main(init: std.process.Init) anyerror!void {
 					widgets.container(zuil.app.context)
 					.c.size(.{.dp = 500}, .{.dp = 500})
 					.color(.RED)
+					.child(
+						widgets.button(zuil.app.context)
+						.c.size(.{.dp = 100}, .{.dp = 50})
+						.setOnClick(containerClick)
+						.child(
+							widgets.text(zuil.app.context)
+							.c.size(.fill, .fill)
+							.c.ignoreInput(true)
+							.fontSize(20)
+							.text("button")
+							.build()
+						)
+						.build()
+					)
 					.build()
 				)
-				.build(),
+				.build()
 			})
-			.build(),
+			.build()
 		)
 		.build()
 	})
@@ -168,7 +183,6 @@ pub fn main(init: std.process.Init) anyerror!void {
 }
 
 fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
-	_ = self;
 	if (event != zuil.input.ZEvent.key) {
 		return true;
 	} else if (event.key.action != .release) {
@@ -196,29 +210,39 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 			};
 			return false;
 		},
+		.space => {
+			if (zuil.app.context.theme.background.equals(.BLACK)) {
+				zuil.app.context.theme.background = .rgb256(41, 44, 48);
+			} else {
+				zuil.app.context.theme.background = .BLACK;
+			}
+			self.tree.markDirtyRender(self.tree.current_bounds);
+		},
 		else => {}
 	}
 	return true;
 }
 
-fn containerClick(self: *zuil.core.widget.ZWidget, event: zuil.core.input.ZEvent) void {
-	if (event.* != zuil.input.ZEvent.mouse) {
-		return 0;
-	} else if (event.*.mouse.action != .release) {
-		return 0;
-	}
-	switch (event.*.mouse.key) {
+fn containerClick(self: *zuil.widgets.zbutton.ZButton, event: zuil.core.input.ZMouseEvent) void {
+	switch (event.key) {
 		.left => {
-			if (self.getData(widgets.zcontainer.ZContainer)) |data| {
-				if (colors.compare(data.color, colors.BLUE)) {
-					data.color = colors.BLACK;
-				} else {
-					data.color = colors.BLUE;
+			if (event.action != .press) return;
+
+			number += 1;
+
+			self.color = .rgb256(0, 0, number);
+			self.super.markDirtyRender();
+
+			if (self.child) |child| {
+				if (!std.mem.eql(u8, child.fi.name, @typeName(widgets.ztext.ZText))) return;
+				const text = child.as(widgets.ztext.ZText);
+
+				if (text.text != null) {
+					self.super.window.?.context.allocator.free(text.text.?);
 				}
-				self.markDirtyRender();
+				text.text = std.fmt.allocPrint(self.super.window.?.context.allocator, "{d}", .{number}) catch null;
 			}
 		},
 		else => {}
 	}
-	return 0;
 }

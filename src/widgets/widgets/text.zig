@@ -11,7 +11,7 @@ const colors = zuil.color;
 
 pub const ZText = struct {
 	color: ?ZColor = null,
-	text: []const u8 = "",
+	text: ?[]const u8 = null,
 	font_size: u32 = 14,
 
 	super: ZWidget = .{.fi = &vtable},
@@ -27,6 +27,8 @@ pub const ZText = struct {
 	pub fn deinit(widget: *ZWidget, context: *zuil.context.ZContext) void {
 		const self: *@This() = widget.as(@This());
 
+		if (self.text != null) context.allocator.free(self.text.?);
+
 		context.allocator.destroy(self);
 	}
 
@@ -40,6 +42,8 @@ pub const ZText = struct {
 	) !void {
 		const self: *@This() = widget.as(@This());
 
+		if (self.text == null) return;
+
 		if (area) |a| {
 			if (
 				widget.clamped_bounds.x > a.x + a.w or
@@ -51,7 +55,7 @@ pub const ZText = struct {
 			}
 		}
 
-		const Style = @import("../root.zig").Style;
+		const Style = root.Style;
 		const s = tree.context.theme.get(@typeName(Style)) orelse {
 			tree.context.log(.err, "style \"{s}\" not found in theme", .{@typeName(Style)});
 			return;
@@ -89,7 +93,7 @@ pub const ZText = struct {
 		c.hb_buffer_set_script(buffer, c.HB_SCRIPT_LATIN);
 		c.hb_buffer_set_language(buffer, c.hb_language_from_string("en", -1));
 
-		c.hb_buffer_add_utf8(buffer, self.text.ptr, @intCast(self.text.len), 0, @intCast(self.text.len));
+		c.hb_buffer_add_utf8(buffer, self.text.?.ptr, @intCast(self.text.?.len), 0, @intCast(self.text.?.len));
 
 		c.hb_shape(
 			sub_font,
@@ -212,7 +216,12 @@ pub const zTextBuilder = struct {
 	}
 
 	pub fn text(self: *@This(), new: []const u8) *@This() {
-		self.widget.text = new;
+		const buf = self.context.allocator.alloc(u8, new.len) catch {
+			self.widget.text = null;
+			return self;
+		};
+		@memcpy(buf, new);
+		self.widget.text = buf;
 		return self;
 	}
 

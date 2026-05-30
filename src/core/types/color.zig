@@ -36,4 +36,16 @@ pub const ZColor = struct {
 			.a = 1.0,
 		};
 	}
+
+	pub fn equals(a: *@This(), b: @This()) bool {
+		if (
+			a.r == b.r and
+			a.g == b.g and
+			a.b == b.b and
+			a.a == b.a
+		) {
+			return true;
+		}
+		return false;
+	}
 };

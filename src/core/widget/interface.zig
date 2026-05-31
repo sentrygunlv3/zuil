@@ -43,6 +43,13 @@ pub const ZWidgetFI = struct {
 			));
 		}
 
+		if (!@hasDecl(t, "vtable")) {
+			@compileError(std.fmt.comptimePrint(
+				"{s} needs to have a constant \"vtable\" of type \"ZWidgetFI\" to be a valid widget",
+				.{@typeName(t)}
+			));
+		}
+
 		const hasEnterTree = @hasDecl(t, "enterTree");
 		const hasExitTree = @hasDecl(t, "exitTree");
 

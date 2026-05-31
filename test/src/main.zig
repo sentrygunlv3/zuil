@@ -234,8 +234,8 @@ fn containerClick(self: *zuil.widgets.zbutton.ZButton, event: zuil.core.input.ZM
 			self.super.markDirtyRender();
 
 			if (self.child) |child| {
-				if (!std.mem.eql(u8, child.fi.name, @typeName(widgets.ztext.ZText))) return;
-				const text = child.as(widgets.ztext.ZText);
+				//if (!child.is(widgets.ztext.ZText)) return;
+				const text = child.asSafe(widgets.ztext.ZText) orelse return;
 
 				if (text.text != null) {
 					self.super.window.?.context.allocator.free(text.text.?);

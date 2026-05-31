@@ -119,12 +119,22 @@ pub const ZWidget = struct {
 		self.markDirty();
 	}
 
+	pub fn getName(self: *@This()) []const u8 {
+		return self.fi.name;
+	}
+
 	pub fn as(self: *@This(), comptime T: type) *T {
 		return @as(*T, @alignCast(@fieldParentPtr("super", self)));
 	}
 
-	pub fn getName(self: *@This()) []const u8 {
-		return self.fi.name;
+	pub fn is(self: *@This(), comptime T: type) bool {
+		if (self.fi == &T.vtable) return true;
+		return false;
+	}
+
+	pub fn asSafe(self: *@This(), comptime T: type) ?*T {
+		if (self.fi != &T.vtable) return null;
+		return @as(*T, @alignCast(@fieldParentPtr("super", self)));
 	}
 
 	// ---

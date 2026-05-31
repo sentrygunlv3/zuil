@@ -27,6 +27,7 @@ pub fn init(a: std.mem.Allocator, theme: *ZuilCore.Theme) !void {
 
 	_ = glfw.setErrorCallback(errorCallback);
 	try glfw.init();
+	glfw.windowHint(.transparent_framebuffer, true);
 
 	windows = std.AutoHashMap(*glfw.Window, *ZWindow).init(allocator);
 

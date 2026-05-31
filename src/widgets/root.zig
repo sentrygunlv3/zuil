@@ -109,7 +109,7 @@ pub const zbutton = @import("widgets/button.zig");
 pub const button = buildFunc(zbutton.ZButtonBuilder);
 
 pub const Style = struct {
-	//background: zuil.color.ZColor = .default,
+	background: zuil.color.ZColor = .rgb256(41, 44, 48),
 	container: struct {
 		radius: f32 = 10,
 		color: zuil.color.ZColor = .rgb256(40, 40, 41),
@@ -134,5 +134,6 @@ pub fn addStyles(alloc: std.mem.Allocator, theme: *zuil.Theme) !void {
 		.ptr = t,
 		.func_deinit = Style.deinit,
 	});
-	theme.background = .rgb256(41, 44, 48);
+	theme.background = .BLACK;
+	theme.background.a = 0.5;
 }

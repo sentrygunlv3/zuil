@@ -7,8 +7,8 @@ const ZColor = zuil.color.ZColor;
 const types = zuil.types;
 
 pub const ZList = struct {
-	direction: types.ZDirection = types.ZDirection.default,
-	spacing: f32 = 0,
+	direction: types.ZDirection = .default,
+	spacing: types.ZUnit = .zero,
 	children: std.ArrayList(*ZWidget) = undefined,
 
 	super: ZWidget = .{.fi = &vtable},
@@ -87,7 +87,7 @@ pub const ZList = struct {
 						if (child.clamped_bounds.w > new_space.w or child.size.w == .percentage) new_space.w else child.clamped_bounds.w,
 						new_space.h
 					);
-					new_space.w -= child.clamped_bounds.w + self.spacing;
+					new_space.w -= child.clamped_bounds.w + self.spacing.asPixel(false, .{.w = w, .h = h}, widget.window.?);
 				}
 			},
 			.vertical => {
@@ -97,7 +97,7 @@ pub const ZList = struct {
 						new_space.w,
 						if (child.clamped_bounds.h > new_space.h or child.size.h == .percentage) new_space.h else child.clamped_bounds.h
 					);
-					new_space.h -= child.clamped_bounds.h + self.spacing;
+					new_space.h -= child.clamped_bounds.h + self.spacing.asPixel(true, .{.w = w, .h = h}, widget.window.?);
 				}
 			},
 		}
@@ -138,7 +138,7 @@ pub const ZList = struct {
 					child.clamped_bounds.y += new_space.y;
 					try child.updatePosition(true, widget.clamped_bounds.w, widget.clamped_bounds.h);
 
-					new_space.x += width + self.spacing;
+					new_space.x += width + self.spacing.asPixel(false, .{.w = w, .h = h}, widget.window.?);
 				}
 			},
 			.vertical => {
@@ -148,7 +148,7 @@ pub const ZList = struct {
 					child.clamped_bounds.y += new_space.y;
 					try child.updatePosition(true, widget.clamped_bounds.w, widget.clamped_bounds.h);
 
-					new_space.y += height + self.spacing;
+					new_space.y += height + self.spacing.asPixel(true, .{.w = w, .h = h}, widget.window.?);
 				}
 			},
 		}
@@ -202,7 +202,7 @@ pub const ZListBuilder = struct {
 		return self;
 	}
 
-	pub fn spacing(self: *@This(), new: f32) *@This() {
+	pub fn spacing(self: *@This(), new: types.ZUnit) *@This() {
 		self.widget.spacing = new;
 		return self;
 	}

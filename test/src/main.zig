@@ -27,6 +27,11 @@ pub fn main(init: std.process.Init) anyerror!void {
 	try zuil.assets.registerAssetComptime("icon.svg", @embedFile("icon.svg"), .svg);
 	try zuil.assets.registerAssetComptime("firesans.ttf", @embedFile("font/FiraSans-Regular.ttf"), .ttf);
 
+	const widgets_theme: *widgets.Style = @alignCast(@ptrCast(theme.get(@typeName(widgets.Style)) orelse {
+		zuil.app.context.log(.err, "failed to get style {s}", .{@typeName(widgets.Style)});
+		return;
+	}));
+
 	const list =
 	widgets.list(zuil.app.context)
 	.c.size(.fill, .fill)
@@ -65,7 +70,7 @@ pub fn main(init: std.process.Init) anyerror!void {
 			widgets.container(zuil.app.context)
 			.c.size(.fill, .fill)
 			.c.margin(.new(10))
-			.color(theme.background)
+			.color(widgets_theme.background)
 			.child(
 				widgets.container(zuil.app.context)
 				.c.size(.fill, .fill)
@@ -79,13 +84,13 @@ pub fn main(init: std.process.Init) anyerror!void {
 		.build(),
 		widgets.container(zuil.app.context)
 		.c.size(.fill, .fill)
-		.c.margin(.new(10))
+		.c.margin(.new(4))
 		.color(.TRANSPARENT)
 		.child(
 			widgets.list(zuil.app.context)
 			.c.size(.fill, .fill)
 			.direction(.vertical)
-			.spacing(1)
+			.spacing(.{ .dp = 4 })
 			.children(.{
 				widgets.text(zuil.app.context)
 				.c.size(.fill, .{.dp = 60})
@@ -140,9 +145,11 @@ pub fn main(init: std.process.Init) anyerror!void {
 					.child(
 						widgets.button(zuil.app.context)
 						.c.size(.{.dp = 100}, .{.dp = 50})
+						.c.margin(.new(5))
 						.setOnClick(containerClick)
 						.child(
 							widgets.text(zuil.app.context)
+							.c.margin(.new(5))
 							.c.size(.fill, .fill)
 							.c.ignoreInput(true)
 							.fontSize(20)
@@ -224,25 +231,19 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 }
 
 fn containerClick(self: *zuil.widgets.zbutton.ZButton, event: zuil.core.input.ZMouseEvent) void {
-	switch (event.key) {
-		.left => {
-			if (event.action != .press) return;
+	if (event.key != .left or event.action != .press) return;
 
-			number += 1;
+	number += 1;
 
-			self.color = .rgb256(0, 0, number);
-			self.super.markDirtyRender();
+	self.color = .rgb256(0, 0, number);
+	self.super.markDirtyRender();
 
-			if (self.child) |child| {
-				//if (!child.is(widgets.ztext.ZText)) return;
-				const text = child.asSafe(widgets.ztext.ZText) orelse return;
+	if (self.child) |child| {
+		const text = child.asSafe(widgets.ztext.ZText) orelse return;
 
-				if (text.text != null) {
-					self.super.window.?.context.allocator.free(text.text.?);
-				}
-				text.text = std.fmt.allocPrint(self.super.window.?.context.allocator, "{d}", .{number}) catch null;
-			}
-		},
-		else => {}
+		if (text.text != null) {
+			self.super.window.?.context.allocator.free(text.text.?);
+		}
+		text.text = std.fmt.allocPrint(self.super.window.?.context.allocator, "{d}", .{number}) catch null;
 	}
 }

@@ -49,7 +49,8 @@ pub const ZWindow = struct {
 			try root.opengl.loadCoreProfile(glfw.getProcAddress, 4, 0);
 
 			root.gl.enable(root.gl.BLEND);
-			root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
+			//root.gl.blendFunc(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA);
+			root.gl.blendFuncSeparate(root.gl.SRC_ALPHA, root.gl.ONE_MINUS_SRC_ALPHA, root.gl.ONE, root.gl.ONE_MINUS_SRC_ALPHA);
 
 			try root.context.lateInit();
 

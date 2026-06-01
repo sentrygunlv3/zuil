@@ -37,6 +37,8 @@ pub const ZList = struct {
 	pub fn updateActualSize(widget: *ZWidget, dirty: bool, w: f32, h: f32) !void {
 		const self: *@This() = widget.as(@This());
 
+		const margin = widget.margin.asPixel(.{.w = w, .h = h}, widget.window.?);
+
 		if (dirty) {
 			const size_max_w = widget.size_max.w.asPixel(false, .{.w = w, .h = h}, widget.window.?);
 			const size_max_h = widget.size_max.h.asPixel(true, .{.w = w, .h = h}, widget.window.?);
@@ -58,6 +60,9 @@ pub const ZList = struct {
 
 		var new_space = widget.clamped_bounds;
 		var child_layout_dirty = true;
+
+		new_space.w -= margin.left + margin.right;
+		new_space.h -= margin.top + margin.bottom;
 
 		if (!dirty) {
 			child_layout_dirty = false;
@@ -81,23 +86,25 @@ pub const ZList = struct {
 
 		switch (self.direction) {
 			.horizontal => {
+				const spacing = self.spacing.asPixel(false, .{.w = w, .h = h}, widget.window.?);
 				for (self.children.items) |child| {
 					try child.updateActualSize(
 						dirty or child.flags.layout_dirty,
 						if (child.clamped_bounds.w > new_space.w or child.size.w == .percentage) new_space.w else child.clamped_bounds.w,
 						new_space.h
 					);
-					new_space.w -= child.clamped_bounds.w + self.spacing.asPixel(false, .{.w = w, .h = h}, widget.window.?);
+					new_space.w -= child.clamped_bounds.w + spacing;
 				}
 			},
 			.vertical => {
+				const spacing = self.spacing.asPixel(true, .{.w = w, .h = h}, widget.window.?);
 				for (self.children.items) |child| {
 					try child.updateActualSize(
 						dirty or child.flags.layout_dirty,
 						new_space.w,
 						if (child.clamped_bounds.h > new_space.h or child.size.h == .percentage) new_space.h else child.clamped_bounds.h
 					);
-					new_space.h -= child.clamped_bounds.h + self.spacing.asPixel(true, .{.w = w, .h = h}, widget.window.?);
+					new_space.h -= child.clamped_bounds.h + spacing;
 				}
 			},
 		}

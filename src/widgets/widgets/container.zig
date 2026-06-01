@@ -7,8 +7,14 @@ const ZWidget = zuil.widget.ZWidget;
 const ZColor = zuil.color.ZColor;
 const types = zuil.types;
 
+pub const ZContainerColor = union(enum) {
+	container: void,
+	background: void,
+	custom: ZColor,
+};
+
 pub const ZContainer = struct {
-	color: ?ZColor = null,
+	color: ZContainerColor = .container,
 	radius: ?f32 = null,
 	child: ?*ZWidget = null,
 
@@ -41,6 +47,20 @@ pub const ZContainer = struct {
 		const self: *@This() = widget.as(@This());
 
 		block: {
+			const Style = root.Style;
+			const s = tree.context.theme.get(@typeName(Style)) orelse {
+				tree.context.log(.err, "style \"{s}\" not found in theme", .{@typeName(Style)});
+				return;
+			};
+			const style: *Style = @ptrCast(@alignCast(s));
+
+			const color = switch (self.color) {
+				.container => style.container.color,
+				.background => if (tree.flags.focused) style.background else style.background_unfocused,
+				.custom => |selected| selected,
+			};
+			if (color.a == 0) break :block;
+
 			if (area) |a| {
 				if (
 					widget.clamped_bounds.x > a.x + a.w or
@@ -52,13 +72,6 @@ pub const ZContainer = struct {
 				}
 			}
 
-			const Style = root.Style;
-			const s = tree.context.theme.get(@typeName(Style)) orelse {
-				tree.context.log(.err, "style \"{s}\" not found in theme", .{@typeName(Style)});
-				return;
-			};
-			const style: *Style = @ptrCast(@alignCast(s));
-
 			const window_size = tree.getBounds();
 
 			const sizew = (widget.clamped_bounds.w / window_size.w) * 2;
@@ -66,8 +79,6 @@ pub const ZContainer = struct {
 
 			const posx = (widget.clamped_bounds.x / window_size.w) * 2.0;
 			const posy = (widget.clamped_bounds.y / window_size.h) * 2.0;
-
-			const color = self.color orelse style.container.border;
 
 			try commands.append(
 				try tree.context.getShader("container"),
@@ -160,7 +171,7 @@ pub const ZContainerBuilder = struct {
 		return final;
 	}
 
-	pub fn color(self: *@This(), new: ZColor) *@This() {
+	pub fn color(self: *@This(), new: ZContainerColor) *@This() {
 		self.widget.color = new;
 		return self;
 	}

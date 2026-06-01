@@ -51,6 +51,8 @@ fn log_default(t: LogType, string: []const u8) void {
 
 pub const ZContext = struct {
 	allocator: std.mem.Allocator,
+	io: std.Io,
+
 	external: struct {
 		log: *const fn (t: LogType, string: []const u8) void = log_default,
 	},
@@ -67,12 +69,13 @@ pub const ZContext = struct {
 		func_deinit: *const fn (self: *anyopaque, context: *ZContext) void,
 	};
 
-	pub fn init(allocator: std.mem.Allocator, renderer: zrenderer.ZRenderer, theme: *root.Theme) !*@This() {
+	pub fn init(allocator: std.mem.Allocator, io: std.Io, renderer: zrenderer.ZRenderer, theme: *root.Theme) !*@This() {
 		const self = try allocator.create(@This());
 		errdefer self.allocator.destroy(self);
 
 		self.* = .{
 			.allocator = allocator,
+			.io = io,
 			.external = .{},
 			.renderer = renderer,
 			.theme = theme,

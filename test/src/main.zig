@@ -17,7 +17,7 @@ pub fn main(init: std.process.Init) anyerror!void {
 	zuil.assets.init(alloc);
 	defer zuil.assets.deinit();
 
-	try zuil.app.init(alloc, theme);
+	try zuil.app.init(alloc, init.io, theme);
 	defer zuil.app.deinit();
 
 	zuil.app.createContext = &zuil.widgets.registerShader;
@@ -27,11 +27,6 @@ pub fn main(init: std.process.Init) anyerror!void {
 	try zuil.assets.registerAssetComptime("icon.svg", @embedFile("icon.svg"), .svg);
 	try zuil.assets.registerAssetComptime("firesans.ttf", @embedFile("font/FiraSans-Regular.ttf"), .ttf);
 
-	const widgets_theme: *widgets.Style = @alignCast(@ptrCast(theme.get(@typeName(widgets.Style)) orelse {
-		zuil.app.context.log(.err, "failed to get style {s}", .{@typeName(widgets.Style)});
-		return;
-	}));
-
 	const list =
 	widgets.list(zuil.app.context)
 	.c.size(.fill, .fill)
@@ -40,7 +35,7 @@ pub fn main(init: std.process.Init) anyerror!void {
 		widgets.container(zuil.app.context)
 		.c.size(.{.pixel = 250}, .{.pixel = 250})
 		.c.keepSizeRatio(true)
-		.color(.BLACK)
+		.color(.{.custom = .BLACK})
 		.radius(250)
 		.child(
 			widgets.position(zuil.app.context)
@@ -70,12 +65,12 @@ pub fn main(init: std.process.Init) anyerror!void {
 			widgets.container(zuil.app.context)
 			.c.size(.fill, .fill)
 			.c.margin(.new(10))
-			.color(widgets_theme.background)
+			.color(.background)
 			.child(
 				widgets.container(zuil.app.context)
 				.c.size(.fill, .fill)
 				.c.margin(.new(10))
-				.color(.TRANSPARENT)
+				.color(.{.custom = .TRANSPARENT})
 				.child(list)
 				.build()
 			)
@@ -85,7 +80,7 @@ pub fn main(init: std.process.Init) anyerror!void {
 		widgets.container(zuil.app.context)
 		.c.size(.fill, .fill)
 		.c.margin(.new(4))
-		.color(.TRANSPARENT)
+		.color(.{.custom = .TRANSPARENT})
 		.child(
 			widgets.list(zuil.app.context)
 			.c.size(.fill, .fill)
@@ -141,7 +136,7 @@ pub fn main(init: std.process.Init) anyerror!void {
 				.child(
 					widgets.container(zuil.app.context)
 					.c.size(.{.dp = 500}, .{.dp = 500})
-					.color(.RED)
+					.color(.{.custom = .RED})
 					.child(
 						widgets.button(zuil.app.context)
 						.c.size(.{.dp = 100}, .{.dp = 50})
@@ -172,7 +167,7 @@ pub fn main(init: std.process.Init) anyerror!void {
 		800,
 		450,
 		"hello",
-		root,
+		topBar(root),
 	);
 	window.input_handler = processInput;
 
@@ -203,12 +198,12 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 				"child window",
 				widgets.container(zuil.app.context)
 				.c.size(.fill, .fill)
-				.color(.BLACK)
+				.color(.{ .custom = .BLACK })
 				.child(
 					widgets.container(zuil.app.context)
 					.c.size(.fill, .fill)
 					.c.margin(.new(20))
-					.color(.BLUE)
+					.color(.{ .custom = .BLUE })
 					.build()
 				)
 				.build()
@@ -231,7 +226,7 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 }
 
 fn containerClick(self: *zuil.widgets.zbutton.ZButton, event: zuil.core.input.ZMouseEvent) void {
-	if (event.key != .left or event.action != .press) return;
+	if (event.key != .left or event.action != .release) return;
 
 	number += 1;
 
@@ -246,4 +241,65 @@ fn containerClick(self: *zuil.widgets.zbutton.ZButton, event: zuil.core.input.ZM
 		}
 		text.text = std.fmt.allocPrint(self.super.window.?.context.allocator, "{d}", .{number}) catch null;
 	}
+}
+
+fn topBar(content: *zuil.core.widget.ZWidget) *zuil.core.widget.ZWidget {
+	return widgets.list(zuil.app.context)
+	.c.size(.fill, .fill)
+	.direction(.vertical)
+	.children(.{
+		widgets.container(zuil.app.context)
+		.c.size(.fill, .{ .dp = 40 })
+		.color(.background)
+		.radius(0)
+		.child(
+			widgets.list(zuil.app.context)
+			.c.size(.fill, .fill)
+			.c.margin(.new(5))
+			.spacing(.{.dp = 5})
+			.children(.{
+				widgets.button(zuil.app.context)
+				.c.size(.{.dp = 80}, .fill)
+				.color(.ZBLUE)
+				.setOnClick(gitClick)
+				.child(
+					widgets.container(zuil.app.context)
+					.c.size(.fill, .fill)
+					.c.margin(.new(1))
+					.c.ignoreInput(true)
+					.color(.background)
+					.child(
+						widgets.text(zuil.app.context)
+						.c.size(.fill, .fill)
+						.c.margin(.new(6))
+						.c.ignoreInput(true)
+						.text("github")
+						.fontSize(18)
+						.build(),
+					)
+					.build(),
+				)
+				.build(),
+			})
+			.build(),
+		)
+		.build(),
+		content,
+	})
+	.build();
+}
+
+fn gitClick(self: *zuil.widgets.zbutton.ZButton, event: zuil.core.input.ZMouseEvent) void {
+	if (event.key != .left or event.action != .release) return;
+
+	var child = std.process.spawn(
+		self.super.window.?.context.io,
+		.{.argv = &[_][]const u8{
+			"xdg-open",
+			"https://github.com/sentrygunlv3/zuil"
+	}}) catch |e| {
+		self.super.window.?.context.log(.err, "xdg-open failed: {}", .{e});
+		return;
+	};
+	_ = child.wait(self.super.window.?.context.io) catch return;
 }

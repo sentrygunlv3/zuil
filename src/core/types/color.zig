@@ -14,10 +14,12 @@ pub const ZColor = struct {
 	pub const RED: ZColor = .{ .r = 0.8, .g = 0.2, .b = 0.2, .a = 1};
 	pub const GREEN: ZColor = .{ .r = 0.2, .g = 0.8, .b = 0.2, .a = 1};
 	pub const BLUE: ZColor = .{ .r = 0.2, .g = 0.2, .b = 0.8, .a = 1};
-	pub const WHITE: ZColor = .{ .r = 0.9, .g = 0.9, .b = 0.9, .a = 1};
+	pub const WHITE: ZColor = .default;
 	pub const GREY: ZColor = .{ .r = 0.4, .g = 0.4, .b = 0.4, .a = 1};
 	pub const BLACK: ZColor = .{ .r = 0.1, .g = 0.1, .b = 0.1, .a = 1};
 	pub const TRANSPARENT: ZColor = .{ .r = 0, .g = 0, .b = 0, .a = 0};
+
+	pub const ZBLUE: ZColor = .rgb256(41, 158, 249);
 
 	pub fn rgb(r: f32, g: f32, b: f32) @This() {
 		return .{

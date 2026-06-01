@@ -70,6 +70,8 @@ pub const ZWindow = struct {
 		_ = glfw.setKeyCallback(self.window, keyCallback);
 		_ = glfw.setMouseButtonCallback(self.window, mouseButtonCallback);
 
+		_ = glfw.setWindowFocusCallback(self.window, focusCallback);
+
 		var size_x: f32 = 0;
 		var size_y: f32 = 0;
 		if (glfw.getPrimaryMonitor()) |monitor| {
@@ -260,6 +262,12 @@ pub const ZWindow = struct {
 			);
 			gl.bindTexture(gl.TEXTURE_2D, 0);
 		}
+	}
+
+	fn focusCallback(window: *glfw.Window, focused: glfw.Bool) callconv(.c) void {
+		const tree = root.windows.get(window).?.tree;
+		tree.flags.focused = if (focused == glfw.TRUE) true else false;
+		tree.markDirtyRender(tree.current_bounds);
 	}
 
 	pub fn process(self: *@This()) !bool {

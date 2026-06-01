@@ -110,9 +110,10 @@ pub const button = buildFunc(zbutton.ZButtonBuilder);
 
 pub const Style = struct {
 	background: zuil.color.ZColor = .rgb256(41, 44, 48),
+	background_unfocused: zuil.color.ZColor = .rgb256(32, 35, 38),
 	container: struct {
 		radius: f32 = 10,
-		color: zuil.color.ZColor = .rgb256(40, 40, 41),
+		color: zuil.color.ZColor = .rgb256(90, 90, 100),
 		border: zuil.color.ZColor = .rgb256(90, 90, 100),
 	} = .{},
 	text: struct {

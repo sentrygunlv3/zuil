@@ -22,7 +22,7 @@ pub const ZAppError = error{
 	NoWindowsCreated,
 };
 
-pub fn init(a: std.mem.Allocator, theme: *ZuilCore.Theme) !void {
+pub fn init(a: std.mem.Allocator, io: std.Io, theme: *ZuilCore.Theme) !void {
 	allocator = a;
 
 	_ = glfw.setErrorCallback(errorCallback);
@@ -31,7 +31,7 @@ pub fn init(a: std.mem.Allocator, theme: *ZuilCore.Theme) !void {
 
 	windows = std.AutoHashMap(*glfw.Window, *ZWindow).init(allocator);
 
-	context = try ZuilCore.ZContext.init(allocator, OpenglBackend, theme);
+	context = try ZuilCore.ZContext.init(allocator, io, OpenglBackend, theme);
 	context.log(.info, "ZUIL init", .{});
 }
 

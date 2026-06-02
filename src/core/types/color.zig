@@ -39,6 +39,15 @@ pub const ZColor = struct {
 		};
 	}
 
+	pub fn rgba256(r: u32, g: u32, b: u32, a: u32) @This() {
+		return .{
+			.r = @as(f32, @floatFromInt(r)) / 255,
+			.g = @as(f32, @floatFromInt(g)) / 255,
+			.b = @as(f32, @floatFromInt(b)) / 255,
+			.a = @as(f32, @floatFromInt(a)) / 255,
+		};
+	}
+
 	pub fn equals(a: *@This(), b: @This()) bool {
 		if (
 			a.r == b.r and

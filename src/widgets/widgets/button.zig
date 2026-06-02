@@ -53,8 +53,8 @@ pub const ZButton = struct {
 			const style: *Style = @ptrCast(@alignCast(s));
 
 			const color = if (self.hovered)
-				self.color_hover orelse style.container.color else
-				self.color orelse ZColor.TRANSPARENT;
+				self.color_hover orelse style.surface.button.color_hovered else
+				self.color orelse style.surface.button.color;
 
 			if (color.a == 0) break :block;
 
@@ -105,7 +105,7 @@ pub const ZButton = struct {
 					},
 					.{
 						.name = "radius",
-						.value = .{.uniform1f = self.radius orelse style.container.radius}
+						.value = .{.uniform1f = self.radius orelse style.surface.radius}
 					},
 					.{
 						.name = "color",

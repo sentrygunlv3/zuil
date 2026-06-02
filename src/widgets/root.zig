@@ -111,13 +111,22 @@ pub const button = buildFunc(zbutton.ZButtonBuilder);
 pub const Style = struct {
 	background: zuil.color.ZColor = .rgb256(41, 44, 48),
 	background_unfocused: zuil.color.ZColor = .rgb256(32, 35, 38),
-	container: struct {
+	surface: struct {
 		radius: f32 = 10,
 		color: zuil.color.ZColor = .rgb256(90, 90, 100),
-		border: zuil.color.ZColor = .rgb256(90, 90, 100),
+		border: zuil.color.ZColor = .rgb256(100, 110, 115),
+		button: struct {
+			color: zuil.color.ZColor = .TRANSPARENT,
+			color_hovered: zuil.color.ZColor = .rgba256(41, 158, 249, 70),
+			border: zuil.color.ZColor = .ZBLUE,
+			border_hovered: zuil.color.ZColor = .ZBLUE,
+		} = .{},
 	} = .{},
-	text: struct {
-		color: zuil.color.ZColor = .rgb(0.9, 0.9, 0.9),
+	decoration: struct {
+		on_surface: zuil.color.ZColor = .WHITE,
+		on_color: zuil.color.ZColor = .BLACK,
+		danger: zuil.color.ZColor = .RED,
+		success: zuil.color.ZColor = .GREEN,
 	} = .{},
 
 	pub fn deinit(self: *anyopaque, alloc: std.mem.Allocator) void {

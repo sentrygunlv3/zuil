@@ -142,6 +142,7 @@ pub fn main(init: std.process.Init) anyerror!void {
 						.c.size(.{.dp = 100}, .{.dp = 50})
 						.c.margin(.new(5))
 						.color(.BLACK)
+						.colorHover(.GREY)
 						.setOnClick(containerClick)
 						.child(
 							widgets.text(zuil.app.context)

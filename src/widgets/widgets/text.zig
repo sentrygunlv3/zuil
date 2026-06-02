@@ -160,7 +160,7 @@ pub const ZText = struct {
 		var mesh_handle = try tree.context.createMesh(&mesh.build());
 		try tree.context.resourceRemoveUser(&mesh_handle);
 
-		const color = self.color orelse style.text.color;
+		const color = self.color orelse style.decoration.on_surface;
 
 		try commands.append(
 			try tree.context.getShader("font"),

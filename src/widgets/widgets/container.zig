@@ -8,13 +8,13 @@ const ZColor = zuil.color.ZColor;
 const types = zuil.types;
 
 pub const ZContainerColor = union(enum) {
-	container: void,
+	surface: void,
 	background: void,
 	custom: ZColor,
 };
 
 pub const ZContainer = struct {
-	color: ZContainerColor = .container,
+	color: ZContainerColor = .surface,
 	radius: ?f32 = null,
 	child: ?*ZWidget = null,
 
@@ -55,7 +55,7 @@ pub const ZContainer = struct {
 			const style: *Style = @ptrCast(@alignCast(s));
 
 			const color = switch (self.color) {
-				.container => style.container.color,
+				.surface => style.surface.color,
 				.background => if (tree.flags.focused) style.background else style.background_unfocused,
 				.custom => |selected| selected,
 			};
@@ -108,7 +108,7 @@ pub const ZContainer = struct {
 					},
 					.{
 						.name = "radius",
-						.value = .{.uniform1f = self.radius orelse style.container.radius}
+						.value = .{.uniform1f = self.radius orelse style.surface.radius}
 					},
 					.{
 						.name = "color",

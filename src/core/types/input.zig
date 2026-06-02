@@ -75,10 +75,9 @@ pub const ZMouseEvent = struct {
 };
 
 pub const ZMouseMoveEvent = struct {
+	entered: bool,
 	x: f32,
 	y: f32,
-	distance_x: f32,
-	distance_y: f32,
 };
 
 pub const ZMouseWheelEvent = struct {

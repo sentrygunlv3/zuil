@@ -11,6 +11,7 @@ pub const ZWidgetTree = struct {
 	// --- input
 	key_events: std.ArrayList(input.ZEvent) = undefined,
 	focused_widget: ?*widget.ZWidget = null,
+	last_hover: ?*widget.ZWidget = null,
 	// ---
 	flags: packed struct {
 		layout_dirty: bool = true,
@@ -65,6 +66,9 @@ pub const ZWidgetTree = struct {
 			r.destroy() catch {
 				self.context.log(.err, "{*} trees root has a bad state", .{self});
 			};
+		} else {
+			self.last_hover = null;
+			self.focused_widget = null;
 		}
 		self.root = root_widget;
 	}

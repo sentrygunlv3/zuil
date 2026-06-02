@@ -65,6 +65,9 @@ pub const ZWidget = struct {
 			if (window.focused_widget == self) {
 				window.focused_widget = null;
 			}
+			if (window.last_hover == self) {
+				window.focused_widget = null;
+			}
 			self.setWindow(null);
 		}
 	}

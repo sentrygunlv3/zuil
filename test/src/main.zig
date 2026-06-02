@@ -141,6 +141,7 @@ pub fn main(init: std.process.Init) anyerror!void {
 						widgets.button(zuil.app.context)
 						.c.size(.{.dp = 100}, .{.dp = 50})
 						.c.margin(.new(5))
+						.color(.BLACK)
 						.setOnClick(containerClick)
 						.child(
 							widgets.text(zuil.app.context)
@@ -260,7 +261,7 @@ fn topBar(content: *zuil.core.widget.ZWidget) *zuil.core.widget.ZWidget {
 			.children(.{
 				widgets.button(zuil.app.context)
 				.c.size(.{.dp = 80}, .fill)
-				.color(.ZBLUE)
+				.colorHover(.ZBLUE)
 				.setOnClick(gitClick)
 				.child(
 					widgets.container(zuil.app.context)

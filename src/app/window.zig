@@ -26,6 +26,9 @@ pub const ZWindow = struct {
 	tree: *root.ZuilCore.tree.ZWidgetTree = undefined,
 	input_handler: ?*const fn (self: *@This(), event: input.ZEvent) bool = null,
 
+	posx: f64 = 0,
+	posy: f64 = 0,
+
 	pub fn init(width: u32, height: u32, title: [:0]const u8, root_widget: ?*widget.ZWidget) !*@This() {
 		const self = try root.allocator.create(@This());
 		errdefer self.deinit();
@@ -273,6 +276,46 @@ pub const ZWindow = struct {
 	pub fn process(self: *@This()) !bool {
 		if (self.window.shouldClose()) {
 			return false;
+		}
+		if (self.tree.root) |r| {
+			var posx: f64 = 0;
+			var posy: f64 = 0;
+			glfw.getCursorPos(self.window, &posx, &posy);
+			if (
+				self.posx != posx or
+				self.posy != posy
+			) {
+				if (r.isOverPoint(@floatCast(posx), @floatCast(posy), false)) |hovered| {
+					//root.context.log(.debug, "hovered {*} at x {} - y {}", .{hovered, posx, posy});
+					if (self.tree.last_hover != null) {
+						if (self.tree.last_hover.? != hovered) {
+							try self.tree.last_hover.?.event(.{.mouse_move = .{
+								.entered = false,
+								.x = @floatCast(posx),
+								.y = @floatCast(posy),
+							}});
+							self.tree.last_hover = hovered;
+							try hovered.event(.{.mouse_move = .{
+								.entered = true,
+								.x = @floatCast(posx),
+								.y = @floatCast(posy),
+							}});
+						}
+					} else {
+						self.tree.last_hover = hovered;
+						try hovered.event(.{.mouse_move = .{
+							.entered = true,
+							.x = @floatCast(posx),
+							.y = @floatCast(posy),
+						}});
+					}
+				} else {
+					self.tree.last_hover = null;
+					//root.context.log(.debug, "nothing hovered", .{});
+				}
+			}
+			self.posx = posx;
+			self.posy = posy;
 		}
 		if (self.tree.key_events.items.len != 0) {
 			root.context.log(.debug, "--- process input ---", .{});

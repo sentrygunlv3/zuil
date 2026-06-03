@@ -17,10 +17,10 @@ pub fn main(init: std.process.Init) anyerror!void {
 	zuil.assets.init(alloc);
 	defer zuil.assets.deinit();
 
+	zuil.app.createContext = &zuil.widgets.registerShader;
+
 	try zuil.app.init(alloc, init.io, theme);
 	defer zuil.app.deinit();
-
-	zuil.app.createContext = &zuil.widgets.registerShader;
 
 	try zuil.widgets.register(zuil.app.context);
 
@@ -172,6 +172,7 @@ pub fn main(init: std.process.Init) anyerror!void {
 		topBar(root),
 	);
 	window.input_handler = processInput;
+	zuil.app.main_window = window;
 
 	const font = try zuil.widgets.font.ttfToFont(zuil.app.context, try zuil.assets.getAsset("firesans.ttf"), 0, 0);
 	const w = zuil.app.context.getSubcontext(zuil.widgets.NAME) orelse {

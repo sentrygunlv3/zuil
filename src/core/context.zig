@@ -56,7 +56,7 @@ pub const ZContext = struct {
 	external: struct {
 		log: *const fn (t: LogType, string: []const u8) void = log_default,
 	},
-	renderer: zrenderer.ZRenderer,
+	renderer: *const zrenderer.ZRenderer,
 
 	theme: *root.Theme,
 
@@ -69,7 +69,7 @@ pub const ZContext = struct {
 		func_deinit: *const fn (self: *anyopaque, context: *ZContext) void,
 	};
 
-	pub fn init(allocator: std.mem.Allocator, io: std.Io, renderer: zrenderer.ZRenderer, theme: *root.Theme) !*@This() {
+	pub fn init(allocator: std.mem.Allocator, io: std.Io, renderer: *const zrenderer.ZRenderer, theme: *root.Theme) !*@This() {
 		const self = try allocator.create(@This());
 		errdefer self.allocator.destroy(self);
 
@@ -89,11 +89,6 @@ pub const ZContext = struct {
 		return self;
 	}
 
-	pub fn lateInit(self: *@This()) !void {
-		try self.renderer.init(self.allocator);
-		errdefer self.renderer.deinit();
-	}
-
 	pub fn deinit(self: *@This()) void {
 		var it = self.subcontext_hashmap.valueIterator();
 		while (it.next()) |s| {
@@ -111,7 +106,6 @@ pub const ZContext = struct {
 		self.shaders.deinit();
 
 		self.renderer.resourcesUpdate();
-		self.renderer.deinit();
 
 		self.allocator.destroy(self);
 	}
@@ -134,16 +128,24 @@ pub const ZContext = struct {
 		self.renderer.resourcesUpdate();
 	}
 
-	pub fn clip(self: *@This(), area: ?root.types.ZBounds) void {
-		self.renderer.clip(area);
+	pub fn clip(self: *@This(), area: ?root.types.ZBounds, bounds: root.types.ZBounds) void {
+		self.renderer.clip(area, bounds);
 	}
 
 	pub fn clear(self: *@This(), color: root.color.ZColor) void {
 		self.renderer.clear(color);
 	}
 
-	pub fn renderCommands(self: *@This(), commands: *zrenderer.RenderCommandList) anyerror!void {
-		try self.renderer.renderCommands(commands);
+	pub fn renderBegin(self: *@This(), user: *anyopaque) void {
+		self.renderer.renderBegin(user);
+	}
+
+	pub fn renderEnd(self: *@This(), user: *anyopaque) void {
+		self.renderer.renderEnd(user);
+	}
+
+	pub fn renderCommands(self: *@This(), user: *anyopaque, commands: *zrenderer.RenderCommandList) anyerror!void {
+		try self.renderer.renderCommands(user, commands);
 	}
 
 	pub fn createTexture(self: *@This(), bitmap: *root.ZBitmap) anyerror!TextureHandle {

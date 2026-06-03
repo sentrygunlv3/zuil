@@ -2,13 +2,13 @@ const std = @import("std");
 const root = @import("root.zig");
 
 pub const ZRenderer = struct {
-	init: *const fn (alloc: std.mem.Allocator) anyerror!void,
-	deinit: *const fn () void,
 	resourceRemoveUser: *const fn (resource: *root.context.ResourceHandle) anyerror!void,
 	resourcesUpdate: *const fn () void,
-	clip: *const fn (area: ?root.types.ZBounds) void,
+	clip: *const fn (area: ?root.types.ZBounds, bounds: root.types.ZBounds) void,
 	clear: *const fn (color: root.color.ZColor) void,
-	renderCommands: *const fn (commands: *RenderCommandList) anyerror!void,
+	renderBegin: *const fn (user: *anyopaque) void,
+	renderEnd: *const fn (user: *anyopaque) void,
+	renderCommands: *const fn (user: *anyopaque, commands: *RenderCommandList) anyerror!void,
 	createTexture: *const fn (bitmap: *root.ZBitmap) anyerror!root.context.TextureHandle,
 	createShader: *const fn (v: []const u8, f: []const u8) anyerror!root.context.ShaderHandle,
 	createMesh: *const fn (mesh: *const root.mesh.ZMesh) anyerror!root.context.MeshHandle,

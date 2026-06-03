@@ -53,16 +53,18 @@ pub fn build(b: *std.Build) void {
 
 	// app
 
-	const glfw = b.dependency("zglfw", .{
-		.target = target,
-		.optimize = optimize,
-		.shared = true
-	});
 	const opengl = b.dependency("zopengl", .{
 		.target = target,
 		// error: invalid option: -Doptimize
 		//.optimize = optimize,
 	});
+
+	const app_translate_c = b.addTranslateC(.{
+		.root_source_file = b.path("src/app/c.h"),
+		.target = target,
+		.optimize = optimize,
+	});
+	app_translate_c.linkSystemLibrary("sdl3", .{});
 
 	var zuil_app = b.addLibrary(.{
 		.name = "zuil",
@@ -71,13 +73,20 @@ pub fn build(b: *std.Build) void {
 			.root_source_file = b.path("src/app/root.zig"),
 			.target = target,
 			.optimize = optimize,
+			.imports = &.{
+				.{
+					.name = "zuilcore",
+					.module = zuil_core.root_module,
+				},
+				.{
+					.name = "c",
+					.module = app_translate_c.createModule(),
+				},
+			}
 		}),
 	});
 	zuil_app.root_module.addImport("zuilcore", zuil_core.root_module);
 	zuil_app.root_module.addImport("widgets", zuil_widgets.root_module);
-
-	zuil_app.root_module.addImport("glfw", glfw.module("root"));
-	zuil_app.root_module.linkLibrary(glfw.artifact("glfw"));
 	zuil_app.root_module.addImport("opengl", opengl.module("root"));
 
 	b.installArtifact(zuil_app);

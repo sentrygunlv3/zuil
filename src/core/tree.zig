@@ -25,9 +25,9 @@ pub const ZWidgetTree = struct {
 	root: ?*widget.ZWidget = undefined,
 	content_alignment: types.ZAlign = .default,
 	display_size: struct {x: f32 = 0, y: f32 = 0} = .{},
-	scaling: struct {x: f32 = 0, y: f32 = 0} = .{},
+	scaling: f32,
 
-	pub fn init(physical: struct {w: f32, h: f32}, scaling: struct {w: f32, h: f32}, root_widget: ?*widget.ZWidget, context: *root.ZContext) !*@This() {
+	pub fn init(physical: struct {w: f32, h: f32}, scaling: f32, root_widget: ?*widget.ZWidget, context: *root.ZContext) !*@This() {
 		const self = try context.allocator.create(@This());
 		errdefer self.deinit();
 
@@ -37,7 +37,7 @@ pub const ZWidgetTree = struct {
 			.context = context,
 			.arena = std.heap.ArenaAllocator.init(context.allocator),
 			.display_size = .{.x = physical.w, .y = physical.h},
-			.scaling = .{.x = scaling.w, .y = scaling.h},
+			.scaling = scaling,
 		};
 		errdefer self.key_events.deinit(context.allocator);
 		errdefer self.arena.deinit();
@@ -121,12 +121,12 @@ pub const ZWidgetTree = struct {
 		self.flags.layout_dirty = false;
 	}
 
-	pub fn render(self: *@This()) anyerror!void {
+	pub fn render(self: *@This(), user: *anyopaque) anyerror!void {
 		defer _ = self.arena.reset(.retain_capacity);
 		if (self.root) |r| {
 			var commands = try root.context.RenderCommandList.init(self.arena.allocator());
 
-			var area = if (self.flags.render_dirty_full) null else self.dirty;
+			const area = if (self.flags.render_dirty_full) null else self.dirty;
 
 			try r.render(
 				self,
@@ -136,16 +136,15 @@ pub const ZWidgetTree = struct {
 			self.context.log(.debug, "area: {} flags: {}", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero, self.flags});
 			self.context.log(.debug, "total commands: {}", .{commands.commands.items.len});
 
-			// TODO: move to opengl backend/app module
-			if (area != null) {
-				// to opengl coordinates
-				area.?.y = self.getBounds().h - area.?.h - area.?.y;
-			}
-			self.context.clip(area);
+			self.context.renderBegin(user);
+
+			self.context.clip(area, self.getBounds());
 			self.context.clear(self.context.theme.background);
-			try self.context.renderCommands(&commands);
+			try self.context.renderCommands(user, &commands);
 		}
-		self.context.clip(null);
+		self.context.clip(null, self.getBounds());
+
+		self.context.renderEnd(user);
 
 		self.flags.render_dirty = false;
 		self.flags.render_dirty_full = false;

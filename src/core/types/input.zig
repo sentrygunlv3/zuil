@@ -29,6 +29,7 @@ pub const ZKey = enum(u32) {
 };
 
 pub const ZMouseKey = enum(u32) {
+	unknown = 0,
 	right,
 	middle,
 	left,
@@ -39,7 +40,7 @@ pub const ZMouseKey = enum(u32) {
 	eight,
 };
 
-pub const ZAction = enum(u16) {
+pub const ZAction = enum(u8) {
 	press,
 	hold,
 	release,
@@ -68,6 +69,7 @@ pub const ZKeyEvent = struct {
 
 pub const ZMouseEvent = struct {
 	key: ZMouseKey,
+	clicks: u8,
 	modifiers: ZModifiers,
 	action: ZAction,
 	x: f32,

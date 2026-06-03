@@ -57,23 +57,20 @@ pub const ZUnit = union(enum) {
 
 	pub fn asPixel(self: *@This(), vertical: bool, space: ZBounds, window: *root.tree.ZWidgetTree) f32 {
 		var physical_size: f32 = 0;
-		var scaling: f32 = 0;
 		var space_size: f32 = 0;
 
 		if (vertical) {
 			physical_size = window.display_size.y;
-			scaling = window.scaling.y;
 			space_size = space.h;
 		} else {
 			physical_size = window.display_size.x;
-			scaling = window.scaling.x;
 			space_size = space.w;
 		}
 
 		return switch (self.*) {
 			.pixel => self.pixel,
 			.percentage => self.percentage * space_size,
-			.dp => self.dp * scaling,
+			.dp => self.dp * window.scaling,
 			.mm => self.mm * physical_size,
 		};
 	}

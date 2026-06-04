@@ -1,40 +1,63 @@
 const std = @import("std");
 const root = @import("root.zig");
 
-pub const ZRenderer = struct {
-	resourceRemoveUser: *const fn (resource: *root.context.ResourceHandle) anyerror!void,
-	resourcesUpdate: *const fn () void,
-	clip: *const fn (area: ?root.types.ZBounds, bounds: root.types.ZBounds) void,
-	clear: *const fn (color: root.color.ZColor) void,
-	renderBegin: *const fn (user: *anyopaque) void,
-	renderEnd: *const fn (user: *anyopaque) void,
-	renderCommands: *const fn (user: *anyopaque, commands: *RenderCommandList) anyerror!void,
-	createTexture: *const fn (bitmap: *root.ZBitmap) anyerror!root.context.TextureHandle,
-	createShader: *const fn (v: []const u8, f: []const u8) anyerror!root.context.ShaderHandle,
-	createMesh: *const fn (mesh: *const root.mesh.ZMesh) anyerror!root.context.MeshHandle,
-};
+/// this will become a painter api type system but currently just uses the old ZRenderer system
+pub const ZPainter = struct {
+	ptr: *anyopaque,
+	vtable: *const VTable,
 
-pub const RenderCommandList = struct {
-	allocator: std.mem.Allocator,
-	commands: std.ArrayList(RenderCommand),
+	pub const VTable = struct {
+		resourceRemoveUser: *const fn (self: *anyopaque, resource: *root.context.ResourceHandle) anyerror!void,
+		resourcesUpdate: *const fn (self: *anyopaque, ) void,
 
-	pub fn init(a: std.mem.Allocator) !@This() {
-		return .{
-			.allocator = a,
-			.commands = try std.ArrayList(RenderCommand).initCapacity(a, 16),
-		};
+		renderBegin: *const fn (self: *anyopaque) void,
+		addCommand: *const fn (self: *anyopaque, command: RenderCommand) anyerror!void,
+		renderCommands: *const fn (self: *anyopaque) anyerror!void,
+		renderEnd: *const fn (self: *anyopaque) void,
+
+		clip: *const fn (self: *anyopaque, area: ?root.types.ZBounds, bounds: root.types.ZBounds) void,
+		clear: *const fn (self: *anyopaque, color: root.color.ZColor) void,
+		createTexture: *const fn (self: *anyopaque, bitmap: *root.ZBitmap) anyerror!root.context.TextureHandle,
+		createMesh: *const fn (self: *anyopaque, mesh: *const root.mesh.ZMesh) anyerror!root.context.MeshHandle,
+	};
+
+	pub const Material = enum {
+		container,
+		bitmap,
+		font,
+	};
+
+	pub fn cast(self: *@This(), comptime T: type) ?*T {
+		if (self.vtable != &T.vtable) return null;
+		return @as(*T, @alignCast(@ptrCast(self.ptr)));
 	}
 
-	pub fn append(
+	pub fn resourceRemoveUser(self: *@This(), resource: *root.context.ResourceHandle) anyerror!void {
+		try self.vtable.resourceRemoveUser(self.ptr, resource);
+	}
+
+	pub fn resourcesUpdate(self: *@This()) void {
+		self.vtable.resourcesUpdate(self.ptr);
+	}
+
+	pub fn renderBegin(self: *@This()) void {
+		self.vtable.renderBegin(self.ptr);
+	}
+
+	pub fn addCommand(
 		self: *@This(),
-		shader: root.context.ShaderHandle,
+		allocator: std.mem.Allocator,
+		shader: Material,
 		mesh: ?root.context.MeshHandle,
 		texturers: []const TextureParameter,
 		parameters: []const ShaderParameter
 	) !void {
-		const p = try self.allocator.alloc(ShaderParameter, parameters.len);
+		const p = try allocator.alloc(ShaderParameter, parameters.len);
+		errdefer allocator.free(p);
 		@memcpy(p, parameters);
-		const t = try self.allocator.alloc(TextureParameter, texturers.len);
+
+		const t = try allocator.alloc(TextureParameter, texturers.len);
+		errdefer allocator.free(t);
 		@memcpy(t, texturers);
 
 		const item = RenderCommand{
@@ -44,14 +67,38 @@ pub const RenderCommandList = struct {
 			.mesh = mesh,
 		};
 
-		try self.commands.append(self.allocator, item);
+		try self.vtable.addCommand(self.ptr, item);
+	}
+
+	pub fn renderCommands(self: *@This()) anyerror!void {
+		try self.vtable.renderCommands(self.ptr);
+	}
+
+	pub fn renderEnd(self: *@This()) void {
+		self.vtable.renderEnd(self.ptr);
+	}
+
+	pub fn clip(self: *@This(), area: ?root.types.ZBounds, bounds: root.types.ZBounds) void {
+		self.vtable.clip(self.ptr, area, bounds);
+	}
+
+	pub fn clear(self: *@This(), color: root.color.ZColor) void {
+		self.vtable.clear(self.ptr, color);
+	}
+
+	pub fn createTexture(self: *@This(), bitmap: *root.ZBitmap) anyerror!root.context.TextureHandle {
+		return try self.vtable.createTexture(self.ptr, bitmap);
+	}
+
+	pub fn createMesh(self: *@This(), mesh: *const root.mesh.ZMesh) anyerror!root.context.MeshHandle {
+		return try self.vtable.createMesh(self.ptr, mesh);
 	}
 };
 
 pub const RenderCommand = struct {
-	shader: root.context.ShaderHandle,
+	shader: ZPainter.Material,
 	parameters: []ShaderParameter,
-	mesh: ?root.context.ResourceHandle = null,
+	mesh: ?root.context.MeshHandle = null,
 	textures: []TextureParameter,
 };
 

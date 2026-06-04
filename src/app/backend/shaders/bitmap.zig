@@ -1,9 +1,4 @@
-const std = @import("std");
-const root = @import("../root.zig");
-
-const name = "bitmap";
-
-const vertex =
+pub const vertex =
 	\\#version 400 core
 	\\
 	\\layout (location = 0) in vec2 posIn;
@@ -24,7 +19,7 @@ const vertex =
 	\\}
 ;
 
-const fragment =
+pub const fragment =
 	\\#version 400 core
 	\\
 	\\in vec2 texCoord;
@@ -37,14 +32,3 @@ const fragment =
 	\\    FragColor = texture(tex0, texCoord);
 	\\}
 ;
-
-pub fn register(c: *root.zuil.ZContext) void {
-	c.registerShader(
-		c,
-		name,
-		vertex,
-		fragment
-	) catch |e| {
-		std.log.err("failed to register shader \"{s}\": {}", .{name, e});
-	};
-}

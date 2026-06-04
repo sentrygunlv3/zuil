@@ -32,7 +32,9 @@ pub const ZContainer = struct {
 		const self: *@This() = widget.as(@This());
 
 		if (self.child) |c| {
-			c.exitTreeExceptParent(context);
+			c.exitTreeExceptParent() catch {
+				context.log(.warning, "{} not in tree but still child of {}", .{c, self});
+			};
 			c.deinit(context);
 		}
 		context.allocator.destroy(self);
@@ -41,7 +43,6 @@ pub const ZContainer = struct {
 	pub fn render(
 		widget: *ZWidget,
 		tree: *zuil.tree.ZWidgetTree,
-		commands: *zuil.context.RenderCommandList,
 		area: ?types.ZBounds
 	) !void {
 		const self: *@This() = widget.as(@This());
@@ -80,8 +81,9 @@ pub const ZContainer = struct {
 			const posx = (widget.clamped_bounds.x / window_size.w) * 2.0;
 			const posy = (widget.clamped_bounds.y / window_size.h) * 2.0;
 
-			try commands.append(
-				try tree.context.getShader("container"),
+			try tree.painter.addCommand(
+				tree.context.allocator,
+				.container,
 				null,
 				&[0]zuil.context.TextureParameter{},
 				&[_]zuil.context.ShaderParameter{
@@ -124,7 +126,7 @@ pub const ZContainer = struct {
 		}
 
 		if (self.child) |child| {
-			try child.render(tree, commands, if (area != null) area.? else null);
+			try child.render(tree, if (area != null) area.? else null);
 		}
 	}
 

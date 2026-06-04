@@ -37,21 +37,20 @@ pub const ZIcon = struct {
 			return;
 		};
 		defer bitmap.deinit(widget.window.?.context.allocator);
-		self.resource = widget.window.?.context.createTexture(&bitmap) catch {
+		self.resource = widget.window.?.painter.createTexture(&bitmap) catch {
 			return;
 		};
 	}
 
-	pub fn exitTree(widget: *ZWidget, context: *zuil.context.ZContext) void {
+	pub fn exitTree(widget: *ZWidget) void {
 		const self: *@This() = widget.as(@This());
 
-		self.resource.deinit(context);
+		widget.window.?.painter.resourceRemoveUser(&self.resource) catch return;
 	}
 
 	pub fn render(
 		widget: *ZWidget,
 		tree: *zuil.tree.ZWidgetTree,
-		commands: *zuil.context.RenderCommandList,
 		area: ?types.ZBounds
 	) !void {
 		const self: *@This() = widget.as(@This());
@@ -65,8 +64,9 @@ pub const ZIcon = struct {
 		const posx = (widget.clamped_bounds.x / window_size.w) * 2.0;
 		const posy = (widget.clamped_bounds.y / window_size.h) * 2.0;
 
-		try commands.append(
-			try tree.context.getShader("bitmap"),
+		try tree.painter.addCommand(
+			tree.context.allocator,
+			.bitmap,
 			null,
 			&[_]zuil.context.TextureParameter{
 				.{

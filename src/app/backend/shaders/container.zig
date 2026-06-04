@@ -1,9 +1,4 @@
-const std = @import("std");
-const root = @import("../root.zig");
-
-const name = "container";
-
-const vertex =
+pub const vertex =
 	\\#version 400 core
 	\\
 	\\layout (location = 0) in vec2 posIn;
@@ -25,7 +20,7 @@ const vertex =
 
 // TODO: probably not the best shader
 // a better one could have different radius per corner and a border
-const fragment =
+pub const fragment =
 	\\#version 400 core
 	\\
 	\\uniform vec2 size;
@@ -52,14 +47,3 @@ const fragment =
 	\\    );
 	\\}
 ;
-
-pub fn register(c: *root.zuil.ZContext) void {
-	c.registerShader(
-		c,
-		name,
-		vertex,
-		fragment
-	) catch |e| {
-		std.log.err("failed to register shader \"{s}\": {}", .{name, e});
-	};
-}

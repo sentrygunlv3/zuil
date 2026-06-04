@@ -8,6 +8,7 @@ const types = root.types;
 pub const ZWidgetTree = struct {
 	arena: std.heap.ArenaAllocator = undefined,
 	context: *root.ZContext = undefined,
+	painter: *root.context.ZPainter,
 	// --- input
 	key_events: std.ArrayList(input.ZEvent) = undefined,
 	focused_widget: ?*widget.ZWidget = null,
@@ -27,7 +28,7 @@ pub const ZWidgetTree = struct {
 	display_size: struct {x: f32 = 0, y: f32 = 0} = .{},
 	scaling: f32,
 
-	pub fn init(physical: struct {w: f32, h: f32}, scaling: f32, root_widget: ?*widget.ZWidget, context: *root.ZContext) !*@This() {
+	pub fn init(physical: struct {w: f32, h: f32}, scaling: f32, root_widget: ?*widget.ZWidget, context: *root.ZContext, painter: *root.context.ZPainter) !*@This() {
 		const self = try context.allocator.create(@This());
 		errdefer self.deinit();
 
@@ -35,6 +36,7 @@ pub const ZWidgetTree = struct {
 			.key_events = try std.ArrayList(input.ZEvent).initCapacity(context.allocator, 0),
 			.root = root_widget,
 			.context = context,
+			.painter = painter,
 			.arena = std.heap.ArenaAllocator.init(context.allocator),
 			.display_size = .{.x = physical.w, .y = physical.h},
 			.scaling = scaling,
@@ -121,35 +123,31 @@ pub const ZWidgetTree = struct {
 		self.flags.layout_dirty = false;
 	}
 
-	pub fn render(self: *@This(), user: *anyopaque) anyerror!void {
+	pub fn render(self: *@This()) anyerror!void {
 		defer _ = self.arena.reset(.retain_capacity);
 		if (self.root) |r| {
-			var commands = try root.context.RenderCommandList.init(self.arena.allocator());
-
 			const area = if (self.flags.render_dirty_full) null else self.dirty;
 
 			try r.render(
 				self,
-				&commands,
 				area
 			);
 			self.context.log(.debug, "area: {} flags: {}", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero, self.flags});
-			self.context.log(.debug, "total commands: {}", .{commands.commands.items.len});
 
-			self.context.renderBegin(user);
+			self.painter.renderBegin();
 
-			self.context.clip(area, self.getBounds());
-			self.context.clear(self.context.theme.background);
-			try self.context.renderCommands(user, &commands);
+			self.painter.clip(area, self.getBounds());
+			self.painter.clear(self.context.theme.background);
+			try self.painter.renderCommands();
 		}
-		self.context.clip(null, self.getBounds());
+		self.painter.clip(null, self.getBounds());
 
-		self.context.renderEnd(user);
+		self.painter.renderEnd();
 
 		self.flags.render_dirty = false;
 		self.flags.render_dirty_full = false;
 		self.dirty = null;
 
-		self.context.resourcesUpdate();
+		self.painter.resourcesUpdate();
 	}
 };

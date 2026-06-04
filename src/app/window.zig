@@ -9,7 +9,7 @@ const types = root.ZuilCore.types;
 pub const ZWindow = struct {
 	window: *c.SDL_Window = undefined,
 	tree: *root.ZuilCore.tree.ZWidgetTree = undefined,
-	backend_data: *anyopaque = undefined,
+	painter: root.ZuilCore.context.ZPainter = undefined,
 	input_handler: ?*const fn (self: *@This(), event: input.ZEvent) bool = null,
 
 	posx: f32 = 0,
@@ -18,6 +18,8 @@ pub const ZWindow = struct {
 	pub fn init(width: u32, height: u32, title: [:0]const u8, root_widget: ?*widget.ZWidget) !*@This() {
 		const self = try root.allocator.create(@This());
 		errdefer self.deinit();
+
+		self.* = .{};
 
 		try root.backend.createWindow(self, width, height, title);
 		errdefer root.backend.destroyWindow(self);
@@ -38,7 +40,8 @@ pub const ZWindow = struct {
 			.{.w = 1, .h = 1},
 			scaling,
 			root_widget,
-			root.context
+			root.context,
+			&self.painter,
 		);
 
 		var w: c_int = 0;
@@ -56,7 +59,7 @@ pub const ZWindow = struct {
 	}
 
 	pub fn deinit(self: *@This()) void {
-		if (root.main_window == self) root.main_window = null;
+		if (root.main_window == .set and root.main_window.set == self) root.main_window = .{ .set = null };
 		self.tree.deinit();
 		_ = root.windows.remove(@intCast(c.SDL_GetWindowID(self.window)));
 		root.backend.destroyWindow(self);
@@ -144,7 +147,7 @@ pub const ZWindow = struct {
 		if (self.tree.flags.layout_dirty or self.tree.flags.render_dirty) {
 			root.context.log(.debug, "--- process render ---", .{});
 
-			try self.tree.render(@ptrCast(self));
+			try self.tree.render();
 		}
 		return true;
 	}

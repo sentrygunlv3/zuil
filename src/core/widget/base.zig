@@ -57,26 +57,27 @@ pub const ZWidget = struct {
 	}
 
 	/// removes references from everything in the tree except the parent widget
-	pub fn exitTreeExceptParent(self: *@This(), context: *root.context.ZContext) void {
+	pub fn exitTreeExceptParent(self: *@This()) !void {
+		if (self.window == null) return error.NotInTree;
+
 		if (self.fi.exitTree) |func| {
-			func(self, context);
+			func(self);
 		}
-		if (self.window) |window| {
-			if (window.focused_widget == self) {
-				window.focused_widget = null;
-			}
-			if (window.last_hover == self) {
-				window.focused_widget = null;
-			}
-			self.setWindow(null);
+
+		if (self.window.?.focused_widget == self) {
+			self.window.?.focused_widget = null;
 		}
+		if (self.window.?.last_hover == self) {
+			self.window.?.focused_widget = null;
+		}
+		self.window = null;
 	}
 
-	pub fn exitTree(self: *@This(), context: *root.context.ZContext) void {
-		self.exitTreeExceptParent(context);
+	pub fn exitTree(self: *@This()) !void {
+		try self.exitTreeExceptParent();
 		if (self.parent != null) {
 			self.parent.?.removeChild(self) catch |e| {
-				context.log(.err, "exit tree: {}", .{e});
+				self.window.?.context.log(.err, "exit tree: {}", .{e});
 			};
 			self.parent = null;
 		}
@@ -84,7 +85,7 @@ pub const ZWidget = struct {
 
 	pub fn destroy(self: *@This()) !void {
 		if (self.window) |tree| {
-			self.exitTree(tree.context);
+			try self.exitTree();
 			self.deinit(tree.context);
 			return;
 		}
@@ -135,7 +136,7 @@ pub const ZWidget = struct {
 		return false;
 	}
 
-	pub fn asSafe(self: *@This(), comptime T: type) ?*T {
+	pub fn cast(self: *@This(), comptime T: type) ?*T {
 		if (self.fi != &T.vtable) return null;
 		return @as(*T, @alignCast(@fieldParentPtr("super", self)));
 	}
@@ -156,12 +157,12 @@ pub const ZWidget = struct {
 		}
 	}
 
-	pub fn render(self: *@This(), tree: *root.tree.ZWidgetTree, commands: *root.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
+	pub fn render(self: *@This(), tree: *root.tree.ZWidgetTree, area: ?types.ZBounds) anyerror!void {
 		tree.context.log(.debug, "{*} - {s}", .{self, self.getName()});
 		tree.context.log(.debug, "bounds: {}", .{self.clamped_bounds});
 
 		if (self.fi.render) |func| {
-			try func(self, tree, commands, if (area != null) area.? else null);
+			try func(self, tree, if (area != null) area.? else null);
 		}
 	}
 

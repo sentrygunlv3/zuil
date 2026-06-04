@@ -27,7 +27,9 @@ pub const ZList = struct {
 		const self: *@This() = widget.as(@This());
 
 		for (self.children.items) |c| {
-			c.exitTreeExceptParent(context);
+			c.exitTreeExceptParent() catch {
+				context.log(.warning, "{} not in tree but still child of {}", .{c, self});
+			};
 			c.deinit(context);
 		}
 		self.children.deinit(context.allocator);

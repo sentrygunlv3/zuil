@@ -37,7 +37,6 @@ pub const ZText = struct {
 	pub fn render(
 		widget: *ZWidget,
 		tree: *zuil.tree.ZWidgetTree,
-		commands: *zuil.context.RenderCommandList,
 		area: ?types.ZBounds
 	) !void {
 		const self: *@This() = widget.as(@This());
@@ -69,7 +68,7 @@ pub const ZText = struct {
 		const widget_context: *root.ZWidgetContext = @ptrCast(@alignCast(w));
 
 		const font = widget_context.fonts.get("firesans") orelse return;
-		const texture = try widget_context.getFontTexture(tree.context, font);
+		const texture = try widget_context.getFontTexture(tree.painter, font);
 
 		const window_size = tree.getBounds();
 
@@ -157,13 +156,14 @@ pub const ZText = struct {
 			advance += (@as(f32, @floatFromInt(glyph_pos[i].x_advance)) / 64) * sizew;
 		}
 
-		var mesh_handle = try tree.context.createMesh(&mesh.build());
-		try tree.context.resourceRemoveUser(&mesh_handle);
+		var mesh_handle = try tree.painter.createMesh(&mesh.build());
+		try tree.painter.resourceRemoveUser(&mesh_handle);
 
 		const color = self.color orelse style.decoration.on_surface;
 
-		try commands.append(
-			try tree.context.getShader("font"),
+		try tree.painter.addCommand(
+			tree.context.allocator,
+			.font,
 			mesh_handle,
 			&[_]zuil.context.TextureParameter{
 				.{

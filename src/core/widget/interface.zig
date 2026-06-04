@@ -16,7 +16,7 @@ pub const ZWidgetFI = struct {
 	deinit: *const fn (self: *ZWidget, context: *root.context.ZContext) void,
 
 	enterTree: ?*const fn (self: *ZWidget) void = null,
-	exitTree: ?*const fn (self: *ZWidget, context: *root.context.ZContext) void = null,
+	exitTree: ?*const fn (self: *ZWidget) void = null,
 
 	/// bottom to top
 	updatePreferredSize: ?*const fn (self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!void = updatePreferredSize,
@@ -25,7 +25,7 @@ pub const ZWidgetFI = struct {
 	/// top to bottom
 	updatePosition: ?*const fn (self: *ZWidget, dirty: bool, w: f32, h: f32) anyerror!void = updatePosition,
 
-	render: ?*const fn (self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *root.context.RenderCommandList, area: ?types.ZBounds) anyerror!void = render,
+	render: ?*const fn (self: *ZWidget, window: *root.tree.ZWidgetTree, area: ?types.ZBounds) anyerror!void = render,
 
 	isOverPoint: ?*const fn (self: *ZWidget, x: f32, y: f32, parent_outside: bool) ?*ZWidget = isOverPoint,
 	event: ?*const fn (self: *ZWidget, event: root.input.ZEvent) void = null,
@@ -79,10 +79,10 @@ pub const ZWidgetFI = struct {
 	}
 };
 
-pub fn render(self: *ZWidget, window: *root.tree.ZWidgetTree, commands: *root.context.RenderCommandList, area: ?types.ZBounds) anyerror!void {
+pub fn render(self: *ZWidget, window: *root.tree.ZWidgetTree, area: ?types.ZBounds) anyerror!void {
 	const children = self.getChildren() orelse return;
 	for (children) |child| {
-		try child.render(window, commands, if (area != null) area.? else null);
+		try child.render(window, if (area != null) area.? else null);
 	}
 }
 

@@ -17,8 +17,6 @@ pub fn main(init: std.process.Init) anyerror!void {
 	zuil.assets.init(alloc);
 	defer zuil.assets.deinit();
 
-	zuil.app.createContext = &zuil.widgets.registerShader;
-
 	try zuil.app.init(alloc, init.io, theme);
 	defer zuil.app.deinit();
 
@@ -172,7 +170,7 @@ pub fn main(init: std.process.Init) anyerror!void {
 		topBar(root),
 	);
 	window.input_handler = processInput;
-	zuil.app.main_window = window;
+	zuil.app.main_window = .{.set = window};
 
 	const font = try zuil.widgets.font.ttfToFont(zuil.app.context, try zuil.assets.getAsset("firesans.ttf"), 0, 0);
 	const w = zuil.app.context.getSubcontext(zuil.widgets.NAME) orelse {
@@ -237,7 +235,7 @@ fn containerClick(self: *zuil.widgets.zbutton.ZButton, event: zuil.core.input.ZM
 	self.super.markDirtyRender();
 
 	if (self.child) |child| {
-		const text = child.asSafe(widgets.ztext.ZText) orelse return;
+		const text = child.cast(widgets.ztext.ZText) orelse return;
 
 		if (text.text != null) {
 			self.super.window.?.context.allocator.free(text.text.?);

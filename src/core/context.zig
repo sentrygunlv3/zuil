@@ -2,24 +2,16 @@ const std = @import("std");
 const root = @import("root.zig");
 const zrenderer = @import("renderer.zig");
 
-pub const RenderCommandList = zrenderer.RenderCommandList;
 pub const RenderCommand = zrenderer.RenderCommand;
 pub const TextureParameter = zrenderer.TextureParameter;
 pub const ShaderParameter = zrenderer.ShaderParameter;
-pub const ZRenderer = zrenderer.ZRenderer;
+pub const ZPainter = zrenderer.ZPainter;
 
 pub const MeshHandle = ResourceHandle;
 pub const TextureHandle = ResourceHandle;
-pub const ShaderHandle = ResourceHandle;
 
 pub const ResourceHandle = struct {
 	resource: *anyopaque,
-
-	pub fn deinit(self: *@This(), context: *root.ZContext) void {
-		context.resourceRemoveUser(self) catch |e| {
-			context.log(.err, "resource ({*}) {}", .{self, e});
-		};
-	}
 };
 
 pub const LogType = enum(u8) {
@@ -56,20 +48,17 @@ pub const ZContext = struct {
 	external: struct {
 		log: *const fn (t: LogType, string: []const u8) void = log_default,
 	},
-	renderer: *const zrenderer.ZRenderer,
 
 	theme: *root.Theme,
 
 	subcontext_hashmap: std.StringHashMap(Subcontext),
-
-	shaders: std.StringHashMap(ShaderHandle),
 
 	pub const Subcontext = struct {
 		ptr: *anyopaque,
 		func_deinit: *const fn (self: *anyopaque, context: *ZContext) void,
 	};
 
-	pub fn init(allocator: std.mem.Allocator, io: std.Io, renderer: *const zrenderer.ZRenderer, theme: *root.Theme) !*@This() {
+	pub fn init(allocator: std.mem.Allocator, io: std.Io, theme: *root.Theme) !*@This() {
 		const self = try allocator.create(@This());
 		errdefer self.allocator.destroy(self);
 
@@ -77,14 +66,10 @@ pub const ZContext = struct {
 			.allocator = allocator,
 			.io = io,
 			.external = .{},
-			.renderer = renderer,
 			.theme = theme,
 			.subcontext_hashmap = .init(allocator),
-
-			.shaders = .init(allocator),
 		};
 		errdefer self.subcontext_hashmap.deinit();
-		errdefer self.shaders.deinit();
 
 		return self;
 	}
@@ -97,16 +82,6 @@ pub const ZContext = struct {
 
 		self.subcontext_hashmap.deinit();
 
-		var shader_it = self.shaders.iterator();
-		while (shader_it.next()) |entry| {
-			self.renderer.resourceRemoveUser(entry.value_ptr) catch |e| {
-				self.log(.err, "failed to deinit shader: {}", .{e});
-			};
-		}
-		self.shaders.deinit();
-
-		self.renderer.resourcesUpdate();
-
 		self.allocator.destroy(self);
 	}
 
@@ -118,60 +93,6 @@ pub const ZContext = struct {
 		var buffer: [256]u8 = undefined;
 		const string = std.fmt.bufPrintZ(&buffer, fmt, args) catch return;
 		self.external.log(t, string);
-	}
-
-	pub fn resourceRemoveUser(self: *@This(), resource: *ResourceHandle) anyerror!void {
-		try self.renderer.resourceRemoveUser(resource);
-	}
-
-	pub fn resourcesUpdate(self: *@This()) void {
-		self.renderer.resourcesUpdate();
-	}
-
-	pub fn clip(self: *@This(), area: ?root.types.ZBounds, bounds: root.types.ZBounds) void {
-		self.renderer.clip(area, bounds);
-	}
-
-	pub fn clear(self: *@This(), color: root.color.ZColor) void {
-		self.renderer.clear(color);
-	}
-
-	pub fn renderBegin(self: *@This(), user: *anyopaque) void {
-		self.renderer.renderBegin(user);
-	}
-
-	pub fn renderEnd(self: *@This(), user: *anyopaque) void {
-		self.renderer.renderEnd(user);
-	}
-
-	pub fn renderCommands(self: *@This(), user: *anyopaque, commands: *zrenderer.RenderCommandList) anyerror!void {
-		try self.renderer.renderCommands(user, commands);
-	}
-
-	pub fn createTexture(self: *@This(), bitmap: *root.ZBitmap) anyerror!TextureHandle {
-		return try self.renderer.createTexture(bitmap);
-	}
-
-	pub fn createShader(self: *@This(), v: []const u8, f: []const u8) !ShaderHandle {
-		return try self.renderer.createShader(v, f);
-	}
-
-	pub fn createMesh(self: *@This(), mesh: *const root.mesh.ZMesh) anyerror!MeshHandle {
-		return try self.renderer.createMesh(mesh);
-	}
-
-	pub fn getShader(self: *@This(), name: []const u8) !ShaderHandle {
-		const handle = self.shaders.get(name);
-		if (handle) |s| {
-			return s;
-		}
-		return root.ZError.MissingShader;
-	}
-
-	pub fn registerShader(self: *@This(), context: *@This(), name: []const u8, v: []const u8, f: []const u8) !void {
-		const handle = try context.createShader(v, f);
-
-		try self.shaders.put(name, handle);
 	}
 
 	pub fn putSubcontext(self: *@This(), key: []const u8, style: Subcontext) !void {

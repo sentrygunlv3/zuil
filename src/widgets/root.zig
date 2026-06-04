@@ -11,16 +11,22 @@ pub const font = @import("helpers/font.zig");
 pub const NAME = "ZWidgets";
 
 pub const ZWidgetContext = struct {
+	context: *zuil.ZContext,
 	freetype: c.FT_Library = undefined,
 
 	fonts: std.StringHashMapUnmanaged(*font.ZFont),
-	font_textures: std.AutoHashMap(*font.ZFont, zuil.context.TextureHandle),
+	font_textures: std.AutoHashMap(*anyopaque, *PainterData),
+
+	pub const PainterData = struct {
+		font_textures: std.AutoHashMap(*font.ZFont, zuil.context.TextureHandle),
+	};
 
 	pub fn init(context: *zuil.ZContext) !*@This() {
 		const self = try context.allocator.create(@This());
 		errdefer context.allocator.destroy(self);
 
 		self.* = .{
+			.context = context,
 			.fonts = .empty,
 			.font_textures = .init(context.allocator),
 		};
@@ -40,12 +46,6 @@ pub const ZWidgetContext = struct {
 		}
 		self.fonts.deinit(context.allocator);
 
-		var ftex_it = self.font_textures.iterator();
-		while (ftex_it.next()) |entry| {
-			context.renderer.resourceRemoveUser(entry.value_ptr) catch |e| {
-				context.log(.err, "failed to deinit font texture: {}", .{e});
-			};
-		}
 		self.font_textures.deinit();
 
 		_ = c.FT_Done_FreeType(self.freetype);
@@ -53,13 +53,20 @@ pub const ZWidgetContext = struct {
 		context.allocator.destroy(self);
 	}
 
-	pub fn getFontTexture(self: *@This(), context: *zuil.ZContext, f: *font.ZFont) !zuil.context.TextureHandle {
-		if (self.font_textures.get(f)) |s| {
-			return s;
+	pub fn getFontTexture(self: *@This(), painter: *zuil.context.ZPainter, f: *font.ZFont) !zuil.context.TextureHandle {
+		if (self.font_textures.get(painter)) |s| {
+			return s.font_textures.get(f) orelse return error.noFont;
 		}
-		var handle = try context.createTexture(&f.texture);
-		errdefer context.resourceRemoveUser(&handle) catch {};
-		try self.font_textures.put(f, handle);
+		var handle = try painter.createTexture(&f.texture);
+		errdefer painter.resourceRemoveUser(&handle) catch {};
+
+		var d = self.font_textures.get(painter.ptr);
+		if (d == null) {
+			d = try self.context.allocator.create(PainterData);
+			d.?.font_textures = .init(self.context.allocator);
+		}
+
+		try d.?.font_textures.put(f, handle);
 		return handle;
 	}
 };
@@ -77,12 +84,6 @@ pub fn register(context: *zuil.ZContext) anyerror!void {
 		.ptr = subcontext,
 		.func_deinit = &deinitContext,
 	});
-}
-
-pub fn registerShader(context: *zuil.ZContext) anyerror!void {
-	@import("shaders/container.zig").register(context);
-	@import("shaders/bitmap.zig").register(context);
-	@import("shaders/font.zig").register(context);
 }
 
 fn buildFunc(T: type) fn (context: *zuil.context.ZContext) *T {

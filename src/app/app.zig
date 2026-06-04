@@ -14,31 +14,31 @@ pub var allocator: std.mem.Allocator = undefined;
 pub var context: *ZuilCore.ZContext = undefined;
 
 pub var windows: std.AutoHashMap(u32, *ZWindow) = undefined;
-pub var main_window: ?*ZWindow = null;
+pub var main_window: union(enum) {
+	// main window was never set
+	not_set: void,
+	// main window was set
+	set: ?*ZWindow,
+} = .not_set;
 
 pub var modifiers = ZuilCore.input.ZModifiers{};
 
-pub var createContext: ?*const fn (context: *ZuilCore.ZContext) anyerror!void = null;
-
 pub const ZAppError = error{
 	NoWindowsCreated,
+	MainWindowSetButNull,
 	SDLError,
 };
 
 pub fn init(a: std.mem.Allocator, io: std.Io, theme: *ZuilCore.Theme) !void {
 	allocator = a;
 
-	context = try ZuilCore.ZContext.init(allocator, io, &backend.ZRenderFIOpengl, theme);
+	context = try ZuilCore.ZContext.init(allocator, io, theme);
 
 	c.SDL_SetLogOutputFunction(errorCallback, null);
 
 	if (!c.SDL_Init(c.SDL_INIT_VIDEO)) return ZAppError.SDLError;
 
 	try backend.init();
-
-	if (createContext) |func| {
-		try func(context);
-	}
 
 	windows = .init(allocator);
 
@@ -55,13 +55,12 @@ pub fn deinit() void {
 }
 
 pub fn run() !void {
-	if (windows.count() == 0) {
-		return ZAppError.NoWindowsCreated;
-	}
+	if (windows.count() == 0) return ZAppError.NoWindowsCreated;
+	if (main_window == .set and main_window.set == null) return ZAppError.MainWindowSetButNull;
 
 	var running = true;
 	while (running) {
-		if (main_window == null) {
+		if (main_window == .set and main_window.set == null) {
 			running = false;
 			break;
 		}
@@ -72,7 +71,7 @@ pub fn run() !void {
 				c.SDL_EVENT_WINDOW_CLOSE_REQUESTED => {
 					const window = windows.get(event.window.windowID) orelse continue;
 					window.deinit();
-					if (main_window == null) {
+					if (main_window == .set and main_window.set == null) {
 						running = false;
 						break;
 					}
@@ -154,6 +153,10 @@ pub fn run() !void {
 				break;
 			}
 		}
+	}
+	var iterator = windows.valueIterator();
+	while (iterator.next()) |window| {
+		window.*.deinit();
 	}
 }
 

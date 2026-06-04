@@ -29,7 +29,9 @@ pub const ZPosition = struct {
 		const self: *@This() = widget.as(@This());
 
 		if (self.child) |c| {
-			c.exitTreeExceptParent(context);
+			c.exitTreeExceptParent() catch {
+				context.log(.warning, "{} not in tree but still child of {}", .{c, self});
+			};
 			c.deinit(context);
 		}
 		context.allocator.destroy(self);

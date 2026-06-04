@@ -27,22 +27,6 @@ using `sdl3`, `zopengl`, `plutosvg`, `harfbuzz` and `freetype` libs
 
 ### current plan
 
-usage (with app module):
-1. core
-   1. init asset registry
-   2. init theme
-2. app
-   1. init app module
-3. widgets
-   1. register widget lib context
-   2. register style to theme
-4. user
-   1. register assets
-   2. init widget tree
-   3. init window
-5. app
-   1. app run
-
 rendering:\
 replace renderer with a painter interface system and allow casting to the actual backend if its a know type for more advanced stuff
 
@@ -95,7 +79,7 @@ there is a test/example project in the `test` directory
 keybinds:
 
 - `space`: change the background color
-- `F1`: spawn a new window (currently broken)
+- `F1`: spawn a new window
 
 ## project structure
 

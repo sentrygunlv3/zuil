@@ -106,6 +106,16 @@ fn compileShader(shader_type: u32, source: []const u8) !u32 {
 }
 
 pub fn deinit() void {
+	_ = c.SDL_GL_MakeCurrent(primary_window, glcontext);
+
+	gl.deleteProgram(container_shader.shader);
+	gl.deleteProgram(bitmap_shader.shader);
+	gl.deleteProgram(font_shader.shader);
+
+	container_shader.locations.deinit();
+	bitmap_shader.locations.deinit();
+	font_shader.locations.deinit();
+
 	c.SDL_DestroyWindow(primary_window);
 	_ = c.SDL_GL_DestroyContext(glcontext);
 }
@@ -168,11 +178,18 @@ pub fn destroyWindow(self: *root.ZWindow) void {
 	gl.deleteTextures(1, &data.render_texture);
 	gl.deleteFramebuffers(1, &data.render_frame);
 
+	for (data.resources.items) |resource| {
+		resource.deinit();
+	}
+	data.resources.deinit(root.allocator);
+
+	data.resources_to_remove.deinit(root.allocator);
+
+	data.commands.deinit(root.allocator);
+
 	const cx = data.context;
 
-	data.resources.deinit(root.allocator);
-	data.resources_to_remove.deinit(root.allocator);
-	data.commands.deinit(root.allocator);
+	root.allocator.destroy(data);
 
 	c.SDL_DestroyWindow(self.window);
 	_ = c.SDL_GL_DestroyContext(cx);
@@ -271,7 +288,7 @@ pub const Resource = struct {
 		root.context.log(.debug, "deleting: {*} - {s}", .{self, @tagName(self.type)});
 		switch (self.type) {
 			.texture => {
-				gl.deleteTextures(1, self.type.texture);
+				gl.deleteTextures(1, &self.type.texture);
 			},
 			.mesh => {
 				gl.deleteVertexArrays(1, &self.type.mesh.vertex_arrays);
@@ -510,6 +527,10 @@ pub const OpenGL = struct {
 
 		_ = c.SDL_GL_SwapWindow(self.window);
 
+		for (self.commands.items) |command| {
+			root.allocator.free(command.parameters);
+			root.allocator.free(command.textures);
+		}
 		self.commands.clearRetainingCapacity();
 	}
 

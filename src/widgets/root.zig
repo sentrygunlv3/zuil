@@ -46,6 +46,11 @@ pub const ZWidgetContext = struct {
 		}
 		self.fonts.deinit(context.allocator);
 
+		var fontt_it = self.font_textures.iterator();
+		while (fontt_it.next()) |entry| {
+			entry.value_ptr.*.font_textures.deinit();
+			context.allocator.destroy(entry.value_ptr.*);
+		}
 		self.font_textures.deinit();
 
 		_ = c.FT_Done_FreeType(self.freetype);
@@ -63,8 +68,13 @@ pub const ZWidgetContext = struct {
 		var d = self.font_textures.get(painter.ptr);
 		if (d == null) {
 			d = try self.context.allocator.create(PainterData);
+			errdefer self.context.allocator.destroy(d.?);
 			d.?.font_textures = .init(self.context.allocator);
+			errdefer d.?.font_textures.deinit();
+			try self.font_textures.put(painter.ptr, d.?);
 		}
+		errdefer self.context.allocator.destroy(d.?);
+		errdefer d.?.font_textures.deinit();
 
 		try d.?.font_textures.put(f, handle);
 		return handle;

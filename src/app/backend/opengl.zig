@@ -6,12 +6,14 @@ const gl = root.gl;
 
 const ZError = root.ZuilCore.errors.ZError;
 
-var glcontext: *c.SDL_GLContextState = undefined;
-var primary_window: *c.SDL_Window = undefined;
+pub const BackendData = struct {
+	glcontext: *c.SDL_GLContextState = undefined,
+	primary_window: *c.SDL_Window = undefined,
 
-var container_shader: Shader = undefined;
-var bitmap_shader: Shader = undefined;
-var font_shader: Shader = undefined;
+	container_shader: Shader = undefined,
+	bitmap_shader: Shader = undefined,
+	font_shader: Shader = undefined,
+};
 
 const Shader = struct {
 	shader: u32,
@@ -28,23 +30,22 @@ const Shader = struct {
 	}
 };
 
-pub fn init() anyerror!void {
+pub fn init(state: *root.State) anyerror!void {
 	_ = c.SDL_GL_SetAttribute(c.SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 	_ = c.SDL_GL_SetAttribute(c.SDL_GL_CONTEXT_MINOR_VERSION, 0);
 	_ = c.SDL_GL_SetAttribute(c.SDL_GL_CONTEXT_PROFILE_MASK, c.SDL_GL_CONTEXT_PROFILE_CORE);
+	_ = c.SDL_GL_SetAttribute(c.SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
-	primary_window = c.SDL_CreateWindow(
+	state.backend_data.primary_window = c.SDL_CreateWindow(
 		"",
 		0,
 		0,
 		c.SDL_WINDOW_OPENGL | c.SDL_WINDOW_HIDDEN
 	) orelse return root.ZAppError.SDLError;
-	errdefer c.SDL_DestroyWindow(primary_window);
+	errdefer c.SDL_DestroyWindow(state.backend_data.primary_window);
 
-	glcontext = c.SDL_GL_CreateContext(primary_window) orelse return root.ZAppError.SDLError;
-	_ = c.SDL_GL_MakeCurrent(primary_window, glcontext);
-
-	_ = c.SDL_GL_SetAttribute(c.SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+	state.backend_data.glcontext = c.SDL_GL_CreateContext(state.backend_data.primary_window) orelse return root.ZAppError.SDLError;
+	_ = c.SDL_GL_MakeCurrent(state.backend_data.primary_window, state.backend_data.glcontext);
 
 	try root.opengl.loadCoreProfile(@ptrCast(&c.SDL_GL_GetProcAddress), 4, 0);
 
@@ -54,22 +55,21 @@ pub fn init() anyerror!void {
 	_ = c.SDL_GL_SetSwapInterval(0);
 
 	const container = @import("shaders/container.zig");
-	container_shader = .{.shader = try createShader(container.vertex, container.fragment)};
-	container_shader.locations = .init(root.allocator);
-	errdefer container_shader.locations.deinit();
+	state.backend_data.container_shader = .{.shader = try createShader(container.vertex, container.fragment)};
+	state.backend_data.container_shader.locations = .init(state.alloc);
+	errdefer state.backend_data.container_shader.locations.deinit();
 
 	const bitmap = @import("shaders/bitmap.zig");
-	bitmap_shader = .{.shader = try createShader(bitmap.vertex, bitmap.fragment)};
-	bitmap_shader.locations = .init(root.allocator);
-	errdefer bitmap_shader.locations.deinit();
+	state.backend_data.bitmap_shader = .{.shader = try createShader(bitmap.vertex, bitmap.fragment)};
+	state.backend_data.bitmap_shader.locations = .init(state.alloc);
+	errdefer state.backend_data.bitmap_shader.locations.deinit();
 
 	const font = @import("shaders/font.zig");
-	font_shader = .{.shader = try createShader(font.vertex, font.fragment)};
-	font_shader.locations = .init(root.allocator);
-	errdefer font_shader.locations.deinit();
+	state.backend_data.font_shader = .{.shader = try createShader(font.vertex, font.fragment)};
+	state.backend_data.font_shader.locations = .init(state.alloc);
+	errdefer state.backend_data.font_shader.locations.deinit();
 
-
-	root.context.log(.info, "using opengl backend", .{});
+	state.context.log(.info, "using opengl backend", .{});
 }
 
 fn createShader(v: []const u8, f: []const u8) !u32 {
@@ -105,28 +105,28 @@ fn compileShader(shader_type: u32, source: []const u8) !u32 {
 	return s;
 }
 
-pub fn deinit() void {
-	_ = c.SDL_GL_MakeCurrent(primary_window, glcontext);
+pub fn deinit(state: *root.State) void {
+	_ = c.SDL_GL_MakeCurrent(state.backend_data.primary_window, state.backend_data.glcontext);
 
-	gl.deleteProgram(container_shader.shader);
-	gl.deleteProgram(bitmap_shader.shader);
-	gl.deleteProgram(font_shader.shader);
+	gl.deleteProgram(state.backend_data.container_shader.shader);
+	gl.deleteProgram(state.backend_data.bitmap_shader.shader);
+	gl.deleteProgram(state.backend_data.font_shader.shader);
 
-	container_shader.locations.deinit();
-	bitmap_shader.locations.deinit();
-	font_shader.locations.deinit();
+	state.backend_data.container_shader.locations.deinit();
+	state.backend_data.bitmap_shader.locations.deinit();
+	state.backend_data.font_shader.locations.deinit();
 
-	c.SDL_DestroyWindow(primary_window);
-	_ = c.SDL_GL_DestroyContext(glcontext);
+	c.SDL_DestroyWindow(state.backend_data.primary_window);
+	_ = c.SDL_GL_DestroyContext(state.backend_data.glcontext);
 }
 
-pub fn createWindow(self: *root.ZWindow, width: u32, height: u32, title: [:0]const u8) !void {
-	_ = c.SDL_GL_MakeCurrent(primary_window, glcontext);
+pub fn createWindow(self: *root.ZWindow, state: *root.State, width: u32, height: u32, title: [:0]const u8) !void {
+	_ = c.SDL_GL_MakeCurrent(state.backend_data.primary_window, state.backend_data.glcontext);
 
 	_ = c.SDL_GL_SetAttribute(c.SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
 
-	const instance = try root.allocator.create(OpenGL);
-	errdefer root.allocator.destroy(instance);
+	const instance = try state.alloc.create(OpenGL);
+	errdefer state.alloc.destroy(instance);
 
 	const window = c.SDL_CreateWindow(
 		title,
@@ -146,13 +146,14 @@ pub fn createWindow(self: *root.ZWindow, width: u32, height: u32, title: [:0]con
 	instance.* = .{
 		.context = context,
 		.window = window,
+		.state = state,
 	};
-	instance.resources = try .initCapacity(root.allocator, 16);
-	errdefer instance.resources.deinit(root.allocator);
-	instance.resources_to_remove = try .initCapacity(root.allocator, 16);
-	errdefer instance.resources_to_remove.deinit(root.allocator);
-	instance.commands = try .initCapacity(root.allocator, 16);
-	errdefer instance.commands.deinit(root.allocator);
+	instance.resources = try .initCapacity(state.alloc, 16);
+	errdefer instance.resources.deinit(state.alloc);
+	instance.resources_to_remove = try .initCapacity(state.alloc, 16);
+	errdefer instance.resources_to_remove.deinit(state.alloc);
+	instance.commands = try .initCapacity(state.alloc, 16);
+	errdefer instance.commands.deinit(state.alloc);
 
 	instance.default_mesh = getResource(&try OpenGL.createMesh(@ptrCast(instance), &root.ZuilCore.mesh.DefaultMesh));
 
@@ -165,12 +166,12 @@ pub fn createWindow(self: *root.ZWindow, width: u32, height: u32, title: [:0]con
 	initRenderTexture(self);
 
 	if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) != gl.FRAMEBUFFER_COMPLETE) {
-		root.context.log(.err, "framebuffer not complete", .{});
+		state.context.log(.err, "framebuffer not complete", .{});
 		return root.ZAppError.SDLError;
 	}
 }
 
-pub fn destroyWindow(self: *root.ZWindow) void {
+pub fn destroyWindow(self: *root.ZWindow, state: *root.State) void {
 	const data = self.painter.cast(OpenGL) orelse return;
 
 	_ = c.SDL_GL_MakeCurrent(self.window, data.context);
@@ -179,17 +180,17 @@ pub fn destroyWindow(self: *root.ZWindow) void {
 	gl.deleteFramebuffers(1, &data.render_frame);
 
 	for (data.resources.items) |resource| {
-		resource.deinit();
+		resource.deinit(state);
 	}
-	data.resources.deinit(root.allocator);
+	data.resources.deinit(state.alloc);
 
-	data.resources_to_remove.deinit(root.allocator);
+	data.resources_to_remove.deinit(state.alloc);
 
-	data.commands.deinit(root.allocator);
+	data.commands.deinit(state.alloc);
 
 	const cx = data.context;
 
-	root.allocator.destroy(data);
+	state.alloc.destroy(data);
 
 	c.SDL_DestroyWindow(self.window);
 	_ = c.SDL_GL_DestroyContext(cx);
@@ -272,8 +273,8 @@ pub const Resource = struct {
 		},
 	};
 
-	pub fn init(t: Type, fake_user: bool) anyerror!*@This() {
-		const self = try root.allocator.create(@This());
+	pub fn init(state: *root.State, t: Type, fake_user: bool) anyerror!*@This() {
+		const self = try state.alloc.create(@This());
 		self.* = @This(){
 			.type = t,
 		};
@@ -284,8 +285,8 @@ pub const Resource = struct {
 		return self;
 	}
 
-	pub fn deinit(self: *@This()) void {
-		root.context.log(.debug, "deleting: {*} - {s}", .{self, @tagName(self.type)});
+	pub fn deinit(self: *@This(), state: *root.State) void {
+		state.context.log(.debug, "deleting: {*} - {s}", .{self, @tagName(self.type)});
 		switch (self.type) {
 			.texture => {
 				gl.deleteTextures(1, &self.type.texture);
@@ -296,7 +297,7 @@ pub const Resource = struct {
 				gl.deleteBuffers(1, &self.type.mesh.element_buffer);
 			}
 		}
-		root.allocator.destroy(self);
+		state.alloc.destroy(self);
 	}
 };
 
@@ -314,6 +315,7 @@ pub const OpenGL = struct {
 
 	commands: std.ArrayList(root.ZuilCore.context.RenderCommand) = undefined,
 
+	state: *root.State,
 	context: *c.SDL_GLContextState,
 	window: *c.SDL_Window,
 
@@ -342,7 +344,7 @@ pub const OpenGL = struct {
 		const r = getResource(resource);
 		r.users -= 1;
 		if (r.users <= 0) {
-			try self.resources_to_remove.append(root.allocator, r);
+			try self.resources_to_remove.append(self.state.alloc, r);
 		}
 	}
 
@@ -355,7 +357,7 @@ pub const OpenGL = struct {
 			for (self.resources.items, 0..) |item, i| {
 				if (item == value) {
 					_ = self.resources.swapRemove(i);
-					item.deinit();
+					item.deinit(self.state);
 					break;
 				}
 			}
@@ -406,9 +408,9 @@ pub const OpenGL = struct {
 			bitmap.data.ptr
 		);
 
-		const resource = try Resource.init(.{.texture = texture}, true);
-		errdefer resource.deinit();
-		try self.resources.append(root.allocator, resource);
+		const resource = try Resource.init(self.state, .{.texture = texture}, true);
+		errdefer resource.deinit(self.state);
+		try self.resources.append(self.state.alloc, resource);
 
 		return .{
 			.resource = resource
@@ -448,6 +450,7 @@ pub const OpenGL = struct {
 		gl.bindVertexArray(0);
 
 		const resource = try Resource.init(
+			self.state,
 			.{.mesh = .{
 				.vertex_arrays = vertex_arrays,
 				.buffers = buffers,
@@ -456,8 +459,8 @@ pub const OpenGL = struct {
 			}},
 			true
 		);
-		errdefer resource.deinit();
-		try self.resources.append(root.allocator, resource);
+		errdefer resource.deinit(self.state);
+		try self.resources.append(self.state.alloc, resource);
 
 		return .{
 			.resource = resource
@@ -503,7 +506,7 @@ pub const OpenGL = struct {
 	fn addCommand(s: *anyopaque, command: root.ZuilCore.context.RenderCommand) !void {
 		const self: *@This() = @alignCast(@ptrCast(s));
 
-		try self.commands.append(root.allocator, command);
+		try self.commands.append(self.state.alloc, command);
 	}
 
 	fn renderEnd(s: *anyopaque) void {
@@ -528,8 +531,8 @@ pub const OpenGL = struct {
 		_ = c.SDL_GL_SwapWindow(self.window);
 
 		for (self.commands.items) |command| {
-			root.allocator.free(command.parameters);
-			root.allocator.free(command.textures);
+			self.state.alloc.free(command.parameters);
+			self.state.alloc.free(command.textures);
 		}
 		self.commands.clearRetainingCapacity();
 	}
@@ -538,9 +541,9 @@ pub const OpenGL = struct {
 		const self: *@This() = @alignCast(@ptrCast(s));
 
 		//gl.polygonMode(gl.FRONT_AND_BACK, gl.LINE);
-		var current: *Shader = &container_shader;
+		var current: *Shader = &self.state.backend_data.container_shader;
 		var current_mat: root.ZuilCore.context.ZPainter.Material = .container;
-		gl.useProgram(container_shader.shader);
+		gl.useProgram(self.state.backend_data.container_shader.shader);
 
 		for (self.commands.items) |command| {
 			var mesh_resource: *Resource = self.default_mesh;
@@ -554,16 +557,16 @@ pub const OpenGL = struct {
 			if (command.shader != current_mat) {
 				switch (command.shader) {
 					.container => {
-						gl.useProgram(container_shader.shader);
-						current = &container_shader;
+						gl.useProgram(self.state.backend_data.container_shader.shader);
+						current = &self.state.backend_data.container_shader;
 					},
 					.bitmap => {
-						gl.useProgram(bitmap_shader.shader);
-						current = &bitmap_shader;
+						gl.useProgram(self.state.backend_data.bitmap_shader.shader);
+						current = &self.state.backend_data.bitmap_shader;
 					},
 					.font => {
-						gl.useProgram(font_shader.shader);
-						current = &font_shader;
+						gl.useProgram(self.state.backend_data.font_shader.shader);
+						current = &self.state.backend_data.font_shader;
 					},
 				}
 				current_mat = command.shader;

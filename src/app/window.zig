@@ -15,14 +15,14 @@ pub const ZWindow = struct {
 	posx: f32 = 0,
 	posy: f32 = 0,
 
-	pub fn init(width: u32, height: u32, title: [:0]const u8, root_widget: ?*widget.ZWidget) !*@This() {
-		const self = try root.allocator.create(@This());
-		errdefer self.deinit();
+	pub fn init(state: *root.State, width: u32, height: u32, title: [:0]const u8, root_widget: ?*widget.ZWidget) !*@This() {
+		const self = try state.alloc.create(@This());
+		errdefer self.deinit(state);
 
 		self.* = .{};
 
-		try root.backend.createWindow(self, width, height, title);
-		errdefer root.backend.destroyWindow(self);
+		try root.backend.createWindow(self, state, width, height, title);
+		errdefer root.backend.destroyWindow(self, state);
 
 		//var size_x: f32 = 0;
 		//var size_y: f32 = 0;
@@ -40,7 +40,7 @@ pub const ZWindow = struct {
 			.{.w = 1, .h = 1},
 			scaling,
 			root_widget,
-			root.context,
+			state.context,
 			&self.painter,
 		);
 
@@ -54,19 +54,19 @@ pub const ZWindow = struct {
 			.h = @floatFromInt(h),
 		};
 
-		try root.windows.put(@intCast(c.SDL_GetWindowID(self.window)), self);
+		try state.windows.put(@intCast(c.SDL_GetWindowID(self.window)), self);
 		return self;
 	}
 
-	pub fn deinit(self: *@This()) void {
-		if (root.main_window == .set and root.main_window.set == self) root.main_window = .{ .set = null };
+	pub fn deinit(self: *@This(), state: *root.State) void {
+		if (state.main_window == .set and state.main_window.set == self) state.main_window = .{ .set = null };
 		self.tree.deinit();
-		_ = root.windows.remove(@intCast(c.SDL_GetWindowID(self.window)));
-		root.backend.destroyWindow(self);
-		root.allocator.destroy(self);
+		_ = state.windows.remove(@intCast(c.SDL_GetWindowID(self.window)));
+		root.backend.destroyWindow(self, state);
+		state.alloc.destroy(self);
 	}
 
-	pub fn process(self: *@This()) !bool {
+	pub fn process(self: *@This(), state: *root.State) !bool {
 		if (self.tree.root) |r| {
 			const focused = c.SDL_GetMouseFocus();
 			var posx: f32 = 0;
@@ -109,7 +109,7 @@ pub const ZWindow = struct {
 			self.posy = posy;
 		}
 		if (self.tree.key_events.items.len != 0) {
-			root.context.log(.debug, "--- process input ---", .{});
+			state.context.log(.debug, "--- process input ---", .{});
 			for (self.tree.key_events.items) |event| {
 				if (self.input_handler) |func| {
 					if (!func(self, event)) {
@@ -119,33 +119,33 @@ pub const ZWindow = struct {
 				switch (event) {
 					.key => {
 						if (self.tree.focused_widget) |focused| {
-							root.context.log(.debug, "{*}", .{focused});
+							state.context.log(.debug, "{*}", .{focused});
 							try focused.event(event);
 						}
 					},
 					.mouse => {
 						if (self.tree.root) |r| {
 							if (r.isOverPoint(event.mouse.x, event.mouse.y, false)) |hovered| {
-								root.context.log(.debug, "click at x {} - y {} hit {*}", .{event.mouse.x, event.mouse.y, hovered});
+								state.context.log(.debug, "click at x {} - y {} hit {*}", .{event.mouse.x, event.mouse.y, hovered});
 								try hovered.event(event);
 							} else {
-								root.context.log(.debug, "nothing hovered", .{});
+								state.context.log(.debug, "nothing hovered", .{});
 							}
 						}
 					},
 					else => {}
 				}
 			}
-			self.tree.key_events.clearAndFree(root.allocator);
+			self.tree.key_events.clearAndFree(state.alloc);
 		}
 
 		if (self.tree.flags.layout_dirty) {
-			root.context.log(.debug, "--- process layout ---", .{});
+			state.context.log(.debug, "--- process layout ---", .{});
 
 			try self.tree.layout();
 		}
 		if (self.tree.flags.layout_dirty or self.tree.flags.render_dirty) {
-			root.context.log(.debug, "--- process render ---", .{});
+			state.context.log(.debug, "--- process render ---", .{});
 
 			try self.tree.render();
 		}

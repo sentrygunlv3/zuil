@@ -3,7 +3,7 @@ const std = @import("std");
 const zuil = @import("zuil");
 const colors = zuil.core.color;
 
-const widgets = zuil.widgets;
+const widgets = @import("widgets");
 
 var number: u32 = 0;
 
@@ -16,6 +16,13 @@ pub const _start = void;
 pub fn zuilMain(state: *zuil.app.State) anyerror!void {
 	const alloc = state.alloc;
 
+	//var args = try state.args.iterateAllocator(state.alloc);
+	//defer args.deinit();
+	//std.debug.print("args:\n", .{});
+	//while (args.next()) |arg| {
+		//std.debug.print("\t{s}\n", .{arg});
+	//}
+
 	const theme = try zuil.core.Theme.init(alloc);
 	errdefer theme.deinit(alloc);
 	try widgets.addStyles(alloc, theme);
@@ -24,9 +31,8 @@ pub fn zuilMain(state: *zuil.app.State) anyerror!void {
 	errdefer zuil.assets.deinit();
 
 	state.context.theme = theme;
-	std.debug.print("set theme\n", .{});
 
-	try zuil.widgets.register(state.context);
+	try widgets.register(state.context);
 
 	try zuil.assets.registerAssetComptime("icon.svg", @embedFile("icon.svg"), .svg);
 	try zuil.assets.registerAssetComptime("firesans.ttf", @embedFile("font/FiraSans-Regular.ttf"), .ttf);
@@ -145,8 +151,8 @@ pub fn zuilMain(state: *zuil.app.State) anyerror!void {
 						widgets.button(state.context)
 						.c.size(.{.dp = 100}, .{.dp = 50})
 						.c.margin(.new(5))
-						.color(.BLACK)
-						.colorHover(.GREY)
+						.color(.{.custom = .BLACK})
+						.colorHover(.{.custom = .GREY})
 						.setOnClick(containerClick)
 						.child(
 							widgets.text(state.context)
@@ -179,12 +185,12 @@ pub fn zuilMain(state: *zuil.app.State) anyerror!void {
 	window.input_handler = processInput;
 	state.main_window = .{.set = window};
 
-	const font = try zuil.widgets.font.ttfToFont(state.context, try zuil.assets.getAsset("firesans.ttf"), 0, 0);
-	const w = state.context.getSubcontext(zuil.widgets.NAME) orelse {
+	const font = try widgets.font.ttfToFont(state.context, try zuil.assets.getAsset("firesans.ttf"), 0, 0);
+	const w = state.context.getSubcontext(widgets.NAME) orelse {
 		state.context.log(.err, "failed to get widgets subcontext", .{});
 		return;
 	};
-	const widget_context: *zuil.widgets.ZWidgetContext = @ptrCast(@alignCast(w));
+	const widget_context: *widgets.ZWidgetContext = @ptrCast(@alignCast(w));
 	try widget_context.fonts.put(alloc, "firesans", font);
 }
 
@@ -229,12 +235,12 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 	return true;
 }
 
-fn containerClick(self: *zuil.widgets.zbutton.ZButton, event: zuil.core.input.ZMouseEvent) void {
+fn containerClick(self: *widgets.zbutton.ZButton, event: zuil.core.input.ZMouseEvent) void {
 	if (event.key != .left or event.action != .release) return;
 
 	number += 1;
 
-	self.color = .rgb256(0, 0, number);
+	self.color.custom = .rgb256(0, 0, number);
 	self.super.markDirtyRender();
 
 	if (self.child) |child| {
@@ -253,34 +259,25 @@ fn topBar(state: *zuil.app.State, content: *zuil.core.widget.ZWidget) *zuil.core
 	.direction(.vertical)
 	.children(.{
 		widgets.container(state.context)
-		.c.size(.fill, .{ .dp = 40 })
+		.c.size(.fill, .{ .dp = 25 })
 		.color(.background)
 		.radius(0)
 		.child(
 			widgets.list(state.context)
 			.c.size(.fill, .fill)
-			.c.margin(.new(5))
-			.spacing(.{.dp = 5})
+			.c.margin(.new(2))
+			.spacing(.{.dp = 2})
 			.children(.{
 				widgets.button(state.context)
 				.c.size(.{.dp = 80}, .fill)
-				.colorHover(.ZBLUE)
 				.setOnClick(gitClick)
 				.child(
-					widgets.container(state.context)
+					widgets.text(state.context)
 					.c.size(.fill, .fill)
-					.c.margin(.new(1))
+					.c.margin(.new(4))
 					.c.ignoreInput(true)
-					.color(.background)
-					.child(
-						widgets.text(state.context)
-						.c.size(.fill, .fill)
-						.c.margin(.new(6))
-						.c.ignoreInput(true)
-						.text("github")
-						.fontSize(18)
-						.build(),
-					)
+					.text("github")
+					.fontSize(14)
 					.build(),
 				)
 				.build(),
@@ -293,7 +290,7 @@ fn topBar(state: *zuil.app.State, content: *zuil.core.widget.ZWidget) *zuil.core
 	.build();
 }
 
-fn gitClick(self: *zuil.widgets.zbutton.ZButton, event: zuil.core.input.ZMouseEvent) void {
+fn gitClick(self: *widgets.zbutton.ZButton, event: zuil.core.input.ZMouseEvent) void {
 	if (event.key != .left or event.action != .release) return;
 
 	var child = std.process.spawn(

@@ -7,14 +7,8 @@ const ZWidget = zuil.widget.ZWidget;
 const ZColor = zuil.color.ZColor;
 const types = zuil.types;
 
-pub const ZContainerColor = union(enum) {
-	surface: void,
-	background: void,
-	custom: ZColor,
-};
-
 pub const ZContainer = struct {
-	color: ZContainerColor = .surface,
+	color: root.ContainerColor = .surface,
 	radius: ?f32 = null,
 	child: ?*ZWidget = null,
 
@@ -55,11 +49,7 @@ pub const ZContainer = struct {
 			};
 			const style: *Style = @ptrCast(@alignCast(s));
 
-			const color = switch (self.color) {
-				.surface => style.surface.color,
-				.background => if (tree.flags.focused) style.background else style.background_unfocused,
-				.custom => |selected| selected,
-			};
+			const color = self.color.get(style, tree.flags.focused);
 			if (color.a == 0) break :block;
 
 			if (area) |a| {
@@ -173,7 +163,7 @@ pub const ZContainerBuilder = struct {
 		return final;
 	}
 
-	pub fn color(self: *@This(), new: ZContainerColor) *@This() {
+	pub fn color(self: *@This(), new: root.ContainerColor) *@This() {
 		self.widget.color = new;
 		return self;
 	}

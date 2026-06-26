@@ -23,6 +23,7 @@ pub const State = struct {
 	alloc: std.mem.Allocator,
 	threaded: std.Io.Threaded,
 	io: std.Io,
+	args: std.process.Args,
 
 	context: *ZuilCore.ZContext = undefined,
 
@@ -52,23 +53,39 @@ fn errorCallback(s: ?*anyopaque, category: c_int, priority: c_uint, message: [*c
 	);
 }
 
+extern "c" var environ: [*:null]?[*:0]u8;
+
 pub export fn SDL_AppInit(
 	state: **anyopaque,
-	argc: c_int,
-	argv: [*c][*c]u8,
+	c_argc: c_int,
+	c_argv: [*c][*c]u8,
 ) callconv(.c) c.SDL_AppResult {
-	_ = argc; _ = argv;
-
 	const s = std.heap.c_allocator.create(State) catch {
 		return c.SDL_APP_FAILURE;
 	};
+
 	s.* = .{
 		.gpa = .init,
 		.alloc = s.gpa.allocator(),
-		.threaded = .init(s.alloc, .{}),
+
+		.threaded = .init(s.alloc, .{
+			.argv0 = .init(.{
+				.vector = @as([*][*:0]u8, @ptrCast(c_argv))[0..@intCast(c_argc)]
+			}),
+			.environ = .{
+				.block = std.process.Environ.PosixBlock{
+					.slice = std.mem.span(environ)
+				},
+			},
+		}),
 		.io = s.threaded.io(),
+		.args = .{
+			.vector = @as([*][*:0]u8, @ptrCast(c_argv))[0..@intCast(c_argc)]
+		},
+
 		.windows = .init(s.alloc),
 	};
+
 	s.context = ZuilCore.ZContext.init(s.alloc, s.io, undefined) catch {
 		return c.SDL_APP_FAILURE;
 	};

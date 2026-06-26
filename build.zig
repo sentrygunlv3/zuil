@@ -49,6 +49,8 @@ pub fn build(b: *std.Build) void {
 		}),
 	});
 
+	b.modules.put(b.allocator, "widgets", zuil_widgets.root_module) catch {};
+
 	b.installArtifact(zuil_widgets);
 
 	// app
@@ -87,7 +89,6 @@ pub fn build(b: *std.Build) void {
 	});
 	zuil_app.root_module.addCSourceFile(.{.file = b.path("src/app/c.c")});
 	zuil_app.root_module.addImport("zuilcore", zuil_core.root_module);
-	zuil_app.root_module.addImport("widgets", zuil_widgets.root_module);
 	zuil_app.root_module.addImport("opengl", opengl.module("root"));
 
 	b.installArtifact(zuil_app);

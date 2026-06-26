@@ -119,6 +119,29 @@ pub const text = buildFunc(ztext.zTextBuilder);
 pub const zbutton = @import("widgets/button.zig");
 pub const button = buildFunc(zbutton.ZButtonBuilder);
 
+pub const ContainerColor = union(enum) {
+	none: void,
+	custom: zuil.color.ZColor,
+
+	surface: void,
+	surface_border: void,
+	button: void,
+	button_border: void,
+	background: void,
+
+	pub fn get(self: *@This(), style: *Style, focused: bool) zuil.color.ZColor {
+		return switch (self.*) {
+			.none => .TRANSPARENT,
+			.surface => style.surface.color,
+			.surface_border => style.surface.border,
+			.button => if (!focused) style.surface.button.color else style.surface.button.color_hovered,
+			.button_border => if (!focused) style.surface.button.border else style.surface.button.border_hovered,
+			.background => if (focused) style.background else style.background_unfocused,
+			.custom => |selected| selected,
+		};
+	}
+};
+
 pub const Style = struct {
 	background: zuil.color.ZColor = .rgb256(41, 44, 48),
 	background_unfocused: zuil.color.ZColor = .rgb256(32, 35, 38),

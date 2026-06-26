@@ -19,6 +19,10 @@ pub fn build(b: *std.Build) void {
 				.{
 					.name = "zuil",
 					.module = zuil.module("root"),
+				},
+				.{
+					.name = "widgets",
+					.module = zuil.module("widgets"),
 				}
 			}
 		}),

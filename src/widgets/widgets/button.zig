@@ -8,8 +8,8 @@ const ZColor = zuil.color.ZColor;
 const types = zuil.types;
 
 pub const ZButton = struct {
-	color: ?ZColor = null,
-	color_hover: ?ZColor = null,
+	color: root.ContainerColor = .button,
+	color_hover: root.ContainerColor = .none,
 	radius: ?f32 = null,
 	child: ?*ZWidget = null,
 	hovered: bool = false,
@@ -50,9 +50,9 @@ pub const ZButton = struct {
 			};
 			const style: *Style = @ptrCast(@alignCast(s));
 
-			const color = if (self.hovered)
-				self.color_hover orelse style.surface.button.color_hovered else
-				self.color orelse style.surface.button.color;
+			const color = if (self.hovered and self.color_hover != .none)
+				self.color_hover.get(style, self.hovered) else
+				self.color.get(style, self.hovered);
 
 			if (color.a == 0) break :block;
 
@@ -186,12 +186,12 @@ pub const ZButtonBuilder = struct {
 		return final;
 	}
 
-	pub fn color(self: *@This(), new: ZColor) *@This() {
+	pub fn color(self: *@This(), new: root.ContainerColor) *@This() {
 		self.widget.color = new;
 		return self;
 	}
 
-	pub fn colorHover(self: *@This(), new: ZColor) *@This() {
+	pub fn colorHover(self: *@This(), new: root.ContainerColor) *@This() {
 		self.widget.color_hover = new;
 		return self;
 	}

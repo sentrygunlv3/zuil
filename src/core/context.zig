@@ -51,6 +51,7 @@ pub const ZContext = struct {
 
 	theme: *root.Theme,
 
+	usercontext: *anyopaque = undefined,
 	subcontext_hashmap: std.StringHashMap(Subcontext),
 
 	pub const Subcontext = struct {

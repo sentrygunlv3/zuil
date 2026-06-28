@@ -14,6 +14,8 @@ pub const ZText = struct {
 	text: ?[]const u8 = null,
 	font_size: u32 = 14,
 
+	mesh_handle: ?zuil.context.MeshHandle = null,
+
 	super: ZWidget = .{.fi = &vtable},
 
 	pub const vtable = ZWidget.VTable.generate(@This());
@@ -32,13 +34,12 @@ pub const ZText = struct {
 		context.allocator.destroy(self);
 	}
 
-	// very basic text thing
-	// probably needs a complety rewrite to work with more advanced stuff
 	pub fn render(
 		widget: *ZWidget,
 		tree: *zuil.tree.ZWidgetTree,
 		area: ?types.ZBounds
 	) !void {
+		const start = std.Io.Clock.awake.now(tree.context.io);
 		const self: *@This() = widget.as(@This());
 
 		if (self.text == null) return;
@@ -77,8 +78,6 @@ pub const ZText = struct {
 
 		const widgetx = (widget.clamped_bounds.x / window_size.w) * 2 - 1;
 		const widgety = 1 - (widget.clamped_bounds.y / window_size.h) * 2;
-		//const widgetw = (self.clamped_bounds.w / window_size.w) * 2 - 1;
-		//const widgeth = 1 - (self.clamped_bounds.h / window_size.h) * 2;
 
 		const sub_font = c.hb_font_create_sub_font(font.hb_font);
 		defer c.hb_font_destroy(sub_font);
@@ -106,6 +105,7 @@ pub const ZText = struct {
 		const glyph_pos = c.hb_buffer_get_glyph_positions(buffer, &count_c);
 		const count: u32 = @intCast(count_c);
 
+		if (self.mesh_handle != null) try tree.painter.resourceRemoveUser(self.mesh_handle.?);
 		var mesh = try zuil.mesh.ZMeshBuilder.init(widget.window.?.context.allocator);
 		defer mesh.deinit();
 
@@ -156,15 +156,14 @@ pub const ZText = struct {
 			advance += (@as(f32, @floatFromInt(glyph_pos[i].x_advance)) / 64) * sizew;
 		}
 
-		var mesh_handle = try tree.painter.createMesh(&mesh.build());
-		try tree.painter.resourceRemoveUser(&mesh_handle);
+		self.mesh_handle = try tree.painter.createMesh(&mesh.build());
 
 		const color = self.color orelse style.decoration.on_surface;
 
 		try tree.painter.addCommand(
 			tree.context.allocator,
 			.font,
-			mesh_handle,
+			self.mesh_handle,
 			&[_]zuil.context.TextureParameter{
 				.{
 					.slot = 0,
@@ -183,6 +182,8 @@ pub const ZText = struct {
 				},
 			},
 		);
+		const end = start.untilNow(tree.context.io, .awake);
+		std.debug.print("\t\t{s} {}ms\n", .{self.super.fi.name, end.toMilliseconds()});
 	}
 };
 

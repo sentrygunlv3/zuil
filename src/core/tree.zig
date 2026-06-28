@@ -125,23 +125,21 @@ pub const ZWidgetTree = struct {
 
 	pub fn render(self: *@This()) anyerror!void {
 		defer _ = self.arena.reset(.retain_capacity);
-		if (self.root) |r| {
-			const area = if (self.flags.render_dirty_full) null else self.dirty;
 
+		const area = if (self.flags.render_dirty_full) null else self.dirty;
+
+		self.painter.renderBegin();
+
+		self.painter.clip(area, self.getBounds());
+		self.painter.clear(self.context.theme.background);
+
+		if (self.root) |r| {
 			try r.render(
 				self,
 				area
 			);
 			self.context.log(.debug, "area: {} flags: {}", .{if (self.dirty != null) self.dirty.? else types.ZBounds.zero, self.flags});
-
-			self.painter.renderBegin();
-
-			self.painter.clip(area, self.getBounds());
-			self.painter.clear(self.context.theme.background);
-			try self.painter.renderCommands();
 		}
-		self.painter.clip(null, self.getBounds());
-
 		self.painter.renderEnd();
 
 		self.flags.render_dirty = false;

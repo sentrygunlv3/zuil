@@ -91,12 +91,18 @@ pub export fn SDL_AppInit(
 	};
 
 	state.* = @ptrCast(s);
+	s.context.usercontext = state.*;
 	c.SDL_SetLogOutputFunction(errorCallback, s);
+
+	s.context.log(.info, "ZUIL init", .{});
 
 	backend.init(s) catch |e| {
 		std.debug.print("backend error {}\n", .{e});
 		return c.SDL_APP_FAILURE;
 	};
+
+	ZuilCore.assets.init(s.alloc);
+	errdefer ZuilCore.assets.deinit();
 
 	root.zuilMain(s) catch {
 		return c.SDL_APP_FAILURE;
@@ -168,7 +174,14 @@ pub export fn SDL_AppEvent(
 
 			backend.updateSize(window);
 		},
-		c.SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED => {
+		c.SDL_EVENT_WINDOW_EXPOSED => {
+			const window = state.windows.get(event.window.windowID) orelse return c.SDL_APP_CONTINUE;
+			if (window.tree.root) |r| {
+				r.markDirty();
+			}
+			window.tree.flags.render_dirty_full = true;
+		},
+		c.SDL_EVENT_WINDOW_RESIZED => {
 			const window = state.windows.get(event.window.windowID) orelse return c.SDL_APP_CONTINUE;
 			if (window.tree.root) |r| {
 				r.markDirty();
@@ -177,8 +190,6 @@ pub export fn SDL_AppEvent(
 
 			const scaling = c.SDL_GetWindowDisplayScale(window.window);
 			window.tree.scaling = scaling;
-
-			backend.updateSize(window);
 		},
 		else => {}
 	}
@@ -224,4 +235,9 @@ pub export fn SDL_AppQuit(
 	state.context.deinit();
 
 	backend.deinit(state);
+
+	ZuilCore.assets.deinit();
+
+	_ = state.gpa.detectLeaks();
+	_ = state.gpa.deinit();
 }

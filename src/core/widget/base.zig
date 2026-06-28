@@ -158,9 +158,6 @@ pub const ZWidget = struct {
 	}
 
 	pub fn render(self: *@This(), tree: *root.tree.ZWidgetTree, area: ?types.ZBounds) anyerror!void {
-		tree.context.log(.debug, "{*} - {s}", .{self, self.getName()});
-		tree.context.log(.debug, "bounds: {}", .{self.clamped_bounds});
-
 		if (self.fi.render) |func| {
 			try func(self, tree, if (area != null) area.? else null);
 		}

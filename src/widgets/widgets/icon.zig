@@ -45,7 +45,7 @@ pub const ZIcon = struct {
 	pub fn exitTree(widget: *ZWidget) void {
 		const self: *@This() = widget.as(@This());
 
-		widget.window.?.painter.resourceRemoveUser(&self.resource) catch return;
+		widget.window.?.painter.resourceRemoveUser(self.resource) catch return;
 	}
 
 	pub fn render(

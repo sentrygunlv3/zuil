@@ -7,7 +7,7 @@ pub const ZPainter = struct {
 	vtable: *const VTable,
 
 	pub const VTable = struct {
-		resourceRemoveUser: *const fn (self: *anyopaque, resource: *root.context.ResourceHandle) anyerror!void,
+		resourceRemoveUser: *const fn (self: *anyopaque, resource: root.context.ResourceHandle) anyerror!void,
 		resourcesUpdate: *const fn (self: *anyopaque, ) void,
 
 		renderBegin: *const fn (self: *anyopaque) void,
@@ -32,7 +32,7 @@ pub const ZPainter = struct {
 		return @as(*T, @alignCast(@ptrCast(self.ptr)));
 	}
 
-	pub fn resourceRemoveUser(self: *@This(), resource: *root.context.ResourceHandle) anyerror!void {
+	pub fn resourceRemoveUser(self: *@This(), resource: root.context.ResourceHandle) anyerror!void {
 		try self.vtable.resourceRemoveUser(self.ptr, resource);
 	}
 

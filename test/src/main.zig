@@ -16,19 +16,9 @@ pub const _start = void;
 pub fn zuilMain(state: *zuil.app.State) anyerror!void {
 	const alloc = state.alloc;
 
-	//var args = try state.args.iterateAllocator(state.alloc);
-	//defer args.deinit();
-	//std.debug.print("args:\n", .{});
-	//while (args.next()) |arg| {
-		//std.debug.print("\t{s}\n", .{arg});
-	//}
-
 	const theme = try zuil.core.Theme.init(alloc);
 	errdefer theme.deinit(alloc);
 	try widgets.addStyles(alloc, theme);
-
-	zuil.assets.init(alloc);
-	errdefer zuil.assets.deinit();
 
 	state.context.theme = theme;
 
@@ -202,24 +192,25 @@ fn processInput(self: *zuil.ZWindow, event: zuil.input.ZEvent) bool {
 	}
 	switch (event.key.key) {
 		.fn_1 => {
-			//_ = zuil.ZWindow.init(
-				//400,
-				//200,
-				//"child window",
-				//widgets.container(self.tree.context)
-				//.c.size(.fill, .fill)
-				//.color(.{ .custom = .BLACK })
-				//.child(
-					//widgets.container(self.tree.context)
-					//.c.size(.fill, .fill)
-					//.c.margin(.new(20))
-					//.color(.{ .custom = .BLUE })
-					//.build()
-				//)
-				//.build()
-			//) catch |e| {
-				//self.tree.context.log(.debug, "{}", .{e});
-			//};
+			_ = zuil.ZWindow.init(
+				@alignCast(@ptrCast(self.tree.context.usercontext)),
+				400,
+				200,
+				"child window",
+				widgets.container(self.tree.context)
+				.c.size(.fill, .fill)
+				.color(.{ .custom = .BLACK })
+				.child(
+					widgets.container(self.tree.context)
+					.c.size(.fill, .fill)
+					.c.margin(.new(20))
+					.color(.{ .custom = .BLUE })
+					.build()
+				)
+				.build()
+			) catch |e| {
+				self.tree.context.log(.debug, "{}", .{e});
+			};
 			return false;
 		},
 		.space => {

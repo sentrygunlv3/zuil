@@ -104,6 +104,18 @@ pub const ZWindow = struct {
 					self.tree.last_hover = null;
 					//root.context.log(.debug, "nothing hovered", .{});
 				}
+			} else {
+				if (
+					self.tree.last_hover != null and
+					focused != self.window
+				) {
+					try self.tree.last_hover.?.event(.{.mouse_move = .{
+						.entered = false,
+						.x = @floatCast(posx),
+						.y = @floatCast(posy),
+					}});
+					self.tree.last_hover = null;
+				}
 			}
 			self.posx = posx;
 			self.posy = posy;
@@ -141,12 +153,10 @@ pub const ZWindow = struct {
 
 		if (self.tree.flags.layout_dirty) {
 			state.context.log(.debug, "--- process layout ---", .{});
-
 			try self.tree.layout();
 		}
-		if (self.tree.flags.layout_dirty or self.tree.flags.render_dirty) {
+		if (self.tree.flags.layout_dirty or self.tree.flags.render_dirty or self.tree.flags.render_dirty_full) {
 			state.context.log(.debug, "--- process render ---", .{});
-
 			try self.tree.render();
 		}
 		return true;

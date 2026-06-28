@@ -60,24 +60,33 @@ pub const ZWidgetContext = struct {
 
 	pub fn getFontTexture(self: *@This(), painter: *zuil.context.ZPainter, f: *font.ZFont) !zuil.context.TextureHandle {
 		if (self.font_textures.get(painter)) |s| {
-			return s.font_textures.get(f) orelse return error.noFont;
-		}
-		var handle = try painter.createTexture(&f.texture);
-		errdefer painter.resourceRemoveUser(&handle) catch {};
+			if (s.font_textures.get(f)) |t| {
+				return t;
+			} else {
+				const handle = try painter.createTexture(&f.texture);
+				errdefer painter.resourceRemoveUser(handle) catch {};
+				try s.font_textures.put(f, handle);
+				return handle;
+			}
+		} else {
+			const handle = try painter.createTexture(&f.texture);
+			errdefer painter.resourceRemoveUser(handle) catch {};
 
-		var d = self.font_textures.get(painter.ptr);
-		if (d == null) {
-			d = try self.context.allocator.create(PainterData);
+			var d = self.font_textures.get(painter.ptr);
+			if (d == null) {
+				d = try self.context.allocator.create(PainterData);
+				errdefer self.context.allocator.destroy(d.?);
+				d.?.font_textures = .init(self.context.allocator);
+				errdefer d.?.font_textures.deinit();
+				try self.font_textures.put(painter.ptr, d.?);
+			}
 			errdefer self.context.allocator.destroy(d.?);
-			d.?.font_textures = .init(self.context.allocator);
 			errdefer d.?.font_textures.deinit();
-			try self.font_textures.put(painter.ptr, d.?);
-		}
-		errdefer self.context.allocator.destroy(d.?);
-		errdefer d.?.font_textures.deinit();
 
-		try d.?.font_textures.put(f, handle);
-		return handle;
+			try d.?.font_textures.put(f, handle);
+			return handle;
+		}
+		return error.noFont;
 	}
 };
 

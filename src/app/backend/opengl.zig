@@ -155,7 +155,7 @@ pub fn createWindow(self: *root.ZWindow, state: *root.State, width: u32, height:
 	instance.commands = try .initCapacity(state.alloc, 16);
 	errdefer instance.commands.deinit(state.alloc);
 
-	instance.default_mesh = getResource(&try OpenGL.createMesh(@ptrCast(instance), &root.ZuilCore.mesh.DefaultMesh));
+	instance.default_mesh = getResource(try OpenGL.createMesh(@ptrCast(instance), &root.ZuilCore.mesh.DefaultMesh));
 
 	self.window = window;
 	self.painter = .{
@@ -240,7 +240,7 @@ pub fn updateSize(self: *root.ZWindow) void {
 
 	var width: c_int = undefined;
 	var height: c_int = undefined;
-	_ = c.SDL_GetWindowSize(self.window, &width, &height);
+	_ = c.SDL_GetWindowSizeInPixels(self.window, &width, &height);
 
 	root.gl.viewport(0, 0, width, height);
 
@@ -301,7 +301,7 @@ pub const Resource = struct {
 	}
 };
 
-fn getResource(self: *const root.ZuilCore.context.ResourceHandle) *Resource {
+fn getResource(self: root.ZuilCore.context.ResourceHandle) *Resource {
 	return @ptrCast(@alignCast(self.resource));
 }
 
@@ -338,7 +338,7 @@ pub const OpenGL = struct {
 		.createMesh = createMesh,
 	};
 
-	fn resourceRemoveUser(s: *anyopaque, resource: *root.ZuilCore.context.ResourceHandle) anyerror!void {
+	fn resourceRemoveUser(s: *anyopaque, resource: root.ZuilCore.context.ResourceHandle) anyerror!void {
 		const self: *@This() = @alignCast(@ptrCast(s));
 
 		const r = getResource(resource);
@@ -496,7 +496,7 @@ pub const OpenGL = struct {
 
 		var width: c_int = undefined;
 		var height: c_int = undefined;
-		_ = c.SDL_GetWindowSize(self.window, &width, &height);
+		_ = c.SDL_GetWindowSizeInPixels(self.window, &width, &height);
 
 		gl.bindFramebuffer(gl.FRAMEBUFFER, self.render_frame);
 
@@ -512,11 +512,15 @@ pub const OpenGL = struct {
 	fn renderEnd(s: *anyopaque) void {
 		const self: *@This() = @alignCast(@ptrCast(s));
 
-		_ = c.SDL_GL_MakeCurrent(self.window, self.context);
+		renderCommands(s) catch {
+			self.state.context.log(.err, "failed to render commands", .{});
+		};
+
+		gl.disable(gl.SCISSOR_TEST);
 
 		var width: c_int = undefined;
 		var height: c_int = undefined;
-		_ = c.SDL_GetWindowSize(self.window, &width, &height);
+		_ = c.SDL_GetWindowSizeInPixels(self.window, &width, &height);
 
 		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, self.render_frame);
 		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, 0);
@@ -548,7 +552,7 @@ pub const OpenGL = struct {
 		for (self.commands.items) |command| {
 			var mesh_resource: *Resource = self.default_mesh;
 			if (command.mesh) |mesh| {
-				mesh_resource = getResource(&mesh);
+				mesh_resource = getResource(mesh);
 			}
 
 			gl.bindVertexArray(mesh_resource.type.mesh.vertex_arrays);
